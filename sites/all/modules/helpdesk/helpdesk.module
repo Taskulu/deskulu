@@ -455,12 +455,11 @@ function helpdesk_frontpage() {
  */
 function helpdesk_get_taxonomy_tree($vid, &$tree) {
   $terms = taxonomy_get_tree($vid);
-  global $language;
   foreach($terms as $term) {
     if ($term->parents[0] == 0) {
       // top level category
       $tree[$term->tid] = array(
-        'title' => i18n_taxonomy_term_name($term, $language->language),
+        'title' => i18n_taxonomy_term_name($term),
         'children' => [],
       );
       $i = 0;
@@ -472,7 +471,7 @@ function helpdesk_get_taxonomy_tree($vid, &$tree) {
         }
         $i++;
         $tree[$term->tid]['children'][$row][$child->tid] = array(
-          'title' => i18n_taxonomy_term_name($term, $language->language),
+          'title' => i18n_taxonomy_term_name($child),
           'content' => $content,
         );
       }
@@ -484,10 +483,12 @@ function helpdesk_get_taxonomy_tree($vid, &$tree) {
  * Returns nodes referencing $child taxonomy term.
  */
 function helpdesk_get_term_nodes($child) {
+  global $language;
   $q = new EntityFieldQuery();
   $results = $q->entityCondition('entity_type', 'node')
     ->entityCondition('bundle', 'article')
     ->fieldCondition('field_category', 'tid', $child->tid)
+    ->propertyCondition('language', $language->language)
     ->execute();
   $content = [];
   if (!empty($results['node'])) {
