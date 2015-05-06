@@ -1,0 +1,69 @@
+<?php
+/**
+ * @file
+ * User mail translation module.
+ */
+
+/**
+ * Implements hook_mail_alter().
+ */
+function i18n_user_mail_alter(&$message) {
+  if ($message['module'] == 'user') {
+    $language = $message['language'];
+    $variables = array('user' => $message['params']['account']);
+    $key = $message['key'];
+
+    $components = array('subject', 'body');
+    foreach ($components as $component) {
+      $text = i18n_variable_get('user_mail_' . $key . '_' . $component, $language->language, FALSE);
+      if ($text) {
+        $text = token_replace($text, $variables, array('language' => $language, 'callback' => 'i18n_user_user_mail_tokens', 'sanitize' => FALSE));
+
+        switch ($component) {
+          case 'subject':
+            $message[$component] = $text;
+            break;
+
+          case 'body':
+            $message[$component] = array($text);
+            break;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Overrides user_mail_tokens().
+ *
+ * @see i18n_user_user_tokens_alter()
+ * @see user_mail_tokens()
+ */
+function i18n_user_user_mail_tokens(&$replacements, $data, $options) {
+  if (isset($data['user'])) {
+    $replacements['[user:one-time-login-url]'] = i18n_user_user_pass_reset_url($data['user']);
+    $replacements['[user:cancel-url]'] = i18n_user_user_cancel_url($data['user']);
+  }
+}
+
+/**
+ * Overrides user_pass_reset_url().
+ * Generates a unique and localized URL for a user to login and reset their password.
+ *
+ * @see user_pass_reset_url().
+ */
+function i18n_user_user_pass_reset_url($account) {
+  $timestamp = REQUEST_TIME;
+  return url("user/reset/$account->uid/$timestamp/" . user_pass_rehash($account->pass, $timestamp, $account->login), array('absolute' => TRUE, 'language' => i18n_language($account->language)));
+}
+
+/**
+ * Overrides user_pass_cancel_url().
+ * Generates a localized URL to confirm an account cancellation request.
+ *
+ * @see i18n_user_user_cancel_url()
+ */
+function i18n_user_user_cancel_url($account) {
+  $timestamp = REQUEST_TIME;
+  return url("user/$account->uid/cancel/confirm/$timestamp/" . user_pass_rehash($account->pass, $timestamp, $account->login), array('absolute' => TRUE, 'language' => i18n_language($account->language)));
+}

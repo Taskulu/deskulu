@@ -1,0 +1,54 @@
+<?php
+/**
+ * @TODO
+ *
+ * Currently only implemented for nodes. Need to add $plugin->execute()
+ * for any other entities that might be supported.
+ *
+ * Cache the date processing, perhaps cache the formatted, timezone-adjusted
+ * date strings for each entity (would have to be cached differently for each
+ * timezone, based on the tz_handling method for the date).
+ *
+ * Add an option to set/not set the context on forms vs views.
+ */
+
+/**
+ * Implements hook_context_node_condition_alter().
+ */
+function date_context_context_node_condition_alter($node, $op) {
+  if ($plugin = context_get_plugin('condition', 'date_context_date_condition')) {
+    $plugin->execute($node, $op);
+  }
+}
+
+/**
+ * Implements hook_context_plugins()
+ */
+function date_context_context_plugins() {
+  $plugins = array();
+  $plugins['date_context_date_condition'] = array(
+    'handler' => array(
+      'class' => 'date_context_date_condition',
+      'parent' => 'context_condition_node',
+      'path' => drupal_get_path('module', 'date_context') . '/plugins',
+      'file' => 'date_context_date_condition.inc',
+    ),
+  );
+  return $plugins;
+}
+
+/**
+ * Implements hook_context_registry()
+ */
+function date_context_context_registry() {
+  return array(
+    'conditions' => array(
+      'date_context_date_condition' => array(
+        'title' => t('Date'),
+        'description' => t('Set a condition based on the value of a date field'),
+        'plugin' => 'date_context_date_condition',
+      ),
+    ),
+  );
+}
+

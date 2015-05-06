@@ -1,0 +1,53 @@
+<?php
+
+/**
+ * @file
+ * Entity-test i18n integration module via entity API i18n support.
+ *
+ * @see EntityDefaultI18nController
+ */
+
+/**
+ * Implements hook_entity_info_alter().
+ */
+function entity_test_i18n_entity_info_alter(&$info) {
+  // Enable i18n support via the entity API.
+  $info['entity_test_type']['i18n controller class'] = 'EntityDefaultI18nStringController';
+}
+
+/**
+ * Implements hook_entity_property_info_alter().
+ */
+function entity_test_i18n_entity_property_info_alter(&$info) {
+  // Mark some properties as translatable, but also denote that translation
+  // works with i18n_string.
+  foreach (array('label') as $name) {
+    $info['entity_test_type']['properties'][$name]['translatable'] = TRUE;
+    $info['entity_test_type']['properties'][$name]['i18n string'] = TRUE;
+  }
+}
+
+/**
+ * Implements hook_{entity_test_type}_insert().
+ */
+function entity_test_i18n_entity_test_type_insert($test_type) {
+  i18n_string_object_update('entity_test_type', $test_type);
+}
+
+/**
+ * Implements hook_{entity_test_type}_update().
+ */
+function entity_test_i18n_entity_test_type_update($test_type) {
+  // Account for name changes.
+  if ($test_type->original->name != $test_type->name) {
+    i18n_string_update_context("entity_test:entity_test_type:{$test_type->original->name}:*", "entity_test:entity_test_type:{$test_type->name}:*");
+  }
+  i18n_string_object_update('entity_test_type', $test_type);
+}
+
+/**
+ * Implements hook_{entity_test_type}_delete().
+ */
+function entity_test_i18n_entity_test_type_delete($test_type) {
+  i18n_string_object_remove('entity_test_type', $test_type);
+}

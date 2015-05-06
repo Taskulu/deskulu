@@ -1,0 +1,95 @@
+<?php
+
+/**
+ * @file
+ * Functionality tests for the Mime Mail module.
+ *
+ * @ingroup mimemail
+ */
+
+require_once(dirname(__FILE__) . '/../mimemail.inc');
+
+/**
+ * Tests helper functions from the Mime Mail module.
+ */
+class MimeMailUnitTestCase extends DrupalUnitTestCase {
+  public static function getInfo() {
+    return array(
+      'name' => 'Mime Mail unit tests',
+      'description' => 'Test that Mime Mail helper functions work properly.',
+      'group' => 'Mime Mail',
+    );
+  }
+
+  function setUp() {
+    drupal_load('module', 'mimemail');
+    parent::setUp();
+  }
+
+  function testHeaders() {
+    // Test the regular expression for extracting the mail address.
+    $chars = array('-', '.', '+', '_');
+    $name = $this->randomString();
+    $local = $this->randomName() . $chars[array_rand($chars)] . $this->randomName();
+    $domain = $this->randomName() . '-' . $this->randomName() . '.' . $this->randomName(rand(2,4));
+    $headers = mimemail_headers(array(), "$name <$local@$domain>");
+    $result = $headers['Return-Path'];
+    $expected = "<$local@$domain>";
+    $this->assertIdentical($result, $expected, 'Return-Path header field correctly set.');
+  }
+
+  function testUrl() {
+    $result = _mimemail_url('#');
+    $this->assertIdentical($result, '#', 'Hash mark URL without fragment left intact.');
+
+    $url = '/sites/default/files/styles/thumbnail/public/image.jpg?itok=Wrl6Qi9U';
+    $result = _mimemail_url($url, TRUE);
+    $expected = 'sites/default/files/styles/thumbnail/public/image.jpg';
+    $this->assertIdentical($result, $expected, 'Security token removed from styled image URL.');
+
+    $expected = $url = 'public://' . $this->randomName() . ' '. $this->randomName() . '.' . $this->randomName(3);
+    $result = _mimemail_url($url, TRUE);
+    $this->assertIdentical($result, $expected, 'Space in the filename of the attachment left intact.');
+  }
+
+}
+
+/**
+ * Tests functions from the Mime Mail module.
+ */
+class MimeMailWebTestCase extends DrupalWebTestCase {
+  protected $adminUser;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Mime Mail web tests',
+      'description' => 'Test that Mime Mail works properly.',
+      'group' => 'Mime Mail',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp('mailsystem', 'mimemail');
+
+    // Create and login user.
+    $this->adminUser = $this->drupalCreateUser(array(
+      'access administration pages',
+      'administer site configuration',
+    ));
+
+    $this->drupalLogin($this->adminUser);
+  }
+
+  public function testUrl() {
+    $this->drupalPost('admin/config/system/mimemail',
+      array('mimemail_linkonly' => TRUE),
+      t('Save configuration'));
+
+    $url = 'public://' . $this->randomName() . ' '. $this->randomName() . '.jpg';
+    $result = _mimemail_url($url, TRUE);
+    $expected = str_replace(' ', '%20', file_create_url($url));
+    $message = 'Stream wrapper converted to web accessible URL for linked image.';
+    $this->assertIdentical($result, $expected, $message);
+   }
+
+}

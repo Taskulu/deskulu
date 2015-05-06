@@ -1,0 +1,39 @@
+.rate-widget-yesno ul {
+  list-style: none;
+  overflow: hidden;
+}
+.rate-widget-yesno .item-list ul li {
+  background-image: none;
+  padding: 0;
+}
+.rate-widget-yesno ul li {
+  float: left;
+  list-style: none;
+}
+.rate-widget-yesno ul li a {
+  display: block;
+  float: left;
+}
+.rate-yesno-btn {
+  display: inline-block;
+  background: #eee;
+  border: #ccc;
+  margin-right: 5px;
+  padding: 0 2px;
+  color: #666 !important;
+  border: 1px solid #ccc;
+}
+
+.rate-yesno-btn:hover {
+  background: #ddd;
+  text-decoration: none;
+}
+
+.rate-yesno-votes {
+  display: inline-block;
+  margin-right: 5px;
+  padding: 1px 2px;
+  border: 1px;
+  font-size: 0.8em;
+}
+

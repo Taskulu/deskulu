@@ -1,0 +1,197 @@
+<?php
+/**
+ * @file
+ * Test case for multilingual blocks
+ */
+
+class i18nBlocksTestCase extends Drupali18nTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Block translation',
+      'group' => 'Internationalization',
+      'description' => 'Block translation functions'
+    );
+  }
+
+  function setUp() {
+    parent::setUp('i18n_block');
+    parent::setUpLanguages();
+    $this->translator = $this->drupalCreateUser(array('translate interface', 'translate user-defined strings'));
+
+    $format = filter_default_format();
+    variable_set('i18n_string_allowed_formats', array($format => $format));
+    $this->drupalLogin($this->admin_user);
+  }
+
+  function testBlockTranslation() {
+
+    $block_translater = $this->drupalCreateUser(array('administer blocks', 'translate interface', 'translate user-defined strings'));
+
+    // Display Language switcher block
+    $switcher = array('module' => 'locale', 'delta' => 'language', 'title' => t('Languages'));
+    $this->moveBlockToRegion($switcher);
+    // Add a custom title to language switcher block and check it displays translated
+    $title = $this->randomName(10);
+    $this->updateBlock($switcher, array('title' => $title, 'i18n_mode' => I18N_MODE_LOCALIZE));
+    $this->assertText($title, "The new custom title is displayed on the home page.");
+    $translations = $this->createStringTranslation('blocks', $title);
+    $this->i18nAssertTranslations($translations);
+
+    // Create a translatable block and test block visibility per language.
+    $block = $this->i18nCreateBlock();
+    // Now set a language for the block and confirm it shows just for that one (without translation)
+    $languages = $this->getEnabledLanguages();
+    $setlanguage = array_shift($languages);
+    $otherlanguage = array_shift($languages);
+    $this->setBlockLanguages($block, array($setlanguage->language));
+    // Show in block's language but not translated
+    $this->i18nGet($setlanguage);
+    $this->assertText($block['title']);
+    // Do not show in the other language
+    $this->i18nGet($otherlanguage);
+    $this->assertNoText($block['title']);
+
+    // Create a new block, translate it and check the right translations are displayed for title and body
+    $box2 = $this->i18nCreateBlock();
+    // Create translations for title and body, source strings should be already there
+    $translations = $this->i18nTranslateBlock($box2);
+    $this->i18nAssertTranslations($translations['title'], '', 'Custom block title translation displayed.');
+    $this->i18nAssertTranslations($translations['body'], '', 'Custom block body translation displayed.');
+
+    // Test the translate tab.
+    $this->drupalLogin($this->admin_user);
+    $this->drupalGet('admin/structure/block/manage/' . $box2['module'] . '/' . $box2['delta'] . '/configure');
+    $this->assertNoFieldByName('save_and_translate');
+
+    $this->drupalLogin($block_translater);
+    $this->drupalPost('admin/structure/block/manage/' . $box2['module'] . '/' . $box2['delta'] . '/configure', array(), t('Save and translate'));
+    // @todo Improve these checks.
+    $this->assertText(t('Spanish'));
+    $this->assertText(t('translated'));
+
+    $this->clickLink(t('translate'));
+
+    $this->assertFieldByName('strings[blocks:block:' . $box2['delta'] . ':title]', $translations['title']['es']);
+    $this->assertFieldByName('strings[blocks:block:' . $box2['delta'] . ':body]', $translations['body']['es']);
+
+    // Update the translation.
+    $translations['title']['es'] = $this->randomName(10);
+    $translations['body']['es'] = $this->randomName(20);
+    $edit = array(
+      'strings[blocks:block:' . $box2['delta'] . ':title]' => $translations['title']['es'],
+      'strings[blocks:block:' . $box2['delta'] . ':body]' => $translations['body']['es'],
+    );
+    $this->drupalPost(NULL, $edit, t('Save translation'));
+    $this->i18nAssertTranslations($translations['title'], '', 'Updated block title translation displayed.');
+    $this->i18nAssertTranslations($translations['body'], '', 'Updated block body translation displayed.');
+
+    // Test a block translation with filtering and text formats
+    $box3 = $this->i18nCreateBlock(array(
+      'title' => '<div><script>alert(0)</script>Title</script>',
+      'body' => "Dangerous text\nOne line\nTwo lines<script>alert(1)</script>",
+    ));
+    // This should be the actual HTML displayed
+    $title = check_plain($box3['title']);
+    $body = check_markup($box3['body'], $box3['format']);
+    $this->drupalGet('');
+    $this->assertRaw($title, "Title being displayed for default language: " . $title);
+    $this->assertRaw($body, "Body being displayed for default language: " . $body);
+
+    // We add language name to the body just to make sure we get the right translation later
+    // This won't work for block titles as they don't have input format thus scripts will be blocked by locale
+    $translations = array();
+    foreach ($this->getOtherLanguages() as $langcode => $language) {
+      $translations[$langcode] = $box3['body'] . "\n" . $language->name;
+      $filtered[$langcode] = check_markup($translations[$langcode], $box3['format']);
+    }
+    // We need to find the string by this part alone, the rest will be filtered
+    $this->createStringTranslation('blocks', 'Dangerous text', $translations);
+    // Check the right filtered strings are displayed
+    $this->i18nAssertTranslations($filtered);
+
+    // Assert translatable descriptions.
+    $this->drupalLogin($this->admin_user);
+    $this->drupalGet('admin/structure/block/manage/system/powered-by/configure');
+    $this->assertText(t('This block has generated content, only the title can be translated here.'));
+
+    $this->drupalGet('admin/structure/block/manage/system/navigation/configure');
+    $this->assertText(t('To translate the block content itself, translate the menu that is being shown.'));
+  }
+
+  /**
+   * Translate block fields to all languages
+   */
+  function i18nTranslateBlock($block) {
+    $translations['title'] = $this->createStringTranslation('blocks', $block['title']);
+    $translations['body'] = $this->createStringTranslation('blocks', $block['body']);
+    return $translations;
+  }
+  /**
+   * Test creating custom block (i.e. box), moving it to a specific region and then deleting it.
+   */
+  function i18nCreateBlock($block = array(), $region = 'sidebar_first', $check_display = TRUE) {
+    $this->drupalLogin($this->admin_user);
+    // Add a new custom block by filling out the input form on the admin/structure/block/add page.
+    $block += array(
+      'info' => $this->randomName(8),
+      'title' => $this->randomName(8),
+      'i18n_mode' => I18N_MODE_LOCALIZE,
+      'body' => $this->randomName(16),
+    );
+    $custom_block = array(
+      'info' => $block['info'],
+      'title' => $block['title'],
+      'i18n_mode' => $block['i18n_mode'],
+      'body[value]' => $block['body'],
+    );
+    $this->drupalPost('admin/structure/block/add', $custom_block, t('Save block'));
+
+    // Confirm that the custom block has been created, and then query the created bid.
+    $this->assertText(t('The block has been created.'), t('Custom block successfully created.'));
+    $bid = db_query("SELECT bid FROM {block_custom} WHERE info = :info", array(':info' => $block['info']))->fetchField();
+
+    // Check to see if the custom block was created by checking that it's in the database.
+    $this->assertNotNull($bid, t('Custom block found in database'));
+
+    // Check that block_block_view() returns the correct title and content.
+    $data = block_block_view($bid);
+    $format = db_query("SELECT format FROM {block_custom} WHERE bid = :bid", array(':bid' => $bid))->fetchField();
+    $this->assertTrue(array_key_exists('subject', $data) && empty($data['subject']), t('block_block_view() provides an empty block subject, since custom blocks do not have default titles.'));
+    $this->assertEqual(check_markup($block['body'], $format), $data['content'], t('block_block_view() provides correct block content.'));
+
+    // Check if the block can be moved to all available regions.
+    $block['module'] = 'block';
+    $block['delta'] = $bid;
+    $block['format'] = $format;
+    $this->moveBlockToRegion($block, $region);
+
+    return $block;
+  }
+
+  /**
+   * Update block i18n mode
+   */
+  function setBlockMode($block, $mode = I18N_MODE_LOCALIZE) {
+    $edit['i18n_mode'] = $mode;
+    $this->updateBlock($block, $edit);
+  }
+  /**
+   * Update block visibility for languages
+   */
+  function setBlockLanguages($block, $languages = array()) {
+    $edit = array();
+    foreach ($this->getEnabledLanguages() as $langcode => $language) {
+      $edit["languages[$langcode]"] = in_array($langcode, $languages) ? TRUE : FALSE;
+    }
+    $this->updateBlock($block, $edit);
+  }
+  /**
+   * Update block
+   */
+  function updateBlock($block, $edit) {
+    $this->drupalLogin($this->admin_user);
+    $this->drupalPost('admin/structure/block/manage/' . $block['module'] . '/' . $block['delta'] . '/configure', $edit, t('Save block'));
+  }
+
+}

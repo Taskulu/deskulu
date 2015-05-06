@@ -1,0 +1,345 @@
+<?php
+
+/**
+ * @file
+ * Internationalization (i18n) submodule: Multilingual meta-blocks
+ *
+ * @author Jose A. Reyero, 2005
+ *
+ * @ TODO Add strings on block update.
+ */
+
+/**
+ * Implements hook_menu().
+ *
+ * Add translate tab to blocks.
+ */
+function i18n_block_menu() {
+  $items['admin/structure/block/manage/%/%/translate'] = array(
+    'title' => 'Translate',
+    'access callback' => 'i18n_block_translate_tab_access',
+    'access arguments' => array(4, 5),
+    'page callback' => 'i18n_block_translate_tab_page',
+    'page arguments' => array(4, 5),
+    'type' => MENU_LOCAL_TASK,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+    'weight' => 10,
+  );
+  $items['admin/structure/block/manage/%/%/translate/%i18n_language'] = array(
+    'title' => 'Translate',
+    'access callback' => 'i18n_block_translate_tab_access',
+    'access arguments' => array(4, 5),
+    'page callback' => 'i18n_block_translate_tab_page',
+    'page arguments' => array(4, 5, 7),
+    'type' => MENU_CALLBACK,
+    'weight' => 10,
+  );
+  return $items;
+}
+
+/**
+ * Implement hook_menu_alter().
+ *
+ * Reorganize block tabs so that they make sense.
+ */
+function i18n_block_menu_alter(&$items) {
+  // Give the configure tab a short name and make it display.
+  $items['admin/structure/block/manage/%/%/configure']['weight'] = -100;
+  $items['admin/structure/block/manage/%/%/configure']['title'] = 'Configure';
+  $items['admin/structure/block/manage/%/%/configure']['context'] = MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE;
+  // Hide the delete tab. Not sure why this was even set a local task then
+  // set to not show in any context...
+  $items['admin/structure/block/manage/%/%/delete']['type'] = MENU_CALLBACK;
+}
+
+/**
+ * Menu access callback function.
+ *
+ * Only let blocks translated which are configured to be translatable.
+ */
+function i18n_block_translate_tab_access($module, $delta) {
+  $block = block_load($module, $delta);
+  return user_access('translate interface') && $block && isset($block->i18n_mode) && ($block->i18n_mode == I18N_MODE_LOCALIZE);
+}
+
+/**
+ * Build a translation page for the given block.
+ */
+function i18n_block_translate_tab_page($module, $delta, $language = NULL) {
+  $block = block_load($module, $delta);
+  return i18n_string_object_translate_page('block', $block, $language);
+}
+
+/**
+ * Implements hook_block_list_alter().
+ *
+ * Translate localizable blocks.
+ *
+ * To be run after all block visibility modules have run, just translate the blocks to be displayed
+ */
+function i18n_block_block_list_alter(&$blocks) {
+  global $theme_key, $language;
+
+  // Build an array of node types for each block.
+  $block_languages = array();
+  $result = db_query('SELECT module, delta, language FROM {i18n_block_language}');
+  foreach ($result as $record) {
+    $block_languages[$record->module][$record->delta][$record->language] = TRUE;
+  }
+
+  foreach ($blocks as $key => $block) {
+    if (!isset($block->theme) || !isset($block->status) || $block->theme != $theme_key || $block->status != 1) {
+      // This block was added by a contrib module, leave it in the list.
+      continue;
+    }
+    if (isset($block_languages[$block->module][$block->delta]) && !isset($block_languages[$block->module][$block->delta][$language->language])) {
+      // Block not visible for this language
+      unset($blocks[$key]);
+    }
+  }
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function i18n_block_block_view_alter(&$data, $block) {
+  if (!empty($block->i18n_mode)) {
+    if (!empty($block->title) && $block->title != '<none>') {
+      // Unfiltered, as $block->subject will be created later from the title.
+      $data['title'] = i18n_string(array('blocks', $block->module, $block->delta, 'title'), $block->title, array('sanitize' => FALSE));
+    }
+    if ($block->module == 'block' && isset($data['content'])) {
+      $data['content'] = i18n_string(array('blocks', $block->module, $block->delta, 'body'), $data['content']);
+    }
+  }
+}
+
+/**
+ * Implements hook_context_block_info_alter().
+ */
+function i18n_block_context_block_info_alter(&$block_info) {
+  $theme_key = variable_get('theme_default', 'garland');
+  $result = db_select('block')
+    ->fields('block', array('module', 'delta', 'i18n_mode'))
+    ->condition('theme', $theme_key)
+    ->execute();
+  foreach ($result as $row) {
+    if (isset($block_info["{$row->module}-{$row->delta}"])) {
+      $block_info["{$row->module}-{$row->delta}"]->i18n_mode = $row->i18n_mode;
+    }
+  }
+}
+
+/**
+ * Implements hook_help().
+ */
+function i18n_block_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#i18n_block':
+      $output = '<p>' . t('This module provides support for multilingual blocks.') . '</p>';
+      $output .= '<p>' . t('You can set up a language for a block or define it as translatable:') . '</p>';
+      $output .= '<ul>';
+      $output .= '<li>' . t('Blocks with a language will be displayed only in pages with that language.') . '</li>';
+      $output .= '<li>' . t('Translatable blocks can be translated using the localization interface.') . '</li>';
+      $output .= '</ul>';
+      $output .= '<p>' . t('To search and translate strings, use the <a href="@translate-interface">translation interface</a> pages.', array('@translate-interface' => url('admin/config/regional/translate'))) . '</p>';
+      return $output;
+    case 'admin/config/regional/i18n':
+      $output = '<p>'. t('To set up multilingual options for blocks go to the <a href="@configure_blocks">Blocks administration page</a>.', array('@configure_blocks' => url('admin/structure/block'))) .'</p>';
+      return $output;
+  }
+}
+
+/**
+ * Remove strings for deleted custom blocks.
+ */
+function i18n_block_block_delete_submit(&$form, $form_state) {
+  $delta = $form_state['values']['delta'];
+  // Delete stored strings for the title and content fields.
+  i18n_string_remove("blocks:block:$delta:title");
+  i18n_string_remove("blocks:block:$delta:body");
+}
+
+/**
+ * Implements block hook_form_FORM_ID_alter().
+ *
+ * Remove block title for multilingual blocks.
+ */
+function i18n_block_form_block_add_block_form_alter(&$form, &$form_state, $form_id) {
+  //i18n_block_alter_forms($form, $form_state, $form_id);
+  i18n_block_form_block_admin_configure_alter($form, $form_state, $form_id);
+}
+
+/**
+ * Implements block hook_form_FORM_ID_alter().
+ *
+ * Remove block title for multilingual blocks.
+ */
+function i18n_block_form_block_admin_configure_alter(&$form, &$form_state, $form_id) {
+  $form['i18n_block']['languages'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Languages'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#group' => 'visibility',
+    '#weight' => 5,
+    '#attached' => array(
+      'js' => array(drupal_get_path('module', 'i18n_block') . '/i18n_block.js'),
+    ),
+  );
+
+  // Add translatable option, just title for module blocks, title and content
+  // for custom blocks.
+  $description = '';
+  $module = $form['module']['#value'];
+  $delta = $form['delta']['#value'];
+
+  // User created menus are exposed by the menu module, others by system.module.
+  if ($module == 'menu' || ($module == 'system' && !in_array($delta, array('mail', 'help', 'powered-by')))) {
+    $description = t('To translate the block content itself, <a href="@menu_translate_url">translate the menu</a> that is being shown.', array('@menu_translate_url' => url('admin/structure/menu/manage/' . $form['delta']['#value'])));
+  }
+  elseif ($module == 'views' && module_exists('i18nviews')) {
+    $name = substr($delta, 0, strpos($delta, '-'));
+    $description = t('To translate the block content itself, <a href="@views_translate_url">translate the view</a> that is being shown.', array('@views_translate_url' => url('admin/structure/views/view/' . $name . '/translate')));
+  }
+  elseif ($module != 'block') {
+    $description = t('This block has generated content, only the title can be translated here.');
+  }
+
+  $block = block_load($form['module']['#value'], $form['delta']['#value']);
+  $form['i18n_block']['languages']['i18n_mode'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Make this block translatable'),
+    '#default_value' => isset($block->i18n_mode) ? $block->i18n_mode : I18N_MODE_NONE,
+    '#description' => $description,
+  );
+
+  // Add option to select which language pages to show on.
+  $default_options = db_query("SELECT language FROM {i18n_block_language} WHERE module = :module AND delta = :delta", array(
+    ':module' => $form['module']['#value'],
+    ':delta' => $form['delta']['#value'],
+  ))->fetchCol();
+  $form['i18n_block']['languages']['languages'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Show this block for these languages'),
+    '#default_value' => $default_options,
+    '#options' => i18n_language_list(),
+    '#description' => t('If no language is selected, block will show regardless of language.'),
+  );
+  if (user_access('translate interface')) {
+    $form['actions']['translate'] = array(
+      '#type' => 'submit',
+      '#name'   => 'save_translate',
+      '#value' => t('Save and translate'),
+      '#states' => array(
+        'visible' => array(
+          // The value must be a string so that the javascript comparison works.
+          ":input[name=i18n_mode]" => array('checked' => TRUE),
+        ),
+      ),
+    );
+  }
+  $form['#submit'][] = 'i18n_block_form_block_admin_configure_submit';
+}
+
+/**
+ * Form submit handler for block configuration form.
+ *
+ * @see i18n_block_form_block_admin_configure_alter()
+ */
+function i18n_block_form_block_admin_configure_submit(&$form, &$form_state) {
+  $module = $form_state['values']['module'];
+  $delta = $form_state['values']['delta'];
+
+  // Update block languages
+  db_delete('i18n_block_language')
+    ->condition('module', $module)
+    ->condition('delta', $delta)
+    ->execute();
+  $query = db_insert('i18n_block_language')->fields(array('language', 'module', 'delta'));
+  foreach (array_filter($form_state['values']['languages']) as $language) {
+    $query->values(array(
+      'language' => $language,
+      'module' => $module,
+      'delta' => $delta,
+    ));
+  }
+  $query->execute();
+  // Update block translation options and strings
+  if (isset($form_state['values']['i18n_mode'])) {
+    db_update('block')
+      ->fields(array('i18n_mode' => $form_state['values']['i18n_mode']))
+      ->condition('module', $module)
+      ->condition('delta', $delta)
+      ->execute();
+    i18n_block_update_strings($form_state['values'], $form_state['values']['i18n_mode']);
+
+    // If the save and translate button was clicked, redirect to the translate
+    // tab instead of the block overview.
+    if ($form_state['triggering_element']['#name'] == 'save_translate') {
+      $form_state['redirect'] = 'admin/structure/block/manage/' . $module . '/' . $delta . '/translate';
+    }
+  }
+}
+
+/**
+ * Update block strings
+ */
+function i18n_block_update_strings($block, $i18n_mode = TRUE) {
+  $title = $i18n_mode && $block['title'] !== '<none>' ? $block['title'] : '';
+  i18n_string_update(array('blocks', $block['module'], $block['delta'], 'title'), $title);
+  if (isset($block['body'])) {
+    if ($i18n_mode) {
+      i18n_string_update(array('blocks', $block['module'], $block['delta'], 'body'), $block['body']['value'], array('format' => $block['body']['format']));
+    }
+    else {
+      i18n_string_remove(array('blocks', $block['module'], $block['delta'], 'body'));
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORMID_alter().
+ *
+ * Adds node specific submit handler to delete custom block form.
+ *
+ * @see block_custom_block_delete()
+ */
+function i18n_block_form_block_custom_block_delete_alter(&$form, &$form_state) {
+  $form['#submit'][] = 'i18n_block_form_block_custom_block_delete_submit';
+}
+
+/**
+ * Form submit handler for custom block delete form.
+ *
+ * @see node_form_block_custom_block_delete_alter()
+ */
+function i18n_block_form_block_custom_block_delete_submit($form, &$form_state) {
+  db_delete('i18n_block_language')
+    ->condition('module', 'block')
+    ->condition('delta', $form_state['values']['bid'])
+    ->execute();
+  // Remove related strings
+  module_invoke('i18n_strings', 'remove',
+    array('blocks', 'block', $form_state['values']['bid']),
+    array('title', 'body')
+  );
+}
+
+/**
+ * Translate block.
+ *
+ * @param $block
+ *   Core block object
+ */
+function i18n_block_translate_block($block) {
+  if (!empty($block->content) && $localizable) {
+    $block->content = i18n_string_text("blocks:$block->module:$block->delta:body", $block->content);
+  }
+  // If it has a custom title, localize it
+  if (!empty($block->title) && $block->title != '<none>') {
+    // Check plain here to allow module generated titles to keep any markup.
+    $block->subject = i18n_string_plain("blocks:$block->module:$block->delta:title", $block->subject);
+  }
+  return $block;
+}

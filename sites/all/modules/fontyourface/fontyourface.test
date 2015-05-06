@@ -1,0 +1,102 @@
+<?php
+
+/**
+ * @file
+ * Provides tests for simpletest.
+ */
+
+class FontyourfaceSaveFontTestCase extends DrupalWebTestCase {
+
+  public function getInfo() {
+
+    return array(
+      'name' => t('Save font'),
+      'description' => t('Saves new font and updates existing font.'),
+      'group' => t('@font-your-face'),
+    );
+
+  } // getInfo
+
+  public function setUp() {
+
+    parent::setUp('fontyourface');
+
+  } // setUp
+
+  public function test() {
+
+    // Save font.
+
+    $best_font_ever = new stdClass;
+    $best_font_ever->name = 'Best Font Ever';
+    $best_font_ever->url = 'http://www.bestfontever.com/';
+    $best_font_ever->provider = 'best_font_provider';
+    $best_font_ever->css_family = 'best-font-ever';
+    $best_font_ever->foundry = 'Best Foundry';
+    $best_font_ever->license = 'Best License Agreement';
+    $best_font_ever->license_url = 'http://www.bestfontever.com/license.html';
+    $best_font_ever->tags = array('sans-serif', 'best');
+
+    fontyourface_save_font($best_font_ever);
+
+    // Check a font is inserted.
+
+    $fids = array();
+    $results = db_query('SELECT fid FROM {fontyourface_font}');
+
+    while ($result = $results->fetchObject()) {
+      $fids[] = $result->fid;
+    } // while
+
+    $this->assertIdentical(count($fids), 1, '1 fid in database.');
+
+    // Check font loads.
+
+    $font = fontyourface_get_font($fids[0], TRUE);
+
+    $this->assertTrue($font, 'Font loaded.');
+
+    // Check font matches.
+
+    $this->assertIdentical($font->name, $best_font_ever->name, 'Font name matches insert.');
+    $this->assertIdentical($font->fid, $best_font_ever->fid, 'Font fid matches insert.');
+
+    // Save update.
+
+    $updated_best_font_ever = new stdClass;
+    $updated_best_font_ever->name = 'Updated Best Font Ever';
+    $updated_best_font_ever->url = 'http://www.bestfontever.com/';
+    $updated_best_font_ever->provider = 'best_font_provider';
+    $updated_best_font_ever->css_family = 'updated-best-font-ever';
+    $updated_best_font_ever->foundry = 'Best Foundry';
+    $updated_best_font_ever->license = 'Best License Agreement';
+    $updated_best_font_ever->license_url = 'http://www.bestfontever.com/license.html';
+    $updated_best_font_ever->tags = array('sans-serif', 'best', 'updated');
+
+    fontyourface_save_font($updated_best_font_ever);
+
+    // Check font was not inserted.
+
+    $fids = array();
+    $results = db_query('SELECT fid FROM {fontyourface_font}');
+
+    while ($result = $results->fetchObject()) {
+      $fids[] = $result->fid;
+    } // while
+
+    $this->assertIdentical(count($fids), 1, 'Still 1 fid in database.');
+
+    // Check font loads.
+
+    $font = fontyourface_get_font($fids[0], TRUE);
+
+    $this->assertTrue($font, 'Font loaded again.');
+
+    // Check font matches.
+
+    $this->assertIdentical($font->name, $updated_best_font_ever->name, 'Font name matches update.');
+    $this->assertIdentical($font->fid, $updated_best_font_ever->fid, 'Font fid matches update.');
+
+  } // test
+
+} // FontyourfaceSaveFontTestCase

@@ -1,0 +1,182 @@
+Module Filter 7.x-2.x, 2015-02-20
+---------------------------------
+Simplifying the table rows by hiding version and requirements until a
+  particular description is clicked.
+
+
+Module Filter 7.x-2.x, 2014-09-01
+---------------------------------
+#2235553 by greenSkin: Fixed latest jquery_update breaks module filter.
+#2304687 by mpdonadio: Fixed Remove hardcoded operations.
+#2293029 by topsitemakers: Fixed Take header offset into account when selecting
+  a tab.
+#2290213 by topsitemakers: Minor typo in description - "has no affect" -> "has
+  no effect".
+
+
+Module Filter 7.x-2.0-alpha2, 2013-12-06
+----------------------------------------
+#2141743, #2141743 by greenSkin: Fixed issues related to the new dynamically
+  positioned tabs and using the dynamically positioned save button.
+
+
+Module Filter 7.x-2.0-alpha1, 2013-11-18
+----------------------------------------
+by greenSkin: Tabs now should always be visible while scrolling large lists of
+  modules.
+#1854348 by alexweber, greenSkin: Make filter textfield wider on modules page
+  when viewing as tabs.
+by greenSkin: Fixed what was suppose to be a call to variable_set().
+#1370492 by greenSkin: Remember selected tab after modules form submit.
+by greenSkin: Changed the title for the 'module_filter_dynamic_save_position'
+  checkbox to make it clearer what it does.
+#1166414 by greenSkin: Fixed broken submit when tabs are disabled. We no longer
+  reroute the theme of the system modules page unless tabs are enabled.
+by greenSkin: Fixed issue on Available updates page where the update state
+  would not be remembered.
+by greenSkin: Fixed 7200 update to rebuild the theme registry at the same time
+  as rebuilding the menu.
+by greenSkin: Fixed issue relating to row coloring when enabling/disabling
+  modules via switch due to recent fix for jQuery Update module.
+by greenSkin: Added functionality to show recently enabled/disabled modules.
+#1710230 by littlekoala, greenSkin: Fixed On | Off buttons does not change
+  state with jquery_update() module active.
+by greenSkin: Added description to filter textfield on permissions page.
+by greenSkin: Added filter to user permissions page.
+by greenSkin: Fixed styling when JavaScript is disabled.
+by greenSkin: Fixed compatiblility with page_actions.
+#1351184 klonos, greenSkin: Added support for update_advanced "Ignored from
+  settings".
+#1149978 by good_man, greenSkin: Added RTL Styling for tabs and toggle switch.
+by greenSkin: Hide toggle switch when JavaScript is disabled.
+by greenSkin: Added support for ctools dropbutton as well as views styling for
+  ctools dropbutton.
+by greenSkin: Improved hash validation.
+by greenSkin: Added ability for tabs to be disabled. Direct use case is when
+  the "New" tab contains zero new modules.
+by greenSkin: Added title to "New" tab link that helps to describe the criteria
+  of a "new" module.
+#1320796 by greenSkin: Added some validation checks before trying to select a
+  tab in case the tab does not actually exist.
+#1429248 by klonos, greenSkin: Fixed Modules page table header overlaps
+  admin_menu().
+#1494694 by greenSkin: Added Let me decide if I want the cursor to focus on the
+  search box or not.
+#1515256 by catmat, greenSkin: Fixed Tabbed theme may remove functional
+  content.
+by greenSkin: Integrated dynamic positioning of the save button back in, but
+  if the module page_actions is enabled we let it handle the save button. See
+  issue #1424994.
+by greenSkin: Clicking on module name now affects the toggle switch.
+by greenSkin: Do not render the switch for incompatible modules.
+#1033012 by greenSkin: Hide incompatible module rows when the 'Unavailable'
+  checkbox is unchecked.
+by greenSkin: Performance tweak to counting the number of enabled modules.
+by greenSkin: Base new modules on the filectime of their .info file.
+#1424034 by greenSkin: Now adds the jquery.cookie.js file when needed.
+by greenSkin: Removed tweaks to the save configuration button in favor
+  http://drupal.org/project/page_actions.
+by greenSkin: Updated hook_uninstall to del all Module Filter variables.
+by greenSkin: No longer including machine name in the tab summary of modules to
+  enable/disable.
+by greenSkin: Made switches honor disabled checkboxes. A disabled switch can
+  not be turned on or off.
+by greenSkin: Added setting to toggle between using the switch or checkbox for
+  enabling/disabling modules.
+by greenSkin: Centered enable switch.
+by greenSkin: Moved couple styles to be applied via JavaScript instead of CSS
+  so they get applied once the initial loading has finished.
+by greenSkin: Implemented a "switch" look instead of checkboxes.
+by greenSkin: Remember last selected state on "Available updates" page.
+by greenSkin: Switched to using filectime() rather than filemtime() for
+  determining new modules.
+#1354134 by klonos, greenSkin: Module list now formats correctly in core
+  "Garland" theme.
+#1354134 by klonos, greenSkin: Module list now formats correctly in core
+  "Garland" theme.
+#1124218 by jyee, greenSkin: Suppress form submission when hitting the enter
+  key while the filter input is focused.
+by greenSkin: Simplified filter rules for updates page. Instead of checkboxes,
+  now using radios.
+by greenSkin: Fixed "All" tab to be selected by default when the page is first
+  loaded.
+#1350124 by greenSkin: Fixed filtering on package tab.
+by greenSkin: Added the "All" tab back. Added a "New" tab that lists modules
+  installed within the last week.
+by greenSkin: Fixed "No Results" not showing within selected tabs.
+#1259876 by greenSkin: Filter criteria remembered after save.
+by greenSkin: Remove deprecated function moduleGetID() from JavaScript code.
+by greenSkin: Filter now uses OR instead of AND when filtering multiply
+  queries.
+#1288590 by greenSkin: Fixed Drupal.settings.moduleFilter.enabledCounts[id] is
+  undefined.
+#1344214 by eMPee584: Fixed Notice: Undefined index: #default_value in
+  theme_module_filter_system_modules_tabs().
+#1170388 by greenSkin: Fixed confict with Overlay module. Added class
+  "overlay-exclude" to tab links. Added setting to toggle the use of a URL
+  fragment when selecting tabs.
+by greenSkin: Added README.txt.
+by greenSkin: Fixed table row striping.
+by greenSkin: Fixed regular expression to not require an operator be at the
+  beginning. Make filter queries filter with AND instead of OR. Each query will
+  further filter the list rather than potentially add to it.
+by greenSkin: Spruced up the regular expression for splitting query strings.
+by greenSkin: Added "description:" operator.
+by greenSkin: Added operator support to filter. Added "requires:" and
+  "requiredBy:" operators.
+by greenSkin: Filter now processes multiple queries separated by spaces. Use
+  quotes for a single query that includes space(s).
+by greenSkin: Fixed not updating the index when a module is enabled/disabled.
+by greenSkin: Fixed visual aid for enabling/disabling modules. Previously had
+  failed to remove +/- from tab summary.
+by Kiphaas7, greenSkin: Tabs can now be configured to hide when they contain
+  no results.
+by Kiphaas7, greenSkin: Added result info to tabs. When a filter is performed,
+  a count per tab is displayed of the number of visible results for that tab.
+by greenSkin: Now more descriptive of what modules are being enabled/disabled.
+by greenSkin: Moved module operation links to below "Requires" and
+  "Required by" section.
+by greenSkin: Added a suggest class to tabs when their module is hovered.
+by greenSkin: Distinguished difference between tab ID and hash.
+by greenSkin: Only alter the menu item 'admin/reports/updates' if it first
+  exists.
+by greenSkin: Added update to force a menu rebuild. This is needed to let
+  Module Filter alter the Update Status menu item in order to provide our
+  filter on its page.
+#1254140 by greenSkin: No longer return anything in hook_update_7100.
+#1257860 by greenSkin: Added filter to update status report.
+by greenSkin: Moved hiding of the inputs wrapper to css rather than a style
+  attribute.
+by greenSkin: Added missing semi-colons in JavaScript.
+by greenSkin: Changed hook comment from using "Implementation of" to
+  "Implements".
+by greenSkin: Fixed showing all modules by default when no hash is present.
+by greenSkin: Turned off autocomplete for filter textfield.
+by greenSkin: Now using "all" for hash when no tab is selected.
+by greenSkin: Implemented visual aids (displays number of modules being
+  enabled/disabled as well as coloring the modules row accordingly).
+by greenSkin: Implemented the enabled count (displays the number of enabled
+  modules of total for a package.
+by greenSkin: Updated tabs setting description.
+by greenSkin: Added missing period.
+by greenSkin: Made dynamic save position default to on. Updated element title
+  on admin page and removed "DEVELOPMENTAL" from description.
+by greenSkin: Improved fixed-top positioning when toolbar is enabled.
+by greenSkin: Added fixed classes for submit button wrapper.
+by greenSkin: Changed module-filter-tabs from a class to an id.
+by greenSkin: Fixed filter on modules page when tabs are disabled.
+by greenSkin: Set min-height to #module-filter-modules.
+by greenSkin: Implemented module_filter element and using attached js and css
+  more.
+by greenSkin: Filter input and checkboxes can now have their default values set
+  based on query params.
+by greenSkin: Tabs now use URL fragments.
+by greenSkin: Fixed regular expression used to determine tab ID.
+by greenSkin: Tabs have been re-written and are functioning.
+by greenSkin: Added Module Filter to "Administration" package.
+by greenSkin: Improved filtering performance.
+by greenSkin: New filter code.
+by greenSkin: Initial tab layout modified. Modules are all in one table but
+  look like they are in packages. All JavaScript has to do on load now is
+  remove the package name and header rows from tbody then sort the rows.
+by greenSkin: Modified the menu item's description.

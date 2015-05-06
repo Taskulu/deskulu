@@ -1,0 +1,31 @@
+<?php
+
+/**
+ * @file
+ * Functionality tests for the Mime Mail Compress module.
+ *
+ * @ingroup mimemail
+ */
+
+require_once(dirname(__FILE__) . '/../modules/mimemail_compress/mimemail_compress.inc');
+
+/**
+ * Tests helper functions from the Mime Mail Compress module.
+ */
+class MimeMailCompressUnitTestCase extends DrupalUnitTestCase {
+  public static function getInfo() {
+    return array(
+      'name' => 'Mime Mail Compress unit tests',
+      'description' => 'Test that Mime Mail Compress helper functions work properly.',
+      'group' => 'Mime Mail',
+    );
+  }
+
+  function setUp() {
+    drupal_load('module', 'mimemail_compress');
+    parent::setUp();
+  }
+
+
+
+}

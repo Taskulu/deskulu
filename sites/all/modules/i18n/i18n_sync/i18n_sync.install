@@ -1,0 +1,32 @@
+<?php
+
+/**
+ * @file
+ * Installation file for i18n_sync module.
+ */
+
+/**
+ * Set module weight.
+ *
+ * Make sure this runs after taxonomy, i18n and translation modules
+ * and ideally after all other modules implementing nodeapi hook.
+ */
+function i18n_sync_install() {
+  db_query("UPDATE {system} SET weight = 100 WHERE name = 'i18n_sync' AND type = 'module'");
+  // If updating from D6, module changed name
+  if (variable_get('i18n_drupal6_update')) {
+    i18n_sync_update_7000();
+  }
+}
+
+/*
+ * Update variable names from Drupal 6
+ */
+function i18n_sync_update_7000() {
+  foreach (node_type_get_types() as $type => $info) {
+    if ($fields = variable_get('i18nsync_nodeapi_' . $type)) {
+      variable_set('i18n_sync_node_type_' . $type, $fields);
+      variable_del('i18nsync_nodeapi_' . $type);
+    }
+  }
+}

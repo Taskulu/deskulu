@@ -1,0 +1,351 @@
+<?php
+
+/**
+ * @file
+ * Internationalization (i18n) module - Entity translations
+ */
+
+// Language list with only enabled languages
+define('I18N_ENTITY_LANGUAGES_ENABLED', 0);
+// Language list with all languages
+define('I18N_ENTITY_LANGUAGES_EXTENDED', 1);
+
+/**
+ * Default entity controller for notifications objects
+ */
+class I18nTranslationSetController extends DrupalDefaultEntityController {
+  /**
+   * Builds objects of specific classes upon loading.
+   *
+   * @param $queried_entities
+   *   Associative array of query results, keyed on the entity ID.
+   * @param $revision_id
+   *   ID of the revision that was loaded, or FALSE if teh most current revision
+   *   was loaded.
+   */
+  protected function attachLoad(&$queried_entities, $revision_id = FALSE) {
+    foreach ($queried_entities as $id => $entity) {
+      $queried_entities[$id] = i18n_translation_set_build($entity->type, $entity);
+    }
+    return parent::attachLoad($queried_entities, $revision_id);
+  }
+}
+
+/**
+ * Implements hook_entity_info().
+ */
+function i18n_translation_entity_info() {
+  $bundles = array();
+  foreach (i18n_translation_set_info() as $type => $info) {
+    $bundles[$type] = array(
+      'label' => $info['title'],
+    );
+  }
+  $return = array(
+    'i18n_translation' => array(
+      'label' => t('Translation set'),
+      'controller class' => 'I18nTranslationSetController',
+      'base table' => 'i18n_translation_set',
+      //'uri callback' => 'taxonomy_term_uri',
+      'fieldable' => FALSE,
+      'entity keys' => array(
+        'id' => 'tsid',
+        'bundle' => 'type',
+        'label' => 'title',
+      ),
+      'bundle keys' => array(
+        'bundle' => 'type',
+      ),
+      'bundles' => $bundles,
+    ),
+  );
+
+  return $return;
+}
+
+/**
+ * Implements hook_menu()
+ */
+function i18n_translation_menu() {
+  $items['admin/config/regional/i18n_translation'] = array(
+    'title' => 'Translation sets',
+    'description' => 'Translation sets overview.',
+    'page callback' => 'i18n_translation_admin_overview',
+    //'page arguments' => array('i18n_translation_set_overview'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'i18n_translation.admin.inc',
+    'weight' => 10,
+  );
+  $items['admin/config/regional/i18n_translation/configure'] = array(
+    'title' => 'Translation sets',
+    'description' => 'Overview of existing translation sets.',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_hook_info().
+ */
+function i18n_translation_hook_info() {
+  $hooks['i18n_translation_set_info'] = array(
+    'group' => 'i18n',
+  );
+  return $hooks;
+}
+
+/**
+ * Check whether this object can be part of a translation set
+ */
+function i18n_translation_check_object($type, $object) {
+  if ($info = i18n_translation_set_info($type)) {
+
+  }
+}
+
+/**
+ * Get form element for translation mode and language
+ *
+ * @param $object_type
+ *   Object type for the container element
+ * @param $i18n_mode
+ *   Current or default translation mode
+ * @param $langcode
+ *   Current or default language code
+ * @param $options
+ *   Restricted list of translation modes if we don't want all of them
+ */
+function i18n_translation_mode_element($object_type, $i18n_mode = I18N_MODE_NONE, $langcode = LANGUAGE_NONE, $options = NULL) {
+  $form['i18n_translation'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Multilingual options'),
+    '#collapsible' => TRUE,
+  );
+  $form['i18n_translation']['i18n_mode'] = array(
+    '#type' => 'radios',
+    '#title' => t('Translation mode'),
+    '#options' => i18n_translation_options($object_type, $options),
+    '#default_value' => $i18n_mode,
+    '#description' => t('For localizable elements, to have all items available for translation visit the <a href="@locale-refresh">translation refresh</a> page.', array('@locale-refresh' => url('admin/config/regional/translate/i18n_string'))),
+  );
+  $form['i18n_translation']['language'] = array(
+    '#default_value' => $langcode ? $langcode : LANGUAGE_NONE,
+    '#description' => t('Predefined language. If set, it will apply to all items.'),
+    '#required' => TRUE,
+    '#states' => array(
+      'visible' => array('input[name="i18n_mode"]' => array('value' => (string)I18N_MODE_LANGUAGE)),
+    ),
+  ) + i18n_element_language_select();
+
+  // The option value 'Language neutral' makes no sense here.
+  $form['i18n_translation']['language']['#options'][LANGUAGE_NONE] = t('- Select a language -');
+  return $form;
+}
+
+/**
+ * Get list of translation modes
+ *
+ * @param $container_type
+ *   Object type for the container
+ * @param $options
+ *   Options to include. If none, defaults for container type will be returned.
+ */
+function i18n_translation_options($container_type, $options = NULL) {
+  // Get names and translation options for container object and items
+  $container_info = i18n_object_info($container_type, 'translation container');
+  $replacements = array(
+    '@container_name' => $container_info['name'],
+    '@item_name_multiple' => $container_info['item name'],
+    '@item_name_multiple_capitalized' => ucfirst($container_info['item name']),
+  );
+  $options = $options ? $options : $container_info['options'];
+  return i18n_translation_options_list($replacements, $options);
+}
+
+/**
+ * Get list of translation modes
+ */
+function i18n_translation_options_list($replacements = array(), $options = array()) {
+  $list = array(
+    I18N_MODE_NONE => t('No multilingual options for @item_name_multiple. Only the @container_name will be translatable.', $replacements),
+    I18N_MODE_LOCALIZE => t('Localize. @item_name_multiple_capitalized are common for all languages, but their name and description may be localized.', $replacements),
+    I18N_MODE_TRANSLATE => t('Translate. Different @item_name_multiple will be allowed for each language and they can be translated.', $replacements),
+    I18N_MODE_MULTIPLE => t('Translate and Localize. @item_name_multiple_capitalized with language will allow translations. @item_name_multiple_capitalized without language will be localized.', $replacements),
+    I18N_MODE_LANGUAGE => t('Fixed Language. @item_name_multiple_capitalized will have a global language and they will only show up for pages in that language.', $replacements),
+  );
+  if ($options) {
+    foreach (array_keys($list) as $key) {
+      if (!in_array($key, $options, TRUE)) {
+        unset($list[$key]);
+      }
+    }
+  }
+  return $list;
+}
+
+/**
+ * Build translation fieldset for object
+ */
+function i18n_translation_set_element($type, $object) {
+  $element = array(
+    '#type' => 'fieldset',
+    '#title' => t('Translations'),
+  );
+  if ($set = i18n_translation_object($type, $object)) {
+    $element['values']['#markup'] = i18n_translation_format_items($set->item_list());
+  }
+  else {
+    $element['message']['#markup'] = t('No translations');
+  }
+  return $element;
+}
+
+/**
+ * Format translation set info as table
+ */
+function i18n_translation_format_items($translations) {
+  foreach ($translations as $langcode => $item) {
+    $rows[] = array(i18n_language_name($langcode), $item);
+  }
+  return !empty($rows) ? theme('table', array('rows' => $rows)) : '';
+}
+
+/**
+ * Get translation set for object
+ */
+function i18n_translation_object($type, $object, $create = FALSE) {
+  if (($field = i18n_translation_set_info($type, 'field', 'i18n_tsid')) && ($tsid = i18n_object_field($object, $field))) {
+    return i18n_translation_set_load($tsid, $type);
+  }
+  elseif ($create) {
+    $set = i18n_translation_set_build($type);
+    if ($langcode = i18n_object_langcode($object)) {
+      $set->add_item($object, $langcode);
+    }
+    return $set;
+  }
+}
+
+/**
+ * Get information about translation sets
+ */
+function i18n_translation_set_info($type = NULL, $property = NULL, $default = NULL) {
+  $info = &drupal_static(__FUNCTION__);
+  if (!$info) {
+    $info = module_invoke_all('i18n_translation_set_info');
+    drupal_alter('i18n_translation_set_info', $info);
+  }
+  if ($property && $type) {
+    return isset($info[$type][$property]) ? $info[$type][$property] : $default;
+  }
+  elseif ($type) {
+    return isset($info[$type]) ? $info[$type] : $default;
+  }
+  else {
+    return $info;
+  }
+}
+
+/**
+ * Build a translation set from type, data
+ */
+function i18n_translation_set_build($type, $data = array()) {
+  $class = i18n_translation_set_info($type, 'class', 'i18n_translation_set');
+  $set = new $class((array)$data);
+  $set->type = $type;
+  return $set;
+}
+
+/**
+ * Create a new translation set
+ */
+function i18n_translation_set_create($type, $bundle = '', $translations = NULL, $master_id = 0) {
+  $set = i18n_translation_set_build($type, array('type' => $type, 'bundle' => $bundle, 'master_id' => $master_id, 'translations' => $translations));
+  $set->insert();
+  return $set;
+}
+
+/**
+ * Load single translation set.
+ *
+ * @param int $tsid
+ *   Translation set id.
+ * @param string $type
+ *   (Optional) translation set type (bundle).
+ */
+function i18n_translation_set_load($tsid, $type = NULL) {
+  $conditions['tsid'] = $tsid;
+  $list = entity_load('i18n_translation', array($tsid));
+  $entity = reset($list);
+  if ($entity && $type && $entity->type != $type) {
+    return NULL;
+  }
+  return $entity;
+}
+
+/**
+ * Index objects in translation set by language
+ */
+function i18n_translation_set_index($translations) {
+  $list = array();
+  foreach ($translations as $object) {
+    if ($lang = i18n_object_langcode($object)) {
+      $list[$lang] = $object;
+    }
+  }
+  return $list;
+}
+
+/**
+ * Translation set generic form
+ */
+function i18n_translation_set_overview($form, &$form_state, $type = NULL, $tsids = NULL) {
+  module_load_include('admin.inc', 'i18n_translation');
+  return i18n_translation_admin_form($form, $form_state, $type, $tsids);
+}
+
+/**
+ * Generate a tabular listing of translations for this type.
+ */
+function i18n_translation_set_list_manage($type) {
+  module_load_include('admin.inc', 'i18n_translation');
+  return i18n_translation_admin_overview($type);
+}
+
+/**
+ * Ask for confirmation of translation set deletion
+ */
+function i18n_translation_set_delete_confirm($form, &$form_state, $translation_set) {
+  $form['#translation_set'] = $translation_set;
+  $form['tsid'] = array(
+    '#type' => 'value',
+    '#value' => $translation_set->tsid,
+  );
+  if ($items = $translation_set->item_list()) {
+    $form['items'] = array(
+      '#type' => 'item',
+      '#title' => t('Items in this translation set'),
+      '#markup' => theme('item_list', array('items' => $items)),
+    );
+  }
+  return confirm_form($form,
+    t('Are you sure you want to delete %title translation set?', array('%title' => $translation_set->get_title())),
+    i18n_translation_set_info($translation_set->type, 'list path'),
+    t('This action cannot be undone.'),
+    t('Delete'),
+    t('Cancel')
+  );
+}
+
+/**
+ * Execute translation set deletion
+ */
+function i18n_translation_set_delete_confirm_submit($form, &$form_state) {
+  if ($form_state['values']['confirm']) {
+    $set = i18n_translation_set_load($form_state['values']['tsid']);
+    $set->delete(TRUE);
+    drupal_set_message(t('The translation set has been deleted.'));
+  }
+
+  $form_state['redirect'] = i18n_translation_set_info($set->type, 'list path');
+}

@@ -1,0 +1,12 @@
+name = "Rules Test invocation"
+description = "Helper module to test Rules invocations."
+package = Testing
+core = 7.x
+hidden = TRUE
+
+; Information added by Drupal.org packaging script on 2015-03-16
+version = "7.x-2.9"
+core = "7.x"
+project = "rules"
+datestamp = "1426527210"
+

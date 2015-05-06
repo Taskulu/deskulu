@@ -1,0 +1,260 @@
+<?php
+
+/**
+ * @file
+ * This is the file description for Module Filter module.
+ *
+ * In this more verbose, multi-line description, you can specify what this
+ * file does exactly. Make sure to wrap your documentation in column 78 so
+ * that the file can be displayed nicely in default-sized consoles.
+ *
+ * @author greenSkin
+ */
+
+/**
+ * Implements hook_perm().
+ */
+function module_filter_permission() {
+  return array(
+    'administer module filter' => array(
+      'title' => t('Administer Module Filter'),
+      'description' => t('Configure how Module Filter performs.')
+    )
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function module_filter_menu() {
+  $items['admin/config/user-interface/modulefilter'] = array(
+    'title' => 'Module filter',
+    'description' => 'Configure how the modules page looks and acts.',
+    'access arguments' => array('administer module filter'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('module_filter_settings'),
+    'file' => 'module_filter.admin.inc'
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function module_filter_menu_alter(&$items) {
+  if (isset($items['admin/reports/updates'])) {
+    // We route the updates report page through us.
+    $items['admin/reports/updates']['page callback'] = 'module_filter_update_status';
+    $items['admin/reports/updates']['file'] = 'module_filter.pages.inc';
+    $items['admin/reports/updates']['module'] = 'module_filter';
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function module_filter_form_system_modules_alter(&$form, &$form_state, $form_id) {
+  // Don't alter the form when confirming.
+  if (isset($form['confirm'])) {
+    return;
+  }
+
+  $form['module_filter'] = array(
+    '#type' => 'module_filter',
+    '#attached' => array(
+      'js' => array(
+        drupal_get_path('module', 'module_filter') . '/js/modules.js'
+      )
+    )
+  );
+  $checkbox_defaults = array(
+    ((isset($_GET['enabled'])) ? $_GET['enabled'] : 1) ? 'enabled' : '',
+    ((isset($_GET['disabled'])) ? $_GET['disabled'] : 1) ? 'disabled' : '',
+    ((isset($_GET['required'])) ? $_GET['required'] : 1) ? 'required' : '',
+    ((isset($_GET['unavailable'])) ? $_GET['unavailable'] : 1) ? 'unavailable' : ''
+  );
+  $form['module_filter']['show'] = array(
+    '#type' => 'checkboxes',
+    '#default_value' => array_filter($checkbox_defaults),
+    '#options' => array('enabled' => t('Enabled'), 'disabled' => t('Disabled'), 'required' => t('Required'), 'unavailable' => t('Unavailable')),
+    '#prefix' => '<div id="module-filter-show-wrapper">',
+    '#suffix' => '</div>'
+  );
+
+  if (variable_get('module_filter_tabs', 1)) {
+    $form['module_filter']['#attached']['css'][] = drupal_get_path('module', 'module_filter') .'/css/module_filter_tab.css';
+    $form['module_filter']['#attached']['library'][] = array('system', 'jquery.bbq');
+    $form['module_filter']['#attached']['js'][] = drupal_get_path('module', 'module_filter') .'/js/module_filter_tab.js';
+
+    if (!module_exists('page_actions') && variable_get('module_filter_dynamic_save_position', 1)) {
+      $form['module_filter']['#attached']['css'][] = drupal_get_path('module', 'module_filter') .'/css/dynamic_position.css';
+      $form['module_filter']['#attached']['js'][] = drupal_get_path('module', 'module_filter') .'/js/dynamic_position.js';
+    }
+
+    $form['#attached']['css'][] = drupal_get_path('module', 'module_filter') . '/css/modules.css';
+
+    $form['#theme'] = 'module_filter_system_modules_tabs';
+  }
+
+  $form['#submit'][] = 'module_filter_system_modules_submit_redirect';
+
+  if (variable_get('module_filter_track_recent_modules', 1)) {
+    $form['#submit'][] = 'module_filter_system_modules_submit_recent';
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function module_filter_form_user_admin_permissions_alter(&$form, &$form_state) {
+  $form['module_filter'] = array(
+    '#type' => 'module_filter',
+    '#description' => t('Filter list by module. Use the query operator "perm" to filter by permission, e.g., perm:access.'),
+    '#attached' => array(
+      'js' => array(
+        drupal_get_path('module', 'module_filter') . '/js/permissions.js',
+      ),
+    ),
+    '#weight' => -100,
+  );
+}
+
+/**
+ * Implements hook_element_info().
+ */
+function module_filter_element_info() {
+  $types['module_filter'] = array(
+    '#input' => TRUE,
+    '#process' => array('form_process_module_filter', 'ajax_process_form'),
+    '#weight' => -1,
+    '#tree' => TRUE,
+    '#theme' => 'module_filter'
+  );
+  return $types;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function module_filter_theme() {
+  return array(
+    'module_filter' => array(
+      'render element' => 'element',
+      'file' => 'module_filter.theme.inc',
+    ),
+    'module_filter_system_modules_tabs' => array(
+      'render element' => 'form',
+      'file' => 'module_filter.theme.inc',
+    ),
+    'module_filter_operations' => array(
+      'variables' => array('links' => array(), 'dropbutton' => FALSE),
+      'file' => 'module_filter.theme.inc',
+    ),
+  );
+}
+
+function form_process_module_filter($element, &$form_state) {
+  $element['name'] = array(
+    '#type' => 'textfield',
+    '#title' => (isset($element['#title'])) ? $element['#title'] : t('Filter list'),
+    '#default_value' => (isset($element['#default_value'])) ? $element['#default_value'] : ((isset($_GET['filter'])) ? $_GET['filter'] : ''),
+    '#size' => (isset($element['#size'])) ? $element['#size'] : 45,
+    '#weight' => (isset($element['#weight'])) ? $element['#weight'] : -10,
+    '#attributes' => ((isset($element['#attributes'])) ? $element['#attributes'] : array()) + array('autocomplete' => 'off'),
+    '#attached' => array(
+      'css' => array(
+        drupal_get_path('module', 'module_filter') . '/css/module_filter.css'
+      ),
+      'js' => array(
+        'misc/jquery.cookie.js',
+        drupal_get_path('module', 'module_filter') . '/js/module_filter.js',
+        array(
+          'data' => array(
+            'moduleFilter' => array(
+              'setFocus' => variable_get('module_filter_set_focus', 1),
+              'tabs' => variable_get('module_filter_tabs', 1),
+              'countEnabled' => variable_get('module_filter_count_enabled', 1),
+              'visualAid' => variable_get('module_filter_visual_aid', 1),
+              'hideEmptyTabs' => variable_get('module_filter_hide_empty_tabs', 0),
+              'dynamicPosition' => (!module_exists('page_actions')) ? variable_get('module_filter_dynamic_save_position', 1) : FALSE,
+              'useURLFragment' => variable_get('module_filter_use_url_fragment', 1),
+              'useSwitch' => variable_get('module_filter_use_switch', 1),
+              'trackRecent' => variable_get('module_filter_track_recent_modules', 1),
+              'rememberActiveTab' => variable_get('module_filter_remember_active_tab', 1),
+              'rememberUpdateState' => variable_get('module_filter_remember_update_state', 0),
+            )
+          ),
+          'type' => 'setting'
+        )
+      )
+    )
+  );
+  if (isset($element['#description'])) {
+    $element['name']['#description'] = $element['#description'];
+  }
+  return $element;
+}
+
+function module_filter_system_modules_submit_redirect($form, &$form_state) {
+  $query = array();
+  if (!empty($form_state['values']['module_filter']['name'])) {
+    $query['filter'] = $form_state['values']['module_filter']['name'];
+  }
+  $query['enabled'] = (int)(!empty($form_state['values']['module_filter']['show']['enabled']));
+  $query['disabled'] = (int)(!empty($form_state['values']['module_filter']['show']['disabled']));
+  $query['required'] = (int)(!empty($form_state['values']['module_filter']['show']['required']));
+  $query['unavailable'] = (int)(!empty($form_state['values']['module_filter']['show']['unavailable']));
+
+  $form_state['redirect'] = array(
+    'admin/modules',
+    array('query' => $query),
+  );
+}
+
+function module_filter_system_modules_submit_recent($form, &$form_state) {
+  $recent_modules = variable_get('module_filter_recent_modules', array());
+
+  foreach ($form_state['values']['modules'] as $package => $modules) {
+    foreach ($modules as $key => $module) {
+      if ($form['modules'][$package][$key]['enable']['#default_value'] != $module['enable']) {
+        $recent_modules[$key] = REQUEST_TIME;
+      }
+    }
+  }
+
+  variable_set('module_filter_recent_modules', $recent_modules);
+}
+
+function module_filter_new_modules() {
+  // Get current list of modules.
+  $files = system_rebuild_module_data();
+
+  // Remove hidden modules from display list.
+  $visible_files = $files;
+  foreach ($visible_files as $filename => $file) {
+    if (!empty($file->info['hidden'])) {
+      unset($visible_files[$filename]);
+    }
+  }
+
+  uasort($visible_files, 'system_sort_modules_by_info_name');
+
+  $new_modules = array();
+  foreach ($visible_files as $filename => $module) {
+    $ctime = filectime(dirname($module->uri) . '/' . $module->name . '.info');
+    if (($ctime - strtotime('-1 week')) > 0) {
+      $new_modules[$filename] = module_filter_get_id($filename);
+    }
+  }
+  return $new_modules;
+}
+
+function module_filter_get_id($text) {
+  $id = strtolower($text);
+  $id = preg_replace('/([^a-z0-9]+)/', '-', $id);
+  return trim($id, '-');
+}
+
+function module_filter_recent_filter($var) {
+  return (!($var < REQUEST_TIME - 60*60*24*7));
+}

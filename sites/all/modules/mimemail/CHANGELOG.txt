@@ -1,0 +1,198 @@
+Mime Mail 7.x-1.x, xxxx-xx-xx
+-----------------------
+
+Mime Mail 7.x-1.0-beta3, 2014-03-05
+-----------------------
+- Public files test incorrect if similar path is not below root.
+
+Mime Mail 7.x-1.0-beta2, 2014-02-26
+-----------------------
+- Stronger authentication for incoming messages.
+- #2031143 by sgabe, das-peter: Support @import by using drupal_load_stylesheet().
+- #2087913 by sgabe | alancsilver: Allow spaces in attachment filenames.
+- #1852694 by clemens.tolboom | Pixelstyle: Convert float to align for images.
+- #2145659 by sgabe, fatherguddha | raincloud: Images with 'itok' token are not embedded.
+- #2119613 by sgabe, david_garcia_garcia: Further improve boundary collision avoidance.
+- #2185909 by cyrus_bt5, ekidman: Extra space in long header fields.
+- #2152705 by gargsuchi: Images with 'itok' token not showing up.
+- #2129149 by pokap | satvision83: Undefined offset in mimemail_headers.
+
+Mime Mail 7.x-1.0-beta1, 2013-10-07
+-----------------------
+- #1702868 by sgabe, kid_icarus: Remove tokens if no replacement value can be generated.
+- #1719570 by sgabe, oadaeh | greggles: Fix for SA-CONTRIB-2012-124.
+- #2020875 by das-peter, Propaganistas: Provide option to set language in Rules actions.
+- #2045699 by sgabe | Punk_UnDeaD: Boundaries are not unique on Windows.
+- #1798324 by sgabe, kienan | ShaneOnABike: Return-Path is incorrectly using sender name.
+- #1790098 by sgabe | edb, Shellingfox: Custom 'from' address comes out as 'Array'.
+- #1979776 by sgabe | cswolf: Hash mark link gets replaced with site URL.
+- #1963412 by sgabe | djg_tram: Content-Disposition should default to 'inline'.
+- #1469828 by sgabe | shadowhitman: Allow to use simple address format only for recipient.
+- #1947018 by sgabe | bendev: Allow sending plain text messages with Rules.
+- #962226 by sgabe | rchuber: Allow custom mailkeys for system and Rules action messages.
+- #1873348 by sgabe | tutumlum: Cannot use tokens in subject and body of HTML email action.
+- #1439918 by sgabe | Lukas von Blarer: 'Link images only' is not working if the file exists as-is.
+- #1538004 by sgabe | djg_tram: Change template naming logic to use module as well.
+- #1719256 by lirantal, sgabe: Handle different files with the same file name.
+- #1922530 by berliner: Callto links in mail body wrongly replaced.
+- #1911558 by Simon Georges, JulienD: Remove useless files[] directive from .info files.
+- #1877928 by sgabe | parasite: Replacing underscore in key is not needed.
+- #1898140 by MiroslavBanov: Engine variable set to NULL on settings page.
+- #1780412 by sgabe, kid_icarus: Option to exclude blocked users from a role.
+- #1814922 by marcusx: Rule sanitizes the $body if populated by a parameter.
+- #1813348 by sgabe | jdhildeb: Sendmail invoked with empty Return-Path.
+- #1469022 by sgabe, das-peter | MI: Add 'Reply-to' field to Rules and system actions.
+- #1773698 by jherencia: Alternatives for mimemail-message.tpl.php do not work.
+- #1585546 by kotnik, bojanz: Rules actions must be in root module directory.
+
+Mime Mail 7.x-1.0-alpha2, 2012-08-22
+-----------------------
+- #1722188 by sgabe | christian death: Split has been deprecated.
+- #1643750 by sgabe | MRV: Remove class attributes from the compressed message.
+- #321026 by sgabe, LUTi | attiks: HTML messages are broken by line breaks.
+- #1605230 by sgabe | mrbubbs: Extra space in subject caused by wordwrap.
+- #1662682 by sgabe, itamar: Value may be left unset in requirements check.
+- #1504782 by rjkuyvenhoven: Update support for Fusion based themes.
+- #1597896 by sgabe | joewickert: Plus symbol encoded as space in URLs.
+- #1515660 by sgabe | philsward: Missing upgrade path for Rules actions.
+- #81707 by sgabe | FredCK, Peters196: Auto-detect appropriate line endings.
+- #1475664 by sgabe | pumpkinkid: Getting 'Array to string conversion' error.
+- #1301876 by sean_fremouw: Regex in mimemail_headers() strips allowed characters.
+- #1432502 by El Bandito: Quotations are not needed to specify an attachment.
+- #1349728 by jherencia: Possibility to configure the theme that will render the email.
+- #1391680 by marcdecaluwe: Headers not correctly set.
+- #1283620 by Cyberwolf: Expose email settings user field to field API.
+- #1372660 by eueco: Set the proper line ending when calling chunk_split().
+- #1388786 by tostinni: mimemail_html_body() fails to retrieve file's URI.
+
+Mime Mail 7.x-1.0-alpha1, 2011-12-18
+-----------------------
+- #1372088 by marcus.n3rd.26: Use uri to load mail.css when sending mail.
+- #1305824 by sgabe: Leave MIME type and use only path to specify an attachment.
+- #1370422 by awagner: Missing delimiter in file_scan_directory().
+- #1275734 by gnindl: Scan recursively for mail.css.
+- #1304332 by sgabe: Token replacement and PHP evaluation in Rules action messages.
+- #1305830 by sgabe | ibes: Set default filename and mimetype to enforce auto detection.
+- #1289584 by sgabe | oguerreiro: Check if 'styles' is set.
+- #1288546 by sgabe | carn1x: Unknown Rules actions.
+- #1066438 by quicksketch, sgabe, guillaumev, oadaeh: Initial support of attachments.
+- #1258302 by ralf.strobel: Replace 'arguments' with 'variables' in hook_theme().
+- #1190144 by Cyberwolf, sgabe: Trim less-than and grater-than chars from Return-Path.
+- #1140538 by sgabe: Site style sheet isn't included.
+- #1232266 by InternetDevels.Com: Engine select form element has wrong array key.
+
+Mime Mail 6.x-1.0, 2011-11-19
+-----------------------
+- #1232264 by InternetDevels.Com: Check for not just NULL but empty From address.
+- #1201154 by guillaumev: Check if attachments is an array and isn't empty.
+- #1203234 by sgabe | Offlein: Store input format setting for Rules and actions.
+- #1227242 by sgabe: Remove unnecessary reference signs.
+- #1076520 by joelstein: Absolute site stylesheets not included.
+- #1258062 by oadaeh: Don't allow an empty e-mail address with the default engine.
+- #1270686 by gmania: Don't add Content-Disposition to multipart/alternative parts.
+- #1260302 by sgabe | prokop1000: Replace encoding detection with UTF-8.
+- #1270656 by sgabe: From header can be an array which causes errors.
+- #1301868 by sean_fremouw: Headers overwritten.
+- #1308628 by sgabe, chriscohen: List function throws notice.
+- #1301924 by sgabe, ibes: Use array for body in Rules and system actions.
+- #417462 by plach, Lukas von Blarer, sgabe: Language prefix is not taken into account.
+- #1181170 by sgabe, Cyberwolf, ibes | windm: Add permission to set user specific settings.
+- #1309248 by sgabe, gmania: Generate not existing ImageCache images before embedding.
+- #1304134 by sdague: Add preference to link images.
+- #1275080 by gmania: Remove the depricated Errors-To header.
+
+Mime Mail 6.x-1.0-beta2, 2011-06-22
+----------------------
+- #1181486 by sgabe: HTML Message not saving in Rules Action form.
+- #1164870 by itserich: Recipient is not an array anymore.
+- #1186690 by samhassell: Can't send multiple attachments.
+
+Mime Mail 6.x-1.0-beta1, 2011-06-04
+----------------------
+- #911612 by geneticdrift: Hidden attachments in some email clients.
+- #1090286 by sgabe: Prepare action messages with drupal_mail() to allow alteration.
+- #1137358 by sgabe: Tokens don't work in the body of Rules action messages
+- #1150224 by sgabe: Run filters on the message body of Rules and system actions.
+- #1090286 by sgabe: Remove process function, fix sending message to a role action.
+- #1116930 by Pol, sgabe: No text alternative if the CSS is too large.
+- #808518 by sgabe: Return only the result from drupal_mail_wrapper().
+- #808518 by claudiu.cristea, sgabe: Split mail preparation from sending.
+- #1108324 by sgabe: Add input filter to HTML message for system and Rules actions.
+- #1114536 by rjbrown99: Pass recipient to the template.
+- #971272 by sgabe: Allow to specify sender's name for Rules action messages.
+- #1167576 by Pol: Accept plaintext and text parameters for system messages.
+- #338460 by hopla: Doens't look for mail.css in Zen sub-themes.
+- #261028 by sgabe, gnosis, mfb, mrfelton, LUTi: SMTP Return-Path Setting.
+- #1175378 by sgabe, samalone: Include module CSS files in email.
+
+Mime Mail 6.x-1.0-alpha8, 2011-03-24
+----------------------
+- #374615 by joelstein: Set starter default value for plain text user reference.
+- #1076222 by papasse, Aron Novak: Check the module path on settings submission.
+- #920904 by fmjrey: Fusion local.css not taken into account.
+- #443964 by sgabe, pillarsdotnet: Skip style sheets with print media.
+- #932962 by clydefrog, arvana, sgabe: Allow attachments to be added by contents.
+- #907716 by isaac.niebeling: Allow non-web-accessible files as attachments.
+- #758922 by eft, sgabe: Use simple address format for PHP mail() on Windows.
+
+Mime Mail 6.x-1.0-alpha7, 2011-01-31
+----------------------
+- #950456 by stella, sgabe: Check if body encoding can be, and is it detected
+- #364198 by mfb, sgabe | HS: CSS code in email
+- #835734 by sgabe | sylvaticus: In some cases CSS optimization causes WSOD
+- #438058 by AlexisWilke, DanChadwick: Remove line feeds in subject
+- #979748 by Romka: Missing include in mimemail_mailengine()
+- #700996 by smk-ka: Custom inline style properties overwritten
+- #960374 by kim-day: Don't set BCC and CC headers if they are empty
+- #961536 by clydefrog: Check if sender is empty, not just null
+- #852698 by sgabe | interestingaftermath: Specify sender's name
+- #685574 by sgabe, Wim Leers | Michelle: Optional site's css embedding
+- #758754 by sgabe | mennonot: Add 'Send HTML e-mail' action
+- #501722 by jpetso, fago, criz, sgabe, aantonop: HTML mail actions for Rules
+- #729658 by sgabe, Agileware: Allow better integration with Domain Access module
+- #960726 by sgabe, clydefrog: Send plaintext message if the HTML body is empty
+
+Mime Mail 6.x-1.0-alpha6, 2010-09-13
+----------------------
+- #629038 by Robbert: Attachments dont respect ‘list’ setting
+- #882960 by sgabe, glynster: CSS Mail Style Sheet Overrides
+- #319229 by javierreartes, tobiasb, sgabe, crifi: Set $attachments in drupal_wrap_mail()
+- #903536 by sgabe: Use variable_del() to remove smtp_library()
+- #456242 by sgabe, kenorb: Use proper operators in if statements with strpos()
+- #882528 by sgabe | Carsten: Template suggestions based on mailkey
+- #752838 by sgabe | dsms: Pass $subject to the template
+- #319384 by sgabe | mariuss: Add $mailkey to body tag as CSS class
+- #796510 by sgabe | smk-ka: Update CSS Compressor
+- #614782 by sgabe, Sutharsan: Update README.txt
+
+Mime Mail 6.x-1.0-alpha5, 2010-08-12
+----------------------
+- #850674 by sgabe, AlexisWilke: Prepare function name testing '_prepare'...
+- #448996 by mfb, hanoii, Sylvain Lecoy: Wrong implementation of hook_mail_alter()
+- #319229 by sgabe, jm.federico, joostvdl, donquixote, fehin, sunfire-design, mariuss: src='Array' if path to image is broken
+- #517306 by sgabe, rdosser: Mime Mail Compress mangles absolute URLs in CSS properties
+- #597448 by sgabe, rmjiv: Unsafe regex pattern in mimemail_extract_files()
+- #535466 by andreiashu, sgabe: WSOD when using Mime Mail Compress without DOM extension
+- #513138 by sgabe, peterx: Undefined variables in mimemail.inc
+- #304476 by sgabe, Thomas_Zahreddin, aaron: PHP Error when Stylesheets don't exist
+- #710116 by sgabe, neoglez: Wrong implementation/namespace conflict of mimemail_prepare()
+
+Mime Mail 6.x-1.0-alpha4, 2010-07-10
+----------------------
+- #642800 by scronide: Enforce requirement of PHP 5.x for Mime Mail Compress
+- #740856 by sgabe, Vicbus: Check if the file part is set in the body
+- #567594 by hanoii: $mailkey is not properly set in drupal_mail_wrapper()
+- #768794 by sgabe, danyg: Check if the name is empty when the address is an object
+- #700996 by sgabe, -Mania-: Custom inline style properties overwritten when using CSS Compressor
+- #729334 by plach: Flawed CSS to XPath conversion for class selectors in Mime Mail CSS Compressor
+- #456260 by sgabe, kenorb, kscheirer, mitchmac: WSOD: smtp_library variable is not removed when Mime Mail has been disabled
+- #698794 by sgabe, mobilis: Attachment Content-Type-fix
+- #629038 by jackinloadup, sgabe: Attachments don't respect list setting
+
+Mime Mail 6.x-1.0-alpha3, 2010-06-16
+----------------------
+- #358439 by folkertdv: Images are only in the first message
+- #448670 by sgabe, gregarios, moritzz: Spaces and Line Breaks are removed from CSS definitions
+- #372710 by LUTi, sgabe, perarnet: HTML emails are text-only in Hotmail
+- #583920 by Sutharsan, sgabe: Can't override mimemail.tpl.php
+- #127876 by sgabe, Sutharsan, jerdavis: Plain text with/without attachment

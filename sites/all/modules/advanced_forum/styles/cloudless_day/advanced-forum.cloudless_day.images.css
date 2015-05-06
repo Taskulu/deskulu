@@ -1,0 +1,61 @@
+/* FORUM LIST ICONS *********************************************************/
+
+.forum-list-icon-wrapper {
+  border-top: 1px solid #FFFFFF;
+  background: #B5CDDF;
+  background: -webkit-gradient(linear, left top, left bottom, from(#B5CDDF), to(#C8DBEA));
+  background: -moz-linear-gradient(top, #B5CDDF, #C8DBEA);
+  color: #3C78A7;
+}
+
+tr.even td.forum-folder .forum-list-icon-wrapper span,
+tr.odd td.forum-folder .forum-list-icon-wrapper span {
+  background: transparent url(images/forum_list_default.png) no-repeat center center;
+}
+
+tr.even td.forum-folder-new-posts .forum-list-icon-wrapper span,
+tr.odd td.forum-folder-new-posts .forum-list-icon-wrapper span,
+.forum-list-icon-legend .forum-list-icon-new-posts {
+  background: transparent url(images/forum_list_new_posts.png) no-repeat center center;
+}
+
+/* BUTTONIZED LINKS - GENERAL ***********************************************/
+/* Based on http://css-tricks.com/examples/ButtonMaker */
+
+a.af-button-large,
+a.af-button-large:link,
+a.af-button-large:visited,
+a.af-button-small,
+a.af-button-small:link,
+a.af-button-small:visited,
+a.author-pane-link,
+a.author-pane-link:link,
+a.author-pane-link:visited {
+  color: #3C78A7;
+}
+
+.af-button-large,
+.af-button-small,
+.author-pane-link {
+  border-top: 1px solid #FFFFFF;
+  background: #EDF5FA;
+  background: -webkit-gradient(linear, left top, left bottom, from(#EDF5FA), to(#C8DBEA));
+  background: -moz-linear-gradient(top, #EDF5FA, #C8DBEA);
+  color: #3C78A7;
+}
+
+a.af-button-large:hover,
+a.af-button-small:hover,
+a.author-pane-link:hover {
+  background: #C8DBEA;
+  color: #3C78A7;
+  border-top-color: #EFEFEF;
+}
+
+a.af-button-large:active,
+a.af-button-small:active,
+a.author-pane-link:active {
+  background: #C8DBEA;
+  color: #3C78A7;
+  border-top-color: #EFEFEF;
+}

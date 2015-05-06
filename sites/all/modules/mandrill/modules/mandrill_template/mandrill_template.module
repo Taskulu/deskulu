@@ -1,0 +1,219 @@
+<?php
+
+/**
+ * @file
+ * Enables Drupal to send email using Mandrill's template system.
+ */
+
+/**
+ * Implements hook_entity_info().
+ */
+function mandrill_template_entity_info() {
+  $return = array(
+    'mandrill_template_map' => array(
+      'label' => t('Mandrill Template Map'),
+      'plural label' => t('Mandrill Template Maps'),
+      'controller class' => 'EntityAPIControllerExportable',
+      'entity class' => 'MandrillTemplateMap',
+      'base table' => 'mandrill_template_map',
+      'uri callback' => 'entity_class_uri',
+      'fieldable' => FALSE,
+      'exportable' => TRUE,
+      'module' => 'mandrill_template',
+      'access callback' => 'mandrill_template_map_access',
+      'entity keys' => array(
+        'id' => 'mandrill_template_map_entity_id',
+        'label' => 'label',
+        'name' => 'name',
+      ),
+      'admin ui' => array(
+        'path' => 'admin/config/services/mandrill/templates',
+        'file' => 'mandrill_template.admin.inc',
+        'controller class' => 'MandrillTemplateMapUIController',
+      ),
+    ),
+  );
+
+  return $return;
+}
+
+/**
+ * Access callback for mandrill_template_map.
+ *
+ * @return bool
+ *   True if current user has acces to template maps, else false
+ */
+function mandrill_template_map_access() {
+  $a = user_access('configure mandrill templates');
+  $b = variable_get('mandrill_api_key');
+  return $a & !empty($b);
+}
+
+/**
+ * Implements hook_permission().
+ */
+function mandrill_template_permission() {
+  return array(
+    'configure mandrill templates' => array(
+      'title' => t('Configure Mandrill Templates'),
+      'description' => t('Select & configure which Mandrill Templates to use for messages going through Mandrill.'),
+      "restrict access" => FALSE,
+    ),
+  );
+}
+
+/**
+ * Loads a single mandrill_template_map or all of them if no name provided.
+ *
+ * @param null $name
+ *   name of the template map entity
+ *
+ * @return array
+ *   array of template_map entities
+ */
+function mandrill_template_map_load_entities($name = NULL) {
+  $maps = entity_load_multiple_by_name('mandrill_template_map', isset($name) ? array($name) : FALSE);
+  return isset($name) ? reset($maps) : $maps;
+}
+
+/**
+ * Tells you which template_map is configured for a mailsystem key, if any.
+ *
+ * Will search for a default-system mapping if none is availble for a given key.
+ * 
+ * @param string $mailsystem
+ *   Mail key to search for a template mapping.
+ *
+ * @return entity
+ *   Mandrill template map.
+ */
+function mandrill_template_map_load_by_mailsystem($module_key, $module) {
+  // Append the default-system condition as a fallback.
+  $params = array($module_key, $module, 'default-system');
+  $query = new EntityFieldQuery();
+  $query_result = $query
+    ->entityCondition('entity_type', 'mandrill_template_map')
+    ->propertyCondition('mailsystem_key', $params, 'IN')
+    ->execute();
+  $module_match = FALSE;
+  if (!empty($query_result['mandrill_template_map'])) {
+    $template_maps = entity_load('mandrill_template_map', array_keys($query_result['mandrill_template_map']));
+    if (count($template_maps) > 1) {
+      foreach ($template_maps as $template_map) {
+        switch ($template_map->mailsystem_key) {
+          case $module_key:
+            return $template_map;
+
+          case $module:
+            $module_match = $template_map;
+            break;
+
+        }
+      }
+    }
+    return $module_match ? $module_match : reset($template_maps);
+  }
+  return NULL;
+}
+
+/**
+ * Get all mailsystem keys pointed at mandrill and their template mappings.
+ * 
+ * @return array
+ *   Returns an array with indexes matching each module which is assigned
+ *   to use Mandrill for email sends, and values equal to the template_map_ids
+ *   that are assigned to those modules. If no template maps are assigned, the
+ *   value is set to NULL.
+ */
+function mandrill_template_map_usage() {
+  $system_assignments = mailsystem_get();
+  // Filter out the systems that aren't using Mandrill:
+  foreach ($system_assignments as $system => $assignment) {
+    if ($assignment != 'MandrillMailSystem') {
+      unset($system_assignments[$system]);
+    }
+    else {
+      $system_assignments[$system] = NULL;
+    }
+  }
+  $maps = mandrill_template_map_load_entities();
+  foreach ($maps as $map) {
+    if (isset($map->mailsystem_key) && array_key_exists($map->mailsystem_key, $system_assignments)) {
+      $system_assignments[$map->mailsystem_key] = $map->mandrill_template_map_entity_id;
+    }
+  }
+  uksort($system_assignments, '_mandrill_template_map_mailsystem_sort');
+  return $system_assignments;
+}
+
+/**
+ * Implements hook_mandrill_mail_alter().
+ *
+ * Determine if an email is configured to use a Mandrill template and change the
+ * mandrill_send_function parameter as needed.
+ */
+function mandrill_template_mandrill_mail_alter(&$mandrill_params, $message) {
+  $template_map = mandrill_template_map_load_by_mailsystem($message['id'], $message['module']);
+  if ($template_map) {
+    $mandrill_params['function'] = 'mandrill_template_sender';
+    $mandrill_params['args'] = array(
+      'template_id' => $template_map->template_id,
+      'template_content' => array(
+        array(
+          'name' => $template_map->main_section,
+          'content' => $message['body'],
+        ),
+      ),
+    );
+    if (isset($message['mandrill_template_content'])) {
+      $mandrill_params['args']['template_content'] = array_merge($message['mandrill_template_content'], $mandrill_params['args']['template_content']);
+    }
+  }
+}
+
+/**
+ * Send a templated Mandrill message.
+ *
+ * This function checks for appropriate settings in the message, then uses the
+ * template API call to send the message if the settings are valid.
+ *
+ * @param array $message
+ *   Mandrill message to send.
+ * @param string $template_id
+ *   Name of the template to use.
+ * @param array $template_content
+ *   Associative array mapping template regions and content.
+ *
+ * @return array
+ *   Message response.
+ */
+function mandrill_template_sender($message, $template_id, $template_content) {
+  if ($mailer = mandrill_get_api_object()) {
+    return $mailer->messages->sendTemplate($template_id, $template_content, $message);
+  }
+  return NULL;
+}
+
+/**
+ * Simple sorting algorithm to organize mailsystems arrays in a logical way.
+ * 
+ * @param string $a
+ *   a mailsystem key name
+ * @param string $b
+ *   a mailsystem key name
+ * 
+ * @return int
+ *   Negative if $a should come before $b, else positive.
+ */
+function _mandrill_template_map_mailsystem_sort($a, $b) {
+  $first = "default-system";
+  $last = "mandrill_test";
+  if ($a == $first || $b == $last) {
+    return -1;
+  }
+  if ($b == $first || $a == $last) {
+    return 1;
+  }
+  // Otherwise sort alphabetically, case-agnostic
+  return strcasecmp($a, $b);
+}

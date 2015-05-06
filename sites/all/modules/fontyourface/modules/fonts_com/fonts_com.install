@@ -1,0 +1,40 @@
+<?php
+
+/**
+ * @file
+ * Removes fonts on disable.
+ */
+
+/**
+ * Implements hook_enable().
+ */
+function fonts_com_enable() {
+
+  // Set weight to 1 to ensure fonts_com_preprocess_html() is executed after
+  // fontyourface_preprocess_html(), which has weight of 0.
+  db_update('system')
+    ->fields(array('weight' => 1))
+    ->condition('name', 'fonts_com')
+    ->execute();
+
+} // fonts_com_enable
+
+/**
+ * Implements hook_disable().
+ */
+function fonts_com_disable() {
+
+  fontyourface_provider_disable('fonts_com');
+
+} // fonts_com_disable
+
+/**
+ * Implements hook_uninstall().
+ */
+function fonts_com_uninstall() {
+
+  variable_del('fonts_com_project');
+  variable_del('fonts_com_filter_choices');
+  variable_del('fonts_com_token');
+
+} // fonts_com_uninstall

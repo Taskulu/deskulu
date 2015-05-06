@@ -1,0 +1,101 @@
+<?php
+
+/**
+ * @file
+ *   Helper module for testing i18n
+ */
+
+// Add some multilingual variables, override existing ones from settings so
+// we have a known list and we don't need any addition to the settings file for testing i18n
+_i18n_test_variable_init();
+
+/**
+ * Implements hook_init()
+ */
+function i18n_test_init() {
+  // We just implement this hook so this one is loaded always on bootstap
+}
+
+/**
+ * Set default multilingual variables and add any others defined by testing scripts
+ *
+ * More variables can be added using 'i18n_variables_test';
+ */
+function _i18n_test_variable_init() {
+  global $conf;
+  $conf['i18n_variables'] = array_merge(array('site_name', 'site_frontpage'), variable_get('i18n_variables_test', array()));
+}
+
+/**
+ * Implements hook_i18n_string_info()
+ */
+function i18n_test_i18n_string_info() {
+  $groups['test'] = array(
+    'title' => t('Test'),
+    'description' => t('Translatable menu items: title and description.'),
+    'format' => FALSE, // This group doesn't have strings with format
+    'refresh callback' => 'i18n_test_i18n_string_refresh',
+  );
+  $groups['test_cached'] = array(
+    'title' => t('Test Cached Strings'),
+    'description' => t('Translatable items of a textgroup with caching enabled.'),
+    'format' => FALSE, // This group doesn't have strings with format
+    'class' => 'i18n_string_textgroup_cached_logged',
+  );
+  return $groups;
+}
+/**
+ * Locale refresh
+ */
+function i18n_test_i18n_string_refresh() {
+  return TRUE;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function i18n_test_menu() {
+  // Required for the i18n_string caching tests.
+  $items['tests/i18n/i18n_string_build/%'] = array(
+    'title' => 'Load string',
+    'access callback' => TRUE,
+    'page callback' => 'i18n_string_build',
+    'page arguments' => array(3),
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  );
+  $items['tests/i18n/i18n_string_build/%/%'] = array(
+    'title' => 'Load string',
+    'access callback' => TRUE,
+    'page callback' => 'i18n_string_build',
+    'page arguments' => array(3, 4),
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  );
+  $items['tests/i18n/i18n_string_translation_search/%'] = array(
+    'title' => 'Search string translations',
+    'access callback' => TRUE,
+    'page callback' => 'i18n_string_translation_search',
+    'page arguments' => array(3),
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  );
+  $items['tests/i18n/i18n_string_translation_search/%/%'] = array(
+    'title' => 'Search string translations',
+    'access callback' => TRUE,
+    'page callback' => 'i18n_string_translation_search',
+    'page arguments' => array(3, 4),
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  );
+  return $items;
+}
+
+class i18n_string_textgroup_cached_logged extends i18n_string_textgroup_cached {
+  public static function load_translation($i18nstring, $langcode) {
+    $strings = variable_get('i18n_loaded_translations', array());
+    $strings[$i18nstring->get_name()] = true;
+    variable_set('i18n_loaded_translations', $strings);
+    parent::load_translation($i18nstring, $langcode);
+  }
+}

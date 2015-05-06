@@ -1,0 +1,71 @@
+<?php
+
+/**
+ * @file
+ * Installation file for i18nmenu module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function i18n_menu_install() {
+  // Set module weight for it to run after core modules, but before views.
+  db_query("UPDATE {system} SET weight = 5 WHERE name = 'i18n_menu' AND type = 'module'");
+  module_load_install('i18n');
+  i18n_install_create_fields('menu_links', array('language', 'i18n_tsid'));
+  i18n_install_create_fields('menu_custom', array('language', 'i18n_mode'));
+  // If updating from D6, module changed name
+  if (variable_get('i18n_drupal6_update')) {
+    i18n_menu_update_7000();
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function i18n_menu_uninstall() {
+  db_drop_field('menu_links', 'language');
+  db_drop_field('menu_links', 'i18n_tsid');
+  db_drop_field('menu_custom', 'language');
+  db_drop_field('menu_custom', 'i18n_mode');
+}
+
+/**
+ * Implements hook_schema_alter().
+ */
+function i18n_menu_schema_alter(&$schema) {
+  $schema['menu_links']['fields']['language'] = array('type' => 'varchar', 'length' => 12, 'not null' => TRUE, 'default' => LANGUAGE_NONE);
+  $schema['menu_links']['fields']['i18n_tsid'] = array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0);
+  $schema['menu_custom']['fields']['language'] = array('type' => 'varchar', 'length' => 12, 'not null' => TRUE, 'default' => LANGUAGE_NONE);
+  $schema['menu_custom']['fields']['i18n_mode'] = array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0);
+}
+
+/**
+ * Update menu items language field from Drupal 6
+ */
+function i18n_menu_update_7000() {
+  // @todo
+}
+
+/**
+ * Set alter property for menu items with language.
+ */
+function i18n_menu_update_7001() {
+  // Compile a list of menus with i18n options.
+  $i18n_menus = array_filter(menu_get_names(), 'i18n_menu_mode');
+  if ($i18n_menus) {
+    $query = db_select('menu_links', 'm')
+      ->fields('m')
+      ->condition('menu_name', $i18n_menus);
+    foreach ($query->execute()->fetchAllAssoc('mlid', PDO::FETCH_ASSOC) as $mlid => $item) {
+      $options = unserialize($item['options']);
+      if (_i18n_menu_link_check_alter($item) && empty($options['alter'])) {
+        $options['alter'] = TRUE;
+        db_update('menu_links')
+          ->condition('mlid', $mlid)
+          ->fields(array('options' => serialize($options)))
+          ->execute();
+      }
+    }
+  }
+}

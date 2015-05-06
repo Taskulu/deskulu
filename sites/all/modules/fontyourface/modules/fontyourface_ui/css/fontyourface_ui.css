@@ -1,0 +1,178 @@
+#fontyourface-apply-tabs ul {
+  border: none;
+}
+
+#fontyourface-ui-apply-by-font-form tbody tr td.css-selector div.form-type-textfield {
+  margin: 0;
+  padding: 0;
+}
+
+.view-fontyourface-browse ul.tabs {
+  border-bottom: 1px solid #a6a7a2;
+  font-size: 0.923em;
+  margin: 0;
+  padding: 0.769em 0 5px 0;
+}
+
+  .view-fontyourface-browse ul.tabs li {
+    display: inline;
+    list-style: none;
+    position: relative;
+    top: 3px;
+  }
+
+    .view-fontyourface-browse ul.tabs li a {
+      background: #a6a7a2;
+      border-color: #a6a7a2;
+      border-style: solid;
+      border-radius: 8px 8px 0 0;
+      border-width: 1px 1px 0 1px;
+      color: #000;
+      font-weight: bold;
+      margin-right: 4px;
+      padding: 6px 20px;
+      text-decoration: none;
+      -moz-border-radius: 8px 8px 0 0;
+      -webkit-border-radius: 8px 8px 0 0;
+    }
+
+      .view-fontyourface-browse ul.tabs li a:hover {
+        color: #fff;
+      }
+
+      .view-fontyourface-browse ul.tabs li a.active {
+        background: #fff;
+        border-color: #c9cAc4;
+      }
+
+        .view-fontyourface-browse ul.tabs li a.active:hover {
+          color: #000;
+        }
+
+.view-fontyourface-browse ul.fonts-listing {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.view-fontyourface-browse li.font {
+  position: relative;
+  float: left;
+  width: 172px;
+  height: 152px;
+  float: left;
+  margin: 8px;
+}
+
+    .view-fontyourface-browse div.fontyourface-header {
+      position: relative;
+    }
+
+      .view-fontyourface-browse div.fontyourface-header h4 {
+        height: 40px;
+        left: 20px;
+        margin: 0 10px 10px 0;
+        overflow: hidden;
+        padding: 0 25px 0 0;
+        position: absolute;
+        top: 5px;
+      }
+
+        .view-fontyourface-browse li:hover div.fontyourface-header h4 {
+          background: #fff;
+          height: auto;
+        }
+        
+        .view-fontyourface-browse li:hover div.fontyourface-header.enabled-yes h4 {
+          background: #dfd;
+        }
+
+      .view-fontyourface-browse div.fontyourface-header a {
+        background: transparent url(gear-select.png) no-repeat 2px 0;
+        display: none;
+        height: 18px;
+        position: absolute;
+        right: 15px;
+        top: 15px;
+        width: 20px;
+      }
+
+        .view-fontyourface-browse li:hover div.fontyourface-header a {
+          display: block;
+        }
+
+        .view-fontyourface-browse div.fontyourface-header a:hover {
+          background-position-y: -18px;
+        }
+
+        .view-fontyourface-browse div.fontyourface-header a span {
+          display: none;
+        }
+
+  .view-fontyourface-browse div.fontyourface-preview {
+    -webkit-border-radius: 8px;
+    -moz-border-radius: 8px;
+    border-radius: 8px;
+    
+    border: 1px solid #ccc;
+    display: inline-block;
+    height: 10px;
+    margin: 0;
+    padding: 70px 10px;
+    width: 150px;
+  }
+
+  .view-fontyourface-browse div.fontyourface-footer {
+    position: relative;
+  }
+
+    .view-fontyourface-browse div.fontyourface-footer a {
+      -webkit-border-radius: 0 0 8px 8px;
+      -moz-border-radius: 0 0 8px 8px;
+      border-radius: 0 0 8px 8px;
+      border-bottom: 1px solid #ccc;
+      border-left: 1px solid #ccc;
+      border-right: 1px solid #ccc;
+      top: 121px;
+      display: block;
+      height: 20px;
+      left: -10px;
+      margin: 0 10px 10px 10px;
+      padding: 5px 10px;
+      position: absolute;
+      width: 150px;
+    }
+
+      .view-fontyourface-browse div.fontyourface-footer .fontyourface-indicator {
+        background: url(indicator.gif);
+        display: inline-block;
+        float: right;
+        height: 16px;
+        position: relative;
+        top: 2px;
+        width: 16px;
+      }
+
+  .view-fontyourface-browse div.enabled-no {
+    background: #fff;
+  }
+
+    .view-fontyourface-browse div.fontyourface-footer.enabled-no a {
+      background: #eee;
+    }
+
+      .view-fontyourface-browse div.fontyourface-footer.enabled-no a:active {
+        background: #ddd;
+      }
+
+  .view-fontyourface-browse div.enabled-yes {
+    background: #dfd;
+  }
+
+    .view-fontyourface-browse div.fontyourface-footer.enabled-yes a {
+      background: #bdb;
+    }
+
+      .view-fontyourface-browse div.fontyourface-footer.enabled-yes a:active {
+        background: #aca;
+      }

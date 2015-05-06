@@ -1,0 +1,157 @@
+<?php
+
+/**
+ * @file
+ * Installation file for VotingAPI module.
+ */
+
+function votingapi_schema() {
+  $schema['votingapi_vote'] = array(
+    'fields' => array(
+      'vote_id' => array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE),
+      'entity_type' => array('type' => 'varchar', 'length' => 64, 'not null' => TRUE, 'default' => 'node'),
+      'entity_id' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
+      'value' => array('type' => 'float', 'not null' => TRUE, 'default' => 0),
+      'value_type' => array('type' => 'varchar', 'length' => 64, 'not null' => TRUE, 'default' => 'percent'),
+      'tag' => array('type' => 'varchar', 'length' => 64, 'not null' => TRUE, 'default' => 'vote'),
+      'uid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
+      'timestamp' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
+      'vote_source' => array('type' => 'varchar', 'length' => 255),
+    ),
+    'primary key' => array('vote_id'),
+    'indexes' => array(
+      'content_uid' => array('entity_type', 'entity_id', 'uid'),
+      'content_uid_2' => array('entity_type', 'uid'),
+      'content_source' => array('entity_type', 'entity_id', 'vote_source'),
+      'content_value_tag' => array('entity_type', 'entity_id', 'value_type', 'tag'),
+    ),
+  );
+  $schema['votingapi_cache'] = array(
+    'fields' => array(
+      'vote_cache_id' => array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE),
+      'entity_type' => array('type' => 'varchar', 'length' => 64, 'not null' => TRUE, 'default' => 'node'),
+      'entity_id' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
+      'value' => array('type' => 'float', 'not null' => TRUE, 'default' => 0),
+      'value_type' => array('type' => 'varchar', 'length' => 64, 'not null' => TRUE, 'default' => 'percent'),
+      'tag' => array('type' => 'varchar', 'length' => 64, 'not null' => TRUE, 'default' => 'vote'),
+      'function' => array('type' => 'varchar', 'length' => 64, 'not null' => TRUE, 'default' => ''),
+      'timestamp' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
+    ),
+    'primary key' => array('vote_cache_id'),
+    'indexes' => array(
+      'content' => array('entity_type', 'entity_id'),
+      'content_function' => array('entity_type', 'entity_id', 'function'),
+      'content_tag_func' => array('entity_type', 'entity_id', 'tag', 'function'),
+      'content_vtype_tag' => array('entity_type', 'entity_id', 'value_type', 'tag'),
+      'content_vtype_tag_func' => array('entity_type', 'entity_id', 'value_type', 'tag', 'function'),
+    ),
+  );
+  return $schema;
+}
+
+/**
+ * The most recent update removed for version-to-version compatibility.
+ */
+function votingapi_update_last_removed() {
+  return 6101;
+}
+
+/**
+ * Fix default values for entity_type columns
+ */
+function votingapi_update_7203() {
+  db_change_field('votingapi_vote',  'entity_type', 'entity_type', array('type' => 'varchar', 'length' => 64, 'not null' => TRUE, 'default' => 'node'));
+  db_change_field('votingapi_cache', 'entity_type', 'entity_type', array('type' => 'varchar', 'length' => 64, 'not null' => TRUE, 'default' => 'node'));
+}
+
+/**
+ * Queue orphaned votes for deletion (nodes and comments)
+ */
+function votingapi_update_7202() {
+  $tables[] = 'votingapi_vote';
+  $tables[] = 'votingapi_cache';
+
+  $types[] = array('node', 'node', 'nid');
+  $types[] = array('comment', 'comment', 'cid');
+
+  $queue = DrupalQueue::get('VotingAPIOrphaned', TRUE);
+
+  foreach ($types as $w) {
+    list($type, $type_table, $type_key) = $w;
+    if (!db_table_exists($type_table)) {
+      continue;
+    }
+    foreach ($tables as $table) {
+      $sql = "SELECT v.entity_type, v.entity_id FROM {{$table}} v
+              LEFT OUTER JOIN {{$type_table}} e ON v.entity_id=e.$type_key
+              WHERE v.entity_type='$type' AND e.$type_key IS NULL
+              GROUP BY v.entity_type, v.entity_id";
+      $result = db_query($sql);
+      foreach ($result as $row) {
+        $queue->createItem((array) $row);
+      }
+    }
+  }
+}
+
+/**
+ * Renaming the 'content_type' and 'content_id' columns to entity_type and entity_id.
+ * Reduces confusion about 'content types' versus 'node types'.
+ */
+function votingapi_update_7201() {
+  $index['votingapi_vote'] = array(
+    'content_uid'       => array('entity_type', 'entity_id', 'uid'),
+    'content_uid_2'     => array('entity_type', 'uid'),
+    'content_source'    => array('entity_type', 'entity_id', 'vote_source'),
+    'content_value_tag' => array('entity_type', 'entity_id', 'value_type', 'tag'),
+  );
+  $index['votingapi_cache'] = array(
+    'content'                => array('entity_type', 'entity_id'),
+    'content_function'       => array('entity_type', 'entity_id', 'function'),
+    'content_tag_func'       => array('entity_type', 'entity_id', 'tag', 'function'),
+    'content_vtype_tag'      => array('entity_type', 'entity_id', 'value_type', 'tag'),
+    'content_vtype_tag_func' => array('entity_type', 'entity_id', 'value_type', 'tag', 'function'),
+  );
+  // Remove all existing indexes.
+  foreach ($index as $table => $data) {
+    foreach ($data as $index_name => $columns) {
+      if (db_index_exists($table, $index_name)) {
+        db_drop_index($table, $index_name);
+      }
+    }
+  }
+
+  // Change fields
+  foreach (array('votingapi_vote', 'votingapi_cache') as $table) {
+    db_change_field($table, 'content_type', 'entity_type', array('type' => 'varchar', 'length' => 64, 'not null' => TRUE, 'default' => 'node'));
+    db_change_field($table, 'content_id', 'entity_id', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
+    db_change_field($table, 'value_type', 'value_type', array('type' => 'varchar', 'length' => 64, 'not null' => TRUE, 'default' => 'percent'));
+    db_change_field($table, 'tag', 'tag', array('type' => 'varchar', 'length' => 64, 'not null' => TRUE, 'default' => 'vote'));
+  }
+
+  // Recreate the indexes.
+  foreach ($index as $table => $data) {
+    foreach ($data as $index_name => $columns) {
+      db_add_index($table, $index_name, $columns);
+    }
+  }
+
+  return t('Updated VotingAPI table structure.');
+}
+
+
+/**
+ * Implements hook_uninstall().
+ */
+function votingapi_uninstall() {
+  // Delete variables created by voteapi module.
+  $variables = array(
+    'votingapi_last_cron',
+    'votingapi_anonymous_window',
+    'votingapi_user_window',
+    'votingapi_calculation_schedule',
+  );
+  foreach ($variables as $variable) {
+    variable_del($variable);
+  }
+}

@@ -1,0 +1,71 @@
+
+Better Exposed Filters change log
+---------------------------------
+
+Better Exposed Filters 7.x-x.x  xxxx-xx-xx
+------------------------------------------
+Issue #1240238 by marvil07, Max Ka, gapple, chichilatte: Let use toggle links on the exposed form sorts.
+by mikeker: Revamped automated tests.
+by mikeker: Fixed (most) Drupal Coding Standards errors and warnings
+Issue #1842494 by mikeker: Fixed Combined Sort Order - Rendered in Div of Submit Button.
+Issue #1784424 by mikeker: Refactored getting existing and default values.
+Issue #1666896 by Staratel: Fixed Filter captions on BEF settings form are empty if filter labels are empty.
+Issue #1798350 by mikeker: Fixed: secondary options were using the filter label instead of ID.
+By mikeker: Allow rewriting of filter values (similar to the rewrite combined sort option)
+Issue #1673562 by buzkall, nedjo: Added Automatically select children in nested checkboxes option.
+Issue #1813654 by elbahek, mikeker: Fixed Undefined offset notice on rendered page.
+Issue #1627524 by rooby: Added the jQuery slider widget to BEF.
+Issue #1873164 by mikeker: Fixed Taxonomy exposed filter links not linking to appropriate page.
+By mikeker: Correctly handle hierarchical taxonomy filters when rewriting filter options.
+
+Better Exposed Filters 7.x-3.0-beta2  2012-09-13
+------------------------------------------------
+Issue #975376 by mikeker, gordon: Inital port.  Note: only supports Views 3.x as there is no 2.x release planned for D7.
+Issue #1109950 by mikeker, Francois LR: Fixes errors in taxonomy tree
+Issue #1099528 by mikeker: Radio button labels not displayed
+Issue #1128688 by sreynen: Select All/None not working on nested checkboxes
+Issue #1111712 by mikeker: Adds Links as an option for filters
+mikeker: Fixed attributes, select all/none issues
+Issue #1120244 by mikeker: Fixed collapsible filter options
+Issue #1132818 by mikeker: Allows more specific targeting of BEF options based on filter options
+Issue #1162488 by klickreflex: Fixes incorrect HTML in nested displays
+By mikeker: Added datepicker option
+Issue #1194102 by dj1999: Adds BEF options to 'is all of' filters
+Issue #1149254 by aaronbauman: Hides Apply button when exposed filters are set to hidden
+Issue #1227168 by gionnibgud: Adds IDs to select_as_links filter options
+Issue #1260194 by zhuber: Adds toggle functionality to filter links (added --author attribution in a later commit)
+Issue #1099528 by Murz: Fixes incorrect depth of '- Any -' option
+Issue #1241960 by mikeker: Fixes E_STRICT warning
+Issue #1217204 by mikeker: Fixes Undefined index errors when BEF settings page is raised as a standalong page
+Issue #1281348 by mikeker: form.js and collapse.js not being aggregated properly
+Issue #1272694 by samhassell and mikeker: correctly sets form-item classes for wrapper divs
+Issue #1290630 by d.clarke: Removes duplicated IDs from radio buttons
+Issue #1289370 by mikeker: Gets Datepicker working again. Note: needs to be added to behaviors.
+By mikeker: Added/Cleaned up highlight JS, moved datepicker JS to Drupal.behaviors
+Issue #1289370 by ducktape: Adds support for Drupal's default date field and corrects missing JS file
+Issue #1297418 by mikeker: Puts exposed operators inside fieldset
+Issue #1283998 by mikeker: Added token support in description fields
+Issue #1212744 by mikeker: Collapsible option for sort
+Issue #1398048 by mikeker: Rewritable combined sort options
+Issue #1439216 by KeyboardCowboy: Remove duplicate name attributes on checkboxes (W3C validation)
+Issue #1548292 by richard.thomas: Use drupal_add_library() for datepicker option
+Issue #1171952 by mikeker: Added single on/off checkbox support
+Issue #1286378 by m4olivei: Fixes link filter state being list when non-link filter is used
+Issue #1362344 by mikeker, arkz: Adds option to put exposed form elements in a secondary options fieldset.
+
+Better Exposed Filters 6.x-x.x  xxxx-xx-xx
+------------------------------------------
+#864614 by OxideInteractive: Fixes extra space in class attributes
+#874978 by vosechu: select_as_checkboxes now respects #default_value
+#812778 by mikeker: Fixes problem with "Show hierarchy in dropdown enabled"
+#811954 by pivica: Fixes duplicate Select All/None links with multiple Behavior executions
+#657148 by mikeker: Adds support for exposed sort manipulation
+#965388 by mikeker: Adds support for collapsible fieldsets
+#965388 by mikeker: Adds support for collapsible fieldsets
+mikeker: Adds nested list display for hierarchical taxonomy filters
+#894312 by kenorb, mikeker: Adds links as a BEF option
+#1006716 by attiks: Corrects <label>/<input> tag order
+
+Better Exposed Filters 6.x-1.0  2010-05-25
+------------------------------------------
+Initial release.  Supports Views 2.x and 3.x.

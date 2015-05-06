@@ -1,0 +1,224 @@
+<?php
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the Facet API module.
+ */
+
+/**
+ * Implementation of hook_schema().
+ */
+function facetapi_schema() {
+  $schema['facetapi'] = array(
+    'description' => 'Facet configurations.',
+    'export' => array(
+      'key' => 'name',
+      'identifier' => 'facet',
+      'default hook' => 'facetapi_default_facet_settings',
+      'api' => array(
+        'owner' => 'facetapi',
+        'api' => 'facetapi_defaults',
+        'minimum_version' => 1,
+        'current_version' => 1,
+      ),
+    ),
+    'fields' => array(
+      'name' => array(
+        'description' => 'The machine readable name of the configuration.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'searcher' => array(
+        'description' => 'The machine readable name of the searcher.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'realm' => array(
+        'description' => 'The machine readable name of the realm.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'facet' => array(
+        'description' => 'The machine readable name of the facet.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'enabled' => array(
+        'description' => 'Whether the facet is enabled.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'settings' => array(
+        'description' => 'Serialized storage of general settings.',
+        'type' => 'blob',
+        'serialize' => TRUE,
+      ),
+    ),
+    'primary key' => array('name'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function facetapi_install() {
+  // Nothing to do...
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function facetapi_uninstall() {
+  // Remove all variables that start with "facetapi:".
+  $args = array(':module' => 'facetapi%');
+  $result = db_query('SELECT name FROM {variable} WHERE name LIKE :module', $args);
+  foreach ($result as $record) {
+    variable_del($record->name);
+  }
+  // Remove blocks.
+  if (db_table_exists('block')) {
+    db_delete('block')->condition('module', 'facetapi')->execute();
+  }
+}
+
+/**
+ * Update hashed block deltas to a URL-safe form.
+ */
+function facetapi_update_7000() {
+  $result = db_query("SELECT name FROM {facetapi}");
+  foreach ($result as $f) {
+    if (strlen($r->name) > 32) {
+      $orig_delta = substr(base64_encode(hash('sha256', $r->name, TRUE)), 0, 32);
+      $new_delta = strtr($orig_delta, array('+' => '-', '/' => '_', '=' => ''));
+      db_update('block')
+        ->fields(array(
+          'delta' => $new_delta,
+        ))
+        ->condition('module', 'facetapi')
+        ->condition('delta', $orig_delta)
+        ->execute();
+    }
+  }
+}
+
+/**
+ * Hashes all blocks deltas related to Facet API.
+ */
+function facetapi_update_7001() {
+
+  // Clears the delta cache.
+  db_delete('cache')
+    ->condition('cid', 'facetapi:delta_map')
+    ->execute();
+
+  // Deletes blocks that are not enabled so they will get re-hashed.
+  db_delete('block')
+    ->condition('module', 'facetapi')
+    ->condition('status', 0)
+    ->execute();
+
+  // Rehashes deltas of enabled facet blocks.
+  $result = db_query("SELECT delta, bid FROM {block} WHERE module = 'facetapi'");
+  foreach ($result as $record) {
+    $current_search = FALSE;
+
+    // Extracts the searcher, realm name, and facet name from $delta.
+    // Process the parts from the end in case the searcher includes a ':'.
+    $parts = explode(':', $record->delta);
+    $facet_name = array_pop($parts);
+    $realm_name = array_pop($parts);
+    $searcher = implode(':', $parts);
+
+    // We are viewing the current search block.
+    if (!$searcher && 'current_search' == $facet_name) {
+      $current_search = TRUE;
+    }
+
+    // If we don't have a searcher and we aren't viewing the current search
+    // block, delta is probably hashed and we should continue to the next one.
+    if (!$current_search && !$searcher) {
+      // Let's do some block cleanup. Anything less that 32 chars is NOT a hash
+      // and doesn't need to be in the database.
+      if (strlen($record->delta) == 32) {
+        continue;
+      }
+      else {
+        db_delete('block')
+          ->condition('bid', $record->bid)
+          ->execute();
+      }
+    }
+
+    // Hashes the delta and updates.
+    $delta = substr(drupal_hash_base64($record->delta), 0, 32);
+    db_update('block')
+      ->fields(array('delta' => $delta))
+      ->condition('module', 'facetapi')
+      ->condition('delta', $record->delta)
+      ->execute();
+  }
+}
+
+/**
+ * Ensures hashes are alpha-numeric.
+ */
+function facetapi_update_7002() {
+
+  // Updates the block table with alpha-numeric hashes.
+  $result = db_query("SELECT delta, bid FROM {block} WHERE module = 'facetapi'");
+  foreach ($result as $record) {
+    $hash = strtr($record->delta, array('-' => '0', '_' => '1'));
+    db_update('block')
+      ->fields(array('delta' => $hash))
+      ->condition('module', 'facetapi')
+      ->condition('delta', $record->delta)
+      ->execute();
+  }
+
+  // Clears the delta cache.
+  cache_clear_all('facetapi:delta_map', 'cache');
+}
+
+/**
+ * Increase the length of the facetapi.facet column.
+ */
+function facetapi_update_7101() {
+  // Change the length of the facet field.
+  db_change_field('facetapi', 'facet', 'facet', array(
+    'description' => 'The machine readable name of the facet.',
+    'type' => 'varchar',
+    'length' => 255,
+    'not null' => TRUE,
+    'default' => '',
+  ));
+}
+
+/**
+ * Fix Postgres compatibility issue.
+ */
+function facetapi_update_7102() {
+  db_change_field('facetapi', 'settings', 'settings', array(
+    'type' => 'blob',
+    'description' => 'Serialized storage of general settings.',
+    'serialize' => TRUE,
+  ));
+}
+
+/**
+ * Clears facetapi:delta_map cache item to ensure that new realms are mapped.
+ */
+function facetapi_update_7103() {
+  cache_clear_all('facetapi:delta_map', 'cache');
+}

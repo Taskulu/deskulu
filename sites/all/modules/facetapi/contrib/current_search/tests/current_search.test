@@ -1,0 +1,198 @@
+<?php
+
+/**
+ * @file
+ * Test cases for the Current Search Blocks module.
+ */
+
+/**
+ * Base class for all Current Search Blocks test cases.
+ */
+class CurrentSearchTestCase extends FacetapiTestCase {
+
+  /**
+   * Overrides FacetapiTestCase::setUp().
+   */
+  public function setUp() {
+    parent::setUp('current_search');
+  }
+
+  /**
+   * Enables a current search block via the UI.
+   */
+  public function currentSearchEnableBlock($name = 'standard') {
+    // Capture current user, switch to admin user if necessary.
+    $account = $this->loggedInUser;
+    if ($account != $this->adminUser) {
+      $this->drupalLogin($this->adminUser);
+    }
+
+    // Enables the facet in the "sidebar_first" region.
+    $edit = array('blocks[current_search_' . $name . '][region]' => 'sidebar_first');
+    $this->drupalPost('admin/structure/block', $edit, t('Save blocks'));
+
+    // Log back in as original user if necessary.
+    if ($account != $this->adminUser) {
+      if ($account) {
+        $this->drupalLogin($account);
+      }
+      else {
+        $this->drupalLogout();
+      }
+    }
+  }
+}
+
+/**
+ * Test cases for operations taken through the admin UI.
+ */
+class CurrentSearchInterfaceTestCase extends CurrentSearchTestCase {
+  protected $authenticatedUser;
+  protected $adminUser;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Administrative UI',
+      'description' => 'Tests the UI for Current Search Blocks administrative pages.',
+      'group' => 'Current Search Blocks',
+    );
+  }
+
+  /**
+   * Tests access to callbacks.
+   */
+  public function testFormAccess() {
+    $paths = array(
+      'admin/config/search/current_search' => t('list'),
+      'admin/config/search/current_search/list/standard/edit' => t('edit'),
+      'admin/config/search/current_search/list/standard/disable' => t('disable'),
+      'admin/config/search/current_search/list/standard/clone' => t('clone'),
+      'admin/config/search/current_search/list/standard/export' => t('export'),
+      'admin/config/search/current_search/item/standard/delete/results' => t('remove item'),
+    );
+
+    // Test wheter unprivileged user is denied access to forms.
+    $this->drupalLogin($this->authenticatedUser);
+    foreach ($paths as $path => $form_name) {
+      $this->drupalGet($path);
+      $this->assertResponse(403, t('Unprivileged user does not have access to the @form-name form.', array('@form-name' => $form_name)), 'Facet API');
+    }
+
+    // Common message for privileged access checks.
+    $privileged_message = t('Privileged user with "@permission" permission is granted access to the @form-name form.');
+
+    // Test whether privileged user is granted access for forms.
+    // NOTE: $this->adminUser has "administer search" permission.
+    $this->drupalLogin($this->adminUser);
+    foreach ($paths as $path => $form_name) {
+      $this->drupalGet($path);
+      $args = array('@permission' => 'administer search', '@form-name' => $form_name);
+      $this->assertResponse(200, t($privileged_message, $args));
+    }
+
+    // Tests whether privileged user is granted access for forms.
+    // Create another user with the "administer facets" permission, test whether
+    $facet_admin_user = $this->drupalCreateUser(array('administer facets'));
+    $this->drupalLogin($facet_admin_user);
+    foreach ($paths as $path => $form_name) {
+      $this->drupalGet($path);
+      $args = array('@permission' => 'administer facets', '@form-name' => $form_name);
+      $this->assertResponse(200, t($privileged_message, $args));
+    }
+  }
+
+  public function testEnableBlock() {
+    // Enable the standard current search block via the UI.
+    $this->drupalLogin($this->adminUser);
+    $this->currentSearchEnableBlock();
+
+    // Test that block is positioned on the search page.
+    $this->drupalLogin($this->authenticatedUser);
+    $this->drupalGet('facetapi_test/search', array('query' => array('keys' => 'test')));
+    $raw = t('Current search');
+    $this->assertRaw($raw, t('Current search block displayed on search page.'), 'Current Search Blocks');
+  }
+}
+
+/**
+ * Test cases for operations taken through the admin UI.
+ */
+class CurrentSearchBugFixTestCase extends CurrentSearchTestCase {
+  protected $authenticatedUser;
+  protected $adminUser;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Bug Fixes',
+      'description' => 'Tests fixed bugs to prevent regressions.',
+      'group' => 'Current Search Blocks',
+    );
+  }
+
+  /**
+   * Tests bug fixed at http://drupal.org/node/1668980.
+   *
+   * @see http://drupal.org/node/1668980
+   */
+  public function testMultipleBlocks() {
+    // Enable the standard current search block via the UI.
+    $this->drupalLogin($this->adminUser);
+    $this->currentSearchEnableBlock('standard');
+    $this->currentSearchEnableBlock('second');
+
+    // Test that block is positioned on the search page.
+    $this->drupalLogin($this->authenticatedUser);
+    $this->drupalGet('facetapi_test/search', array('query' => array('keys' => 'test')));
+    $this->assertRaw('Second current search block', t('Second current search block displayed on search page.'), 'Current Search Blocks');
+
+    $this->facetapiIssueMessage('http://drupal.org/node/1668980');
+  }
+
+  /**
+   * Tests bug fixed at http://drupal.org/node/1728496.
+   *
+   * @see http://drupal.org/node/1728496
+   */
+  public function testPluralTranslation() {
+    variable_set('facetapi:translator_module', 'facetapi_test');
+
+    // Enable the standard current search block via the UI.
+    $this->drupalLogin($this->adminUser);
+    $this->currentSearchEnableBlock('standard');
+    $this->drupalLogin($this->authenticatedUser);
+
+    // Set the result count to 1 to test singular translation.
+    $this->drupalGet('facetapi_test/search', array('query' => array('keys' => 'test', 'count' => 1)));
+    $raw = filter_xss_admin('s:36:"current_search:standard:results:text";');
+    $this->assertRaw($raw, t('Singular text in current search block is translated.'));
+
+    // Set the result count to 10 to test plural translation.
+    $this->drupalGet('facetapi_test/search', array('query' => array('keys' => 'test', 'count' => 10)));
+    $raw = filter_xss_admin('s:43:"current_search:standard:results:text_plural";');
+    $this->assertRaw($raw, t('Plural text in current search block is translated.'));
+  }
+
+  /**
+   * Tests bug fixed at http://drupal.org/node/1751514.
+   *
+   * @see http://drupal.org/node/1751514
+   * @see http://drupal.org/node/1741444
+   */
+  public function testCurrentSearchTextEncoding() {
+    $raw_text = '<test>';
+    $variables = array(
+      'text' => $raw_text,
+      'wrapper' => 0,
+    );
+
+    // Test that the variable is escaped using check_plain().
+    $variables['options'] = array('html' => FALSE);
+    $sanitized_text = theme('current_search_text', $variables);
+    $this->assertEqual(check_plain($raw_text), $sanitized_text, t('Text is properly sanitized by the theme_current_search_text() function.'), 'Current Search Blocks');
+
+    // Test that the HTML is not double encoded.
+    $variables['options'] = array('html' => TRUE);
+    $unsanitized_text = theme('current_search_text', $variables);
+    $this->assertEqual($raw_text, $unsanitized_text, t('HTML is not double encoded by the theme_current_search_text() function.'), 'Current Search Blocks');
+  }
+}

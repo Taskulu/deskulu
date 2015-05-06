@@ -1,0 +1,105 @@
+Search API Database Search 1.4 (09/08/2014):
+--------------------------------------------
+- #2318865 by drunken monkey: Fixed error when Mbstring extension is not
+  available.
+- #2231453 by Johnny vd Laar, valderama: Fixed case sensitivity of autocomplete
+  suggestions.
+- #2305107 by drunken monkey: Fixed standards-compliance of the generated SQL
+  queries.
+- #2286329 by drunken monkey: Fixed incorrect facet counts for multi-word
+  search.
+- #2237829 by drunken monkey: Added a hook and methods for more specific
+  altering of searches.
+- #2265353 by drunken monkey: Removed uses of _search_api_settings_equals().
+
+Search API Database Search 1.3 (05/23/2014):
+--------------------------------------------
+- #1299238 by Johnny vd Laar, drunken monkey, JeroenT: Added the option to
+  return partial matches.
+- #1912332 by drunken monkey: Fixed error when facet calculation leads to
+  exception.
+- #2231829 by krisahil, drunken monkey: Fixed indexed scores to be integers.
+- #2219525 by drunken monkey: Fixed tests in PostgreSQL.
+- #2207205 by drumm: Changed score from float to int.
+- #2140321 by drunken monkey: Fixed grouping error in PostgreSQL.
+- #2170689 by drumm: Added a (word, field_name) covering index on text tables.
+- #1144620 by drunken monkey, cmonnow: Fixed problems with umlauts, accented
+  characters, etc, in PostgreSQL.
+- #1390586 by Damien Tournoud, drunken monkey: Added support for OR facets.
+- #1658964 by figureone, drunken monkey: Fixed support for facets with count 0.
+- #2170681 by drumm: Improved fulltext search performance further.
+- #2155767 by drumm, drunken monkey: Added fulltext search performance
+  improvement.
+
+Search API Database Search 1.2 (12/25/2013):
+--------------------------------------------
+- #2156151 by drunken monkey: Fixed exception when clearing a server.
+- Follow-up to #2147361 by drunken monkey: Fixed left-over pieces of old code.
+
+Search API Database Search 1.1 (12/09/2013):
+--------------------------------------------
+- #2138669 by drunken monkey, acouch: Fixed MS SQL error for primary key on
+  nullable column.
+- #2147361 by drunken monkey: Revised non-default database support to be more
+  robust.
+- #2126291 by drunken monkey: Update error handling according to the latest
+  Search API change.
+- #2136409 by drunken monkey: Fixed handling of NULL filters.
+- #2135595 by drumm, drunken monkey: Added support for the new "skip result
+  count" option.
+- #2127001 by drunken monkey: Fixed negated fulltext searches.
+- #2134667 by drunken monkey: Fixed tests to not depend on the Search API UI.
+- #1916474 by drunken monkey: Fixed indexing of multi-valued float fields.
+- #2111753 by drunken monkey: Added additional tests for ORed fulltext keywords.
+
+Search API Database Search 1.0 (10/23/2013):
+--------------------------------------------
+- #1155568 by bember, drunken monkey, fabsor: Fixed indexing of historical date
+  fields.
+- #2083079 by drumm, drunken monkey: Added single, denormalized table for
+  indexing single-valued fields.
+- #2073443 by drunken monkey: Removed custom uninstall code for deleting
+  dependent servers.
+
+Search API Database Search 1.0, RC 2 (07/21/2013):
+--------------------------------------------------
+- #2040543 by drunken monkey: Fixed ignored "missing facet" setting.
+- #1809902 by drunken monkey: Added metadata to database queries.
+- #2035017 by drunken monkey: Fixed notices for PHP 5.4+.
+- #2026883 by drunken monkey: Fixed workflow for adding a server with indexes
+  in a feature.
+- #1836992 by drunken monkey: Added autocomplete support.
+- #2013609 by drunken monkey: Changed the workflow of the module's tests.
+- #2020903 by drunken monkey: Fixed deletion of indexed data when a read-only
+  index is removed from the server.
+- #1863672 by drunken monkey, k.dani, bago: Fixed multiple content in the search
+  result when using multiple terms for filtering.
+- #2012688 by drunken monkey: Fixed left-over data when executing two searches
+  in a row.
+- #2010760 by drunken monkey, bago: Fixed handling of database string length
+  restrictions.
+- #1214846 by xatoo: Fixed overlong table names if prefixes are used.
+- #2007872 by drunken monkey: Fixed problems when filtering or sorting on
+  possibly empty fields.
+- #2006870 by drunken monkey: Fixed negated filters on fulltext fields.
+
+Search API Database Search 1.0, RC 1 (05/17/2013):
+--------------------------------------------------
+- #1860028 by drunken monkey: Fixed fulltext filters with multiple words.
+- #1805640 by drunken monkey: Fixed improper handling of 'missing' facets for
+  fulltext fields.
+- #1976708 by hefox: Fixed missing table prefix when creating fulltext field
+  tables.
+- #1414078 by drunken monkey: Fixed wrong reaction to server reverts.
+- #1403916 by Christofer Roth, drunken monkey: Fixed facets for multi-word
+  searches.
+- #1144620 by axel.rutz, drunken monkey: Fixed problems with umlauts, accented
+  characters, etc. on MySQL databases.
+- #1346846 by drunken monkey, klaasvw: Fixed DB exception when indexing with
+  stale index data.
+- #1649042 by drunken monkey, Jelle_S, DYdave, mortona2k, sardbaba: Fixed
+  handling of NULL values when indexing.
+
+Search API Database Search 1.0, Beta 4 (10/30/2012):
+----------------------------------------------------
+See respective release notes for details on earlier releases.

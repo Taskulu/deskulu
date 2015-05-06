@@ -1,0 +1,37 @@
+<?php
+
+/**
+ * @file
+ * Installation functionality for Administration menu toolbar module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function admin_menu_toolbar_install() {
+  // Required to load JS/CSS in hook_init() after admin_menu.
+  db_update('system')
+    ->fields(array('weight' => 101))
+    ->condition('type', 'module')
+    ->condition('name', 'admin_menu_toolbar')
+    ->execute();
+}
+
+/**
+ * Set module weight to a value higher than admin_menu.
+ *
+ * At this point, admin_menu should have a weight of 100. To account for
+ * customized weights, we increase the weight relatively.
+ *
+ * @see admin_menu_toolbar_install()
+ */
+function admin_menu_toolbar_update_6300() {
+  $weight = db_query("SELECT weight FROM {system} WHERE type = 'module' AND name = 'admin_menu'")->fetchField();
+  $weight++;
+  db_update('system')
+    ->fields(array('weight' => $weight))
+    ->condition('type', 'module')
+    ->condition('name', 'admin_menu_toolbar')
+    ->execute();
+}
+

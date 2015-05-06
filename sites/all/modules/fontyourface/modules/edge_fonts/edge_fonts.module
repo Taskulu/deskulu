@@ -1,0 +1,156 @@
+<?php
+
+/**
+ * @file
+ * Edge Fonts module main file.
+ */
+
+/**
+ * Implements hook_fontyourface_info().
+ */
+function edge_fonts_fontyourface_info() {
+  return array(
+    'name' => 'Edge Fonts',
+    'url' => 'http://www.edgefonts.com/',
+    'base_path' => 'http://www.edgefonts.com/?font=',
+  );
+}
+
+/**
+ * Implements hook_fontyourface_import().
+ */
+function edge_fonts_fontyourface_import() {
+  include_once 'edge_fonts.list.inc';
+  // Get available fonts.
+  $families = edge_fonts_list();
+  $variants = 0;
+  foreach ($families as $family_name => $family) {
+    foreach ($family['variants'] as $fvd => $variant) {
+      $font = new stdClass();
+      $font->provider = 'edge_fonts';
+      $font->name = $family['name'] . ' ' . $variant['name'];
+      $font->css_family = $family_name;
+      $font->css_weight = $fvd[1] . '00';
+      if ($fvd[0] == 'i') {
+        $font->css_style = 'italic';
+      }
+      $metadata = array(
+        'variant' => $fvd,
+      );
+      $font->metadata = serialize($metadata);
+      $font->url = 'http://www.edgefonts.com/?font=' . $family_name . ':' . $fvd . '#list-of-available-fonts';
+      $font->license = 'Font license';
+      $font->license_url = $variant['license'];
+      fontyourface_save_font($font);
+      $variants++;
+    }
+  }
+  drupal_set_message(t('!fonts Edge Fonts of !families families imported/updated.', array('!fonts' => $variants, '!families' => count($families))));
+  fontyourface_log('!fonts Edge Fonts of !families families imported/updated.', array('!fonts' => $variants, '!families' => count($families)));
+  // Return TRUE if we succeeded in importing something, FALSE if not.
+  return (bool) count($families);
+}
+
+/**
+ * Implements template_preprocess_html().
+ */
+function edge_fonts_preprocess_html(&$vars) {
+  if (!empty($vars['fontyourface'])) {
+    $fonts = array();
+    foreach ($vars['fontyourface'] as $active_font) {
+      if ($active_font->provider == 'edge_fonts') {
+        $metadata = unserialize($active_font->metadata);
+        $fonts[$active_font->css_family][] = $metadata['variant'];
+      }
+    }
+    if (count($fonts) > 0) {
+      if (variable_get('edge_fonts_base', 'naked') == 'naked') {
+        $base = '//use.edgefonts.net/';
+      }
+      elseif (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') {
+        $base = 'https://use.edgefonts.net/';
+      }
+      else {
+        $base = 'http://use.edgefonts.net/';
+      }
+      $families = array();
+      $all_subsets = (variable_get('edge_fonts_subsets', 'default') == 'all') ? ':all' : '';
+      foreach ($fonts as $family => $variants) {
+        $families[] = $family . ':' . implode(',', $variants) . $all_subsets;
+      }
+      $js = $base . implode(';', $families) . '.js';
+      drupal_add_js($js, array('type' => 'external'));
+    }
+  }
+}
+
+/**
+ * Implements hook_fontyourface_preview().
+ */
+function edge_fonts_fontyourface_preview($font, $text = NULL, $size = 18) {
+  $output = '';
+  if ($text == NULL) {
+    $text = $font->name;
+  }
+  if ($size == 'all') {
+    // Display variety of sizes.
+    $sizes = array(32, 24, 18, 14, 12, 10);
+    foreach ($sizes as $size) {
+      $output .= '<div style="' . fontyourface_font_css($font) . ' font-size: ' . $size . 'px; line-height: ' . $size . 'px;">' . $text . '</div>';
+    }
+  }
+  else {
+    // Display single size.
+    $output = '<span style="' . fontyourface_font_css($font) . ' font-size: ' . $size . 'px; line-height: ' . $size . 'px;">' . $text . '</span>';
+  }
+  return $output;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function edge_fonts_form_fontyourface_ui_settings_form_alter(&$form, &$form_state, $form_id) {
+  $form['edge_fonts'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Edge Fonts',
+    '#weight' => -1,
+    'edge_fonts_base' => array(
+      '#type' => 'radios',
+      '#title' => t('Script URLs'),
+      '#options' => array(
+        'naked' => t('// (schema-less - recommended by the provider)'),
+        'http' => t('http:// or https:// (ask the server)'),
+      ),
+      '#default_value' => variable_get('edge_fonts_base', 'naked'),
+    ),
+    'edge_fonts_subsets' => array(
+      '#type' => 'radios',
+      '#title' => t('Subsets to use'),
+      '#options' => array(
+        'default' => t('Default'),
+        'all' => t('All'),
+      ),
+      '#default_value' => variable_get('edge_fonts_subsets', 'default'),
+    ),
+    'edge_fonts_save_settings' => array(
+      '#type' => 'submit',
+      '#value' => t('Save settings'),
+    ),
+  );
+  $form['#submit'][] = 'edge_fonts_save_settings';
+  // Move the default update/import button to the Edge Fonts fieldset.
+  if (isset($form['providers']['edge_fonts_import'])) {
+    $form['edge_fonts']['edge_fonts_import'] = $form['providers']['edge_fonts_import'];
+    unset($form['providers']['edge_fonts_import']);
+  }
+}
+
+/**
+ * Custom submit handler for fontyourface_ui_settings_form.
+ */
+function edge_fonts_save_settings($form, &$form_state) {
+  if ($form_state['clicked_button']['#parents'][0] == 'edge_fonts_save_settings') {
+    variable_set('edge_fonts_base', $form_state['values']['edge_fonts_base']);
+    variable_set('edge_fonts_subsets', $form_state['values']['edge_fonts_subsets']);
+  }
+}

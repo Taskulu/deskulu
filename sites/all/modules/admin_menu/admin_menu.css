@@ -1,0 +1,233 @@
+
+/**
+ * @file
+ * Administration menu.
+ *
+ * Implementation of Sons of Suckerfish Dropdowns.
+ *
+ * @see www.htmldog.com/articles/suckerfish
+ */
+
+#admin-menu {
+  background: #101010 url(images/bkg.png) bottom left repeat-x;
+  font-size: 9px;
+  font-family: "lucida grande", tahoma, verdana, arial, sans-serif;
+  left: 0;
+  position: absolute;
+  text-align: left;
+  top: 0;
+  width: 100%;
+}
+#admin-menu-wrapper {
+  overflow: hidden;
+}
+#admin-menu .dropdown .admin-menu-icon a {
+  padding: 1px 8px 4px;
+}
+#admin-menu .dropdown .admin-menu-icon ul a {
+  padding: 4px 8px;
+}
+#admin-menu .dropdown .admin-menu-icon img {
+  vertical-align: bottom;
+}
+#admin-menu .dropdown .admin-menu-users a {
+  background: transparent url(images/icon_users.png) 90% center no-repeat;
+  padding-right: 22px;
+}
+#admin-menu .dropdown .admin-menu-action,
+#admin-menu .dropdown .admin-menu-search {
+  float: right;
+}
+#admin-menu .dropdown .admin-menu-action a {
+  border-left: 1px solid #323232;
+  border-right: none;
+}
+body.admin-menu {
+  margin-top: 20px !important;
+}
+
+/* All lists */
+#admin-menu,
+#admin-menu .dropdown {
+  line-height: 1.4em;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  z-index: 999;
+}
+#admin-menu .dropdown {
+  position: static;
+}
+#admin-menu a,
+#admin-menu li > span {
+  background: transparent none;
+  border: none;
+  color: #EEE;
+  font-weight: normal;
+  text-align: left; /* LTR */
+  text-decoration: none;
+}
+#admin-menu .dropdown a,
+#admin-menu .dropdown li > span {
+  border-right: 1px solid #323232; /* LTR */
+  display: block;
+  padding: 4px 8px;
+}
+#admin-menu .dropdown .admin-menu-tab a {
+  border-right: 1px solid #52565E; /* LTR */
+}
+#admin-menu .dropdown li li a {
+  border-right: none; /* LTR */
+  border-top: 1px solid #323232;
+}
+
+/* All list items */
+#admin-menu .dropdown li {
+  background-image: none;
+  float: left; /* LTR */
+  height: 100%;
+  list-style-image: none;
+  list-style-type: none;
+  margin: 0 !important;
+  padding: 0;
+}
+#admin-menu .dropdown .admin-menu-tab {
+  background: url(images/bkg_tab.png) repeat-x left bottom;
+  padding-bottom: 1px;
+}
+#admin-menu .dropdown li li {
+  background: #202020;
+  filter: Alpha(opacity=88);
+  float: none;
+  opacity: 0.88;
+  width: 160px; /* Required for Opera */
+}
+#admin-menu .dropdown li li li {
+  filter: Alpha(opacity=100);
+  opacity: 1;
+}
+
+/* Second-level lists */
+/* Note: We must hide sub-lists or scrollbars might appear (display: none is not read by screen readers). */
+#admin-menu .dropdown li ul {
+  background: none;
+  display: none;
+  left: -999em; /* LTR */
+  line-height: 1.2em;
+  margin: 0;
+  position: absolute;
+  width: 160px;
+}
+
+/* Third-and-above-level lists */
+#admin-menu .dropdown li li.expandable ul {
+  margin: -20px 0 0 160px; /* LTR */
+}
+
+#admin-menu .dropdown li:hover ul ul,
+#admin-menu .dropdown li:hover ul ul ul,
+#admin-menu .dropdown li:hover ul ul ul ul,
+#admin-menu .dropdown li:hover ul ul ul ul ul {
+  display: none;
+  left: -999em; /* LTR */
+}
+
+/* Lists nested under hovered list items */
+#admin-menu .dropdown li:hover ul,
+#admin-menu .dropdown li li:hover ul,
+#admin-menu .dropdown li li li:hover ul,
+#admin-menu .dropdown li li li li:hover ul,
+#admin-menu .dropdown li li li li li:hover ul {
+  display: block;
+  left: auto; /* LTR */
+}
+#admin-menu .dropdown li.admin-menu-action:hover ul {
+  right: 0; /* LTR */
+}
+
+/* Second-and-more-level hovering */
+#admin-menu .dropdown li li.expandable {
+  background: #45454A url(images/arrow.png) no-repeat 145px 6px;
+}
+#admin-menu .dropdown li li:hover {
+  background-color: #111;
+}
+#admin-menu .dropdown li li:hover a,
+#admin-menu .dropdown li li:hover li:hover a,
+#admin-menu .dropdown li li:hover li:hover li:hover a {
+  color: #FFF;
+}
+#admin-menu .dropdown li li.expandable:hover a,
+#admin-menu .dropdown li li.expandable:hover li.expandable:hover a {
+  border-color: #444;
+  color: #EEE;
+}
+#admin-menu .dropdown li li.expandable:hover li a,
+#admin-menu .dropdown li li.expandable:hover li.expandable:hover li a {
+  border-color: #323232;
+}
+#admin-menu .dropdown li li:hover li a {
+  color: #EEE;
+}
+
+/* Search form */
+#admin-menu .admin-menu-search .form-item {
+  margin: 0;
+  padding: 0;
+}
+#admin-menu .admin-menu-search input {
+  background: #fff none center right no-repeat;
+  border: none;
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  border-radius: 5px;
+  font-size: 10px;
+  margin: 1px 0;
+  outline: none;
+  padding: 2px 22px 2px 4px;
+  width: 158px;
+}
+
+#admin-menu .dropdown .admin-menu-search-results {
+  display: block !important;
+  left: auto !important;
+  top: 100%;
+}
+#admin-menu .admin-menu-search-results,
+#admin-menu .admin-menu-search-results li {
+  width: 186px;
+}
+
+#admin-menu li.highlight {
+  background-color: #eee !important;
+}
+#admin-menu li.highlight > a {
+  border-color: #ccc !important;
+  color: #111 !important;
+}
+
+/* #210615: Mozilla on Mac fix */
+html.js fieldset.collapsible div.fieldset-wrapper {
+  overflow: visible;
+}
+
+/* Hide the menu on print output. */
+@media print {
+  #admin-menu {
+    display: none !important;
+  }
+  body.admin-menu {
+    margin-top: 0 !important;
+  }
+}
+
+/**
+ * Tweaks permissions, if enabled.
+ */
+tr.admin-menu-tweak-permissions-processed {
+  cursor: pointer;
+  cursor: hand;
+}
+tr.admin-menu-tweak-permissions-processed td.module {
+  border-top: 0;
+}

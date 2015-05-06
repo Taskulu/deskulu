@@ -1,0 +1,12 @@
+name = Contextual links
+description = Provides contextual links to perform actions related to elements on a page.
+package = Core
+version = VERSION
+core = 7.x
+files[] = contextual.test
+
+; Information added by Drupal.org packaging script on 2015-04-02
+version = "7.36"
+project = "drupal"
+datestamp = "1427943826"
+

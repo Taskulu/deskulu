@@ -1,0 +1,64 @@
+<?php
+
+/**
+ * @file
+ * Installation file for Internationalization (i18n) module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function i18n_node_install() {
+  // If updating from D6, module changed name
+  if (variable_get('i18n_drupal6_update')) {
+    i18n_node_update_7000();
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function i18n_node_uninstall() {
+  variable_del('i18n_hide_translation_links');
+  variable_del('i18n_selection_mode');
+  foreach (array_keys(node_type_get_types()) as $type) {
+    variable_del('i18n_node_' . $type);
+  }
+}
+
+/**
+ * Implements hook_update_dependencies()
+ */
+function i18n_node_update_dependencies() {
+  $dependencies['i18n_node'][7000] = array(
+    'i18n_string' => 7001,
+  );
+  return $dependencies;
+}
+
+/**
+ * Implements hook_i18n_update_drupal6().
+ *
+ * Update old string names
+ */
+function i18n_node_update_7000() {
+  // @todo Update from D6 i18n
+  // Variables:
+  // i18n_newnode_current, i18n_required_node, i18n_lock_node => i18n_node_options_[node_type]
+  // i18n_node => 'i18n_node_extended_[node_type]'
+  // Update string names
+  // - nodetype:type:[type]:[property] -> node:type:[type]:[property]
+  // - Property names: title -> title_label
+  module_load_install('i18n_string');
+  i18n_string_install_update_context('nodetype:type:*:*', 'node:type:*:*');
+  i18n_string_install_update_context('node:type:*:title', 'node:type:*:title_label');
+}
+
+/**
+ * Delete obsoleted variable for switch interface for translating.
+ */
+/*
+function i18n_node_update_7001() {
+  variable_del('i18n_node_translation_switch');
+}
+*/

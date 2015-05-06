@@ -1,0 +1,13 @@
+<?php
+
+/**
+ * @file
+ * Helper module for Rules invocation testing.
+ */
+
+/**
+ * Implements hook_node_load().
+ */
+function rules_test_invocation_node_load($nodes, $types) {
+  rules_invoke_event('rules_test_event');
+}

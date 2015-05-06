@@ -1,0 +1,28 @@
+core = "7.x"
+dependencies[] = "date"
+dependencies[] = "date_repeat"
+dependencies[] = "date_repeat_field"
+dependencies[] = "features"
+dependencies[] = "migrate"
+description = "Examples of migrating with the Date module"
+features[field][] = "node-date_migrate_example-body"
+features[field][] = "node-date_migrate_example-field_date"
+features[field][] = "node-date_migrate_example-field_date_range"
+features[field][] = "node-date_migrate_example-field_date_repeat"
+features[field][] = "node-date_migrate_example-field_datestamp"
+features[field][] = "node-date_migrate_example-field_datestamp_range"
+features[field][] = "node-date_migrate_example-field_datetime"
+features[field][] = "node-date_migrate_example-field_datetime_range"
+features[node][] = "date_migrate_example"
+files[] = date_migrate_example.migrate.inc
+name = "Date Migration Example"
+package = "Features"
+project = "date_migrate_example"
+version = "7.x-2.0"
+
+; Information added by Drupal.org packaging script on 2014-07-29
+version = "7.x-2.8"
+core = "7.x"
+project = "date"
+datestamp = "1406653438"
+

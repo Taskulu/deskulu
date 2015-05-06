@@ -1,0 +1,302 @@
+<?php
+
+/**
+ * @file
+ * Internationalization (i18n) package. Synchronization of translations
+ *
+ * Keeps vocabulary terms in sync for translations.
+ * This is a per-vocabulary option.
+ *
+ * Ref: http://drupal.org/node/115463
+ *
+ * Notes:
+ * This module needs to run after taxonomy, i18n, translation. Check module weight.
+ */
+
+/**
+ * Global switch to enable / disable syncing and check whether we are synching at the moment
+ *
+ * @return boolean
+ *   TRUE if we need to run sync operations. FALSE during syncing so we don't have recursion.
+ */
+function i18n_sync($status = NULL) {
+  static $current = TRUE;
+  if (isset($status)) {
+    $current = $status;
+  }
+  return $current;
+}
+
+/**
+ * Implements hook_help().
+ */
+function i18n_sync_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#i18n_sync' :
+      $output = '<p>' . t('This module synchronizes content taxonomy and fields accross translations:') . '</p>';
+      $output .= '<p>' . t('First you need to select which fields should be synchronized. Then, after a node has been updated, all enabled vocabularies and fields will be synchronized as follows:') . '</p>';
+      $output .= '<ul>';
+      $output .= '<li>' . t('All the node fields selected for synchronization will be set to the same value for all translations.') . '</li>';
+      $output .= '<li>' . t('For multilingual vocabularies, the terms for all translations will be replaced by the translations of the original node terms.') . '</li>';
+      $output .= '<li>' . t('For other vocabularies, the terms will be just copied over to all the translations.') . '</li>';
+      $output .= '</ul>';
+      $output .= '<p><strong>' . t('Note that permissions are not checked for each node. So if someone can edit a node and it is set to synchronize, all the translations will be synchronized anyway.') . '</strong></p>';
+      $output .= '<p>' . t('To enable synchronization check content type options to select which fields to synchronize for each node type.') . '</p>';
+      $output .= '<p>' . t('The list of available fields for synchronization will include some standard node fields and all CCK fields. You can add more fields to the list in a configuration variable. See README.txt for how to do it.') . '</p>';
+      $output .= '<p>' . t('For more information, see the online handbook entry for <a href="@i18n">Internationalization module</a>.', array('@i18n' => 'http://drupal.org/node/133977')) . '</p>';
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_hook_info().
+ */
+function i18n_sync_hook_info() {
+  $hooks['i18n_sync_options'] = array(
+    'group' => 'i18n',
+  );
+  return $hooks;
+}
+
+/**
+ * Implements hook_field_info_alter()
+ */
+function i18n_sync_field_info_alter(&$fields) {
+  foreach (array('file', 'image') as $type) {
+    if (isset($fields[$type])) {
+      $fields[$type]['i18n_sync_callback'] = 'i18n_sync_field_file_sync';
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function i18n_sync_form_node_type_form_alter(&$form, &$form_state) {
+  if (isset($form['type'])) {
+    $type = $form['#node_type']->type;
+    $disabled = !translation_supported_type($type);
+    $form['i18n_sync'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Synchronize translations'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#group' => 'additional_settings',
+      '#attributes' => array(
+        'class' => array('i18n-node-type-settings-form'),
+      ),
+      '#description' => t('Select which fields to synchronize for all translations of this content type.'),
+      '#disabled' => $disabled,
+    );
+
+    $form['i18n_sync']['i18n_sync_node_type'] = array(
+      '#tree' => TRUE,
+    );
+
+    // Each set provides title and options. We build a big checkboxes control for it to be
+    // saved as an array.
+    $current = i18n_sync_node_fields($type);
+    // Group options, group fields by type.
+    $groups = array(
+      'node' => t('Standard node fields'),
+      'fields' => t('Configurable fields'),
+    );
+    $fields = array();
+    foreach (i18n_sync_node_options($type) as $field => $info) {
+      $group = isset($info['group']) && isset($groups[$info['group']]) ? $info['group'] : 'node';
+      $fields[$group][$field] = $info;
+    }
+    foreach ($fields as $group => $group_fields) {
+      $form['i18n_sync']['i18n_sync_node_type']['i18n_sync_group_' . $group] = array(
+        '#prefix' => '<strong>', '#suffix' => '</strong>',
+        '#markup' => $groups[$group],
+      );
+      foreach ($group_fields as $field => $info) {
+        $form['i18n_sync']['i18n_sync_node_type'][$field] = array(
+          '#title' => $info['title'],
+          '#type' => 'checkbox',
+          '#default_value' => in_array($field, $current),
+          '#disabled' => $disabled,
+          '#description' => isset($info['description']) ? $info['description'] : '',
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Check whether this node is to be synced
+ */
+function i18n_sync_node_check($node) {
+  return translation_supported_type($node->type) && i18n_object_langcode($node) && i18n_sync();
+}
+
+/**
+ * Get node translations if any, excluding the node itself
+ *
+ * @param $reset
+ *   Whether to reset the translation_node_get_translations cache.
+ */
+function i18n_sync_node_get_translations($node, $reset = FALSE) {
+  if (!empty($node->tnid)) {
+    if ($reset) {
+      // Clear the static cache of translation_node_get_translations
+      $translations_cache = &drupal_static('translation_node_get_translations', array());
+      unset($translations_cache[$node->tnid]);
+    }
+    // Maybe translations are already here
+    if ($translations = translation_node_get_translations($node->tnid)) {
+      unset($translations[$node->language]);
+      return $translations;
+    }
+  }
+}
+
+/**
+ * Implements hook_node_insert().
+ */
+function i18n_sync_node_insert($node) {
+  // When creating a translation, there are some aditional steps, different from update
+  if (i18n_sync_node_check($node) && !empty($node->translation_source)) {
+    i18n_sync_node_update($node);
+  }
+}
+
+/**
+ * Implements hook_node_update().
+ */
+function i18n_sync_node_update($node) {
+  // Let's go with field synchronization.
+  if (i18n_sync_node_check($node) && !empty($node->tnid) && ($fields = i18n_sync_node_fields($node->type)) && ($translations = i18n_sync_node_get_translations($node, TRUE))) {
+    module_load_include('node.inc', 'i18n_sync');
+    i18n_sync_node_translation($node, $translations, $fields, 'update');
+  }
+}
+
+/**
+ * Implements hook_node_prepare().
+ */
+function i18n_sync_node_prepare($node) {
+  // If creating a translation, copy over all the fields to be synchronized.
+  if (empty($node->nid) && !empty($node->translation_source) && ($sync_fields = i18n_sync_node_fields($node->type))) {
+    $source = $node->translation_source;
+    $i18n_options = i18n_sync_node_options($node->type);
+    // Copy over standard node fields. The rest are handled by field_attach_prepare_translation()
+    foreach ($sync_fields as $field) {
+      if (!empty($source->$field) && empty($i18n_options[$field]['field_name'])) {
+        if ($field == 'uid') {
+          $node->name = $source->name;
+        }
+        elseif ($field == 'created') {
+          $node->date = format_date($source->created, 'custom', 'Y-m-d H:i:s O');
+        }
+        else {
+          $node->$field = $source->$field;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Returns list of fields to synchronize for a given content type.
+ *
+ * @param $type
+ *   Node type.
+ * @param $field
+ *   Optional field name to check whether it is in the list
+ */
+function i18n_sync_node_fields($type, $field = NULL) {
+  $fields = variable_get('i18n_sync_node_type_' . $type, array());
+  return $field ? in_array($field, $fields) : $fields;
+}
+
+/**
+ * Returns list of available fields for given content type.
+ *
+ * Fields can also be changed using hook_i18n_sync_fields_alter($fields, $type)
+ *
+ * @param $type
+ *   Node type.
+ */
+function i18n_sync_node_options($type) {
+  return i18n_sync_options('node', $type);
+}
+
+/**
+ * Returns list of available fields for given entity / bundle.
+ *
+ * Fields can also be changed using hook_i18n_sync_options_alter($fields, $type)
+ *
+ * @param $entity_type
+ *   Entity type.
+ * @param
+ */
+function i18n_sync_options($entity_type, $bundle_name) {
+  $cache = &drupal_static(__FUNCTION__);
+
+  if (!isset($cache[$entity_type][$bundle_name])) {
+    module_load_include('modules.inc', 'i18n_sync');
+    $fields = module_invoke_all('i18n_sync_options', $entity_type, $bundle_name);
+    // Give a chance to modules to change/remove/add their own fields
+    drupal_alter('i18n_sync_options', $fields, $entity_type, $bundle_name);
+    $cache[$entity_type][$bundle_name] = $fields;
+  }
+
+  return $cache[$entity_type][$bundle_name];
+}
+
+/**
+ * Synchronize entity field translation
+ */
+function i18n_sync_field_translation_sync($entity_type, $bundle_name, $entity, $langcode, $source_entity, $source_langcode, $field_name) {
+  $field = field_info_field($field_name);
+  $instance = field_info_instance($entity_type, $field_name, $bundle_name);
+  $source_lang = field_language($entity_type, $source_entity, $field_name);
+  $translation_lang = field_is_translatable($entity_type, $field) ? $entity->language : LANGUAGE_NONE;
+  if (isset($source_entity->{$field_name}[$source_lang])) {
+    $items = $source_entity->{$field_name}[$source_lang];
+    // Determine the function to synchronize this field. If none, just copy over.
+    $type_info = field_info_field_types($field['type']);
+    if (isset($type_info['i18n_sync_callback'])) {
+      $function = $type_info['i18n_sync_callback'];
+      $function($entity_type, $entity, $field, $instance, $langcode, $items, $source_entity, $source_langcode);
+    }
+    $entity->{$field_name}[$translation_lang] = $items;
+  }
+  else {
+    // If source not set, unset translation too
+    unset($entity->{$field_name}[$translation_lang]);
+  }
+}
+
+/**
+ * Sync a file or image field (i18n_sync_callback)
+ *
+ * - file-id's (fid) are synced
+ * - order of fid's is synced
+ * - description, alt, title is kept if already existing, copied otherwise
+ */
+function i18n_sync_field_file_sync($entity_type, $entity, $field, $instance, $langcode, &$items, $source_entity, $source_language) {
+  $field_name = $instance['field_name'];
+  // Build a copy of the existing files in the translation node
+  // indexed by fid for easy retrieval in the copy loop below
+  $existing_files = array();
+  $field_language = field_language($entity_type, $entity, $field_name, $langcode);
+  if (isset($entity->{$field_name}[$field_language])) {
+    foreach ($entity->{$field_name}[$field_language] as $delta => $file) {
+      $existing_files[$file['fid']] = $file;
+    }
+  }
+  // Start creating the translated copy
+  foreach ($items as $delta => &$file) {
+    // keep alt, title, description if they already exist
+    if (isset($existing_files[$file['fid']])) {
+      foreach (array('title', 'description', 'alt') as $property) {
+        if (!empty($existing_files[$file['fid']][$property])) {
+          $file[$property] = $existing_files[$file['fid']][$property];
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,86 @@
+<?php
+/**
+ * @file
+ * Test language selection modes
+ */
+
+class i18nSelectTestCase extends Drupali18nTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Content Selection',
+      'group' => 'Internationalization',
+      'description' => 'Internationalization Content Selection'
+    );
+  }
+
+  function setUp() {
+    parent::setUp('translation', 'i18n_variable', 'i18n_select');
+    parent::setUpLanguages();
+    parent::setUpContentTranslation();
+  }
+
+  function testIi18nSelect() {
+    drupal_static_reset('language_list');
+    $language_list = language_list();
+    $language_count = count($language_list);
+    // Set site name for each language and check pages later
+    variable_set('i18n_variable_list', array('site_name'));
+    foreach (i18n_language_list() as $langcode => $name) {
+      i18n_variable_set('site_name', "Drupal-$name", $langcode);
+    }
+
+    // Enable tags field for page content type.
+    $edit = array(
+      'fields[_add_existing_field][label]' => t('Tags'),
+      'fields[_add_existing_field][field_name]' => 'field_tags',
+      'fields[_add_existing_field][widget_type]' => 'taxonomy_autocomplete',
+    );
+    $this->drupalPost('admin/structure/types/manage/page/fields', $edit, t('Save'));
+    $this->drupalPost(NULL, array(), t('Save settings'));
+
+    // Create some content and check selection modes
+    $this->drupalLogin($this->content_editor);
+
+    // variable_set('language_content_type_story', 1);
+    $neutral = $this->drupalCreateNode(array('type' => 'page', 'promote' => 1));
+    $source = $this->createNode('page', $this->randomName(), $this->randomString(20), language_default('language'), array('field_tags[und]' => $tag_name = $this->randomName()));
+    $translations = $this->createNodeTranslationSet($source);
+
+    drupal_static_reset('translation_node_get_translations');
+    $this->assertEqual(count(translation_node_get_translations($source->tnid)), $language_count, "Created $language_count $source->type translations.");
+
+    // Log in user with access content permission
+    $user = $this->drupalCreateUser(array('access comments', 'access content'));
+    $this->drupalLogin($user);
+    // Default selection mode, only language neutral and current
+    variable_set('i18n_select_nodes', TRUE);
+    foreach (i18n_language_list() as $langcode => $name) {
+      $this->i18nGet($langcode);
+      $this->assertText("Drupal-$name", 'Checked translated site name: Drupal-' . $name);
+      $display = array($translations[$langcode], $neutral);
+      $hide = $translations;
+      unset($hide[$langcode]);
+      $this->assertContent($display, $hide);
+      // Visit the taxonomy page of that node and try again. Only the translated
+      // pages are tagged.
+      unset($display[1]);
+      $this->i18nGet($langcode, 'taxonomy/term/' . $source->field_tags[LANGUAGE_NONE][0]['tid']);
+      $this->assertContent($display, $hide);
+    }
+
+  }
+
+  /**
+   * Check some nodes are displayed, some are not
+   */
+  function assertContent($display, $hide = array()) {
+    $languages = language_list();
+    foreach ($display as $node) {
+      $this->assertText($node->title, 'Content displayed for ' . i18n_language_name($node->language));
+    }
+    foreach ($hide as $node) {
+      $this->assertNoText($node->title, 'Content not displayed for ' . i18n_language_name($node->language));
+    }
+  }
+}

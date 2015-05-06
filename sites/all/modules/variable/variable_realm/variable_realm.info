@@ -1,0 +1,16 @@
+name = Variable realm
+description = API to use variable realms from different modules
+dependencies[] = variable
+package = Variable
+core = 7.x
+version = 7.x-2.x
+
+files[] = variable_realm.class.inc
+files[] = variable_realm_union.class.inc
+
+; Information added by Drupal.org packaging script on 2014-04-23
+version = "7.x-2.5"
+core = "7.x"
+project = "variable"
+datestamp = "1398250128"
+

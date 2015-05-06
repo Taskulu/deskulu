@@ -1,0 +1,12 @@
+name = Rate Slider
+description = Add a slider widget type
+core = 7.x
+package = Voting
+dependencies[] = rate
+
+; Information added by Drupal.org packaging script on 2014-02-10
+version = "7.x-1.7"
+core = "7.x"
+project = "rate"
+datestamp = "1392071605"
+

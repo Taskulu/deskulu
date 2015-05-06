@@ -1,0 +1,130 @@
+<?php
+
+/**
+ * @file
+ * Installation file for i18n_taxonomy module.
+ */
+
+/**
+ * Set language field in its own table.
+ * Do not drop node.language now, just in case.
+ * TO-DO: Drop old tables, fields
+ */
+function i18n_taxonomy_install() {
+  module_load_install('i18n');
+  i18n_install_create_fields('taxonomy_vocabulary', array('language', 'i18n_mode'), TRUE);
+  i18n_install_create_fields('taxonomy_term_data', array('language', 'i18n_tsid'));
+  // Set module weight for it to run after core modules, but before views.
+  db_query("UPDATE {system} SET weight = 5 WHERE name = 'i18n_taxonomy' AND type = 'module'");
+  // Set vocabulary mode if updating from D6, module changed name
+  if (variable_get('i18n_drupal6_update')) {
+    i18n_taxonomy_update_7000();
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function i18n_taxonomy_uninstall() {
+  db_drop_field('taxonomy_vocabulary', 'language');
+  db_drop_field('taxonomy_vocabulary', 'i18n_mode');
+  db_drop_field('taxonomy_term_data', 'language');
+  db_drop_field('taxonomy_term_data', 'i18n_tsid');
+  variable_del('i18n_taxonomy_vocabulary');
+}
+
+/**
+ * Implements hook_schema_alter().
+ */
+function i18n_taxonomy_schema_alter(&$schema) {
+  $schema['taxonomy_vocabulary']['fields']['language'] = array('type' => 'varchar', 'length' => 12, 'not null' => TRUE, 'default' => LANGUAGE_NONE);
+  $schema['taxonomy_vocabulary']['fields']['i18n_mode'] = array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0);
+  $schema['taxonomy_term_data']['fields']['language'] = array('type' => 'varchar', 'length' => 12, 'not null' => TRUE, 'default' => LANGUAGE_NONE);
+  $schema['taxonomy_term_data']['fields']['i18n_tsid'] = array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0);
+}
+
+/**
+ * Implements hook_disable()
+ */
+function i18n_taxonomy_disable() {
+  foreach (field_info_fields() as $fieldname => $field) {
+    if ($field['type'] == 'taxonomy_term_reference' && $field['settings']['options_list_callback'] == 'i18n_taxonomy_allowed_values') {
+      $field['settings']['options_list_callback'] = NULL;
+      field_update_field($field);
+    }
+  }
+}
+
+/**
+ * Set vocabulary modes from D6 variable
+ */
+function i18n_taxonomy_update_7000() {
+  if ($options = variable_get('i18ntaxonomy_vocabulary')) {
+    foreach ($options as $vid => $mode) {
+      $mode = $mode == 3 ? I18N_MODE_TRANSLATE : $mode;
+      db_update('taxonomy_vocabulary')
+        ->fields(array('i18n_mode' => $mode))
+        ->condition('vid', $vid)
+        ->execute();
+    }
+    variable_del('i18ntaxonomy_vocabulary');
+  }
+  // Move to new translation set system
+  if (db_field_exists('taxonomy_term_data', 'trid')) {
+    $query = db_select('taxonomy_term_data', 't');
+    $query->join('taxonomy_vocabulary', 'v', 't.vid = v.vid');
+    $query
+      ->fields('t', array('trid'))
+      ->fields('v', array('machine_name'))
+      ->condition('t.trid', 0, '>')
+      ->distinct();
+
+    foreach ($query->execute() as $record) {
+      $tset = i18n_translation_set_create('taxonomy_term', $record->machine_name);
+      db_update('taxonomy_term_data')
+        ->fields(array('trid' => 0, 'i18n_tsid' => $tset->tsid))
+        ->condition('trid', $record->trid)
+        ->execute();
+    }
+    db_drop_field('taxonomy_term_data', 'trid');
+  }
+}
+
+/**
+ * Drop trid column used in D6 if exists
+ */
+function i18n_taxonomy_update_7001() {
+  if (db_field_exists('taxonomy_term_data', 'trid')) {
+    db_drop_field('taxonomy_term_data', 'trid');
+  }
+}
+
+/**
+ * Switch back to real taxonomy fields and override option_list_callback.
+ */
+function i18n_taxonomy_update_7002(&$sandbox) {
+  foreach (field_info_fields() as $fieldname => $field) {
+    if ($field['type'] == 'taxonomy_term_reference') {
+      $field['module'] = 'taxonomy';
+      $field['settings']['options_list_callback'] =  module_exists('i18n_taxonomy') ? 'i18n_taxonomy_allowed_values' : NULL;
+      drupal_write_record('field_config', $field, array('id'));
+    }
+  }
+}
+
+/**
+ * Unset option_list_callback if i18n_taxonomy is disabled.
+ */
+function i18n_taxonomy_update_7003(&$sandbox) {
+  if (!function_exists('i18n_taxonomy_allowed_values')) {
+    i18n_taxonomy_disable();
+  }
+}
+
+/**
+ * Update D6 language fields in {taxonomy_vocabulary} and {taxonomy_term_data}.
+ */
+function i18n_taxonomy_update_7004() {
+  i18n_install_create_fields('taxonomy_vocabulary', array('language'));
+  i18n_install_create_fields('taxonomy_term_data', array('language'));
+}

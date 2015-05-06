@@ -1,0 +1,62 @@
+<?php
+
+class CtoolsContextKeywordsSubstitutionTestCase extends DrupalWebTestCase {
+  public static function getInfo() {
+    return array(
+      'name' => 'Keywords substitution',
+      'description' => 'Verify that keywords are properly replaced with data.',
+      'group' => 'Chaos Tools Suite',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp('ctools');
+
+    ctools_include('context');
+  }
+
+  public function testKeywordsSubstitution() {
+    // Create node context for substitution.
+    $node = $this->drupalCreateNode();
+    $context = ctools_context_create('node', $node);
+    $contexts = array('argument_1' => $context);
+
+    // Run tests on some edge cases.
+    $checks = array(
+      '%node:changed:raw:' => array(
+        "{$node->changed}:",
+        t('Multi-level token has been replaced. Colon left untouched.'),
+      ),
+      '%node:title' => array(
+        "{$node->title}",
+        t('Keyword and converter have been replaced.'),
+      ),
+      '%%node:title' => array(
+        "%node:title",
+        t('Keyword after escaped percent sign left untouched.'),
+      ),
+      '%node:title%node:nid' => array(
+        "{$node->title}{$node->nid}",
+        t('Multiple substitutions have been replaced.'),
+      ),
+      '%node:title:' => array(
+        "{$node->title}:",
+        t('Colon after keyword and converter left untouched.'),
+      ),
+      '%node:title%%' => array(
+        "{$node->title}%",
+        t('Escaped percent sign after keyword and converter left untouched.'),
+      ),
+      '%%%node:title' => array(
+        "%{$node->title}",
+        t('Keyword after escaped and unescaped percent sign has been replaced.'),
+      ),
+    );
+    foreach ($checks as $string => $expectations) {
+      list($expected_result, $message) = $expectations;
+      $actual_result = ctools_context_keyword_substitute($string, array(), $contexts);
+      $this->assertEqual($actual_result, $expected_result, $message);
+    }
+  }
+
+}

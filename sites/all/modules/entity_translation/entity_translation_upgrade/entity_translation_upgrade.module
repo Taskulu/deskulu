@@ -1,0 +1,141 @@
+<?php
+
+/**
+ * @file
+ * Provides permanent redirects for unavailable node translations.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function entity_translation_upgrade_menu() {
+  return array(
+    'admin/config/regional/entity_translation/upgrade' => array(
+      'title' => 'Entity Translation Upgrade',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('entity_translation_upgrade_form'),
+      'access arguments' => array('administer software updates'),
+      'file' => 'entity_translation_upgrade.admin.inc',
+      'type' => MENU_CALLBACK,
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function entity_translation_upgrade_menu_alter(&$items) {
+  // Obsolete node translations might be left unpublished instead of being
+  // deleted.
+  $items['node/%node']['access callback'] = 'entity_translation_upgrade_access';
+  $items['node/%node']['access arguments'] = array(1);
+}
+
+/**
+ * Access callback.
+ *
+ * Performs a redirect to the corresponding field-based translation if the
+ * current user has not the permission to access the requested node translation.
+ */
+function entity_translation_upgrade_access($node) {
+  // If the user has the right to access the node, we need to do nothing.
+  if (node_access('view', $node)) {
+    return TRUE;
+  }
+
+  // If we have a node translation, we need to redirect the user to the original
+  // node.
+  if ($node->tnid && $node->nid != $node->tnid) {
+    entity_translation_upgrade_redirect($node->tnid, $node->language);
+  }
+
+  return FALSE;
+}
+
+/**
+ * Implements hook_init().
+ */
+function entity_translation_upgrade_init() {
+  // If have a node/$nid path but we are not able to load a node for the given
+  // nid we might have an upgraded translation, hence we need to look for a
+  // record matching the requested nid in the history table.
+  if ($nid = entity_translation_upgrade_check_path() && $data = entity_translation_upgrade_load($nid)) {
+    entity_translation_upgrade_redirect($data->tnid, $data->language);
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function entity_translation_upgrade_form_entity_translation_admin_form_alter(&$form, $form_state) {
+  $form['entity_translation_upgrade'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Entity Translation Upgrade'),
+    '#description' => t('This will create an entity translation for each available node translation, which will be then unpublished.'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+
+  $options = array();
+  foreach (node_type_get_types() as $type) {
+    $options[$type->type] = $type->name;
+  }
+
+  $form['entity_translation_upgrade']['types'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Node types'),
+    '#description' => t('Select which node types will be upgraded.'),
+    '#options' => $options,
+  );
+
+  $form['entity_translation_upgrade']['upgrade'] = array(
+    '#type' => 'submit',
+    '#value' => t('Upgrade'),
+    '#validate' => array('entity_translation_upgrade_validate'),
+    '#submit' => array('entity_translation_upgrade_submit'),
+  );
+}
+
+/**
+ * Validation handler for the entity_translation_admin_form() form.
+ */
+function entity_translation_upgrade_validate($form, &$form_state) {
+  if (!count(array_filter($form_state['values']['types']))) {
+    form_set_error('types', t('Please specify at least one node type.'));
+  }
+}
+
+/**
+ * Submit handler for the entity_translation_admin_form() form.
+ */
+function entity_translation_upgrade_submit($form, &$form_state) {
+  module_load_include('inc', 'entity_translation_upgrade', 'entity_translation_upgrade.admin');
+  entity_translation_upgrade_start(array_filter($form_state['values']['types']));
+}
+
+/**
+ * Performs the redirect to original node with the given language.
+ */
+function entity_translation_upgrade_redirect($nid, $langcode) {
+  $languages = language_list();
+  drupal_goto("node/$nid", array('language' => $languages[$langcode]), 301);
+}
+
+/**
+ * Checks wether the requested path belongs to an upgraded translation.
+ */
+function entity_translation_upgrade_check_path() {
+  $result = arg(0) == 'node' && ($nid = arg(1)) && is_int($nid) && !node_load($nid);
+  return $result ? $nid : FALSE;
+}
+
+/**
+ * Loads the upgrade history entry for the given nid.
+ */
+function entity_translation_upgrade_load($nid) {
+  return db_select('entity_translation_upgrade_history', 'etu')
+    ->fields('etu')
+    ->condition('etu.nid', $nid)
+    ->execute()
+    ->fetchObject();
+}

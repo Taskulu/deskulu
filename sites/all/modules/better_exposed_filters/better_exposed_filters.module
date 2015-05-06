@@ -1,0 +1,200 @@
+<?php
+/**
+ * @file
+ * Allows the use of checkboxes, radio buttons or hidden fields for exposed
+ * Views filters.
+ */
+
+/**
+ * Implements hook_theme().
+ */
+function better_exposed_filters_theme($existing, $type, $theme, $path) {
+  return array(
+    'select_as_checkboxes' => array(
+      'function' => 'theme_select_as_checkboxes',
+      'render element' => 'element',
+      'file' => 'better_exposed_filters.theme',
+    ),
+    'select_as_checkboxes_fieldset' => array(
+      'function' => 'theme_select_as_checkboxes_fieldset',
+      'render element' => 'element',
+      'file' => 'better_exposed_filters.theme',
+    ),
+    'select_as_radios' => array(
+      'function' => 'theme_select_as_radios',
+      'render element' => 'element',
+      'file' => 'better_exposed_filters.theme',
+    ),
+    'select_as_radios_fieldset' => array(
+      'function' => 'theme_select_as_radios_fieldset',
+      'render element' => 'element',
+      'file' => 'better_exposed_filters.theme',
+    ),
+    'select_as_hidden' => array(
+      'function' => 'theme_select_as_hidden',
+      'render element' => 'element',
+      'file' => 'better_exposed_filters.theme',
+    ),
+    'select_as_tree' => array(
+      'function' => 'theme_select_as_tree',
+      'render element' => 'element',
+      'file' => 'better_exposed_filters.theme',
+    ),
+    'select_as_links' => array(
+      'function' => 'theme_select_as_links',
+      'render element' => 'element',
+      'file' => 'better_exposed_filters.theme',
+    ),
+    'secondary_exposed_elements' => array(
+      'function' => 'theme_secondary_exposed_elements',
+      'render element' => 'element',
+      'file' => 'better_exposed_filters.theme',
+    ),
+  );
+}
+
+/*
+ * Views3 support
+ *
+ * Views3 adds the concept of exposed forms to the mix.  In addition, elements
+ * injected into a Views dialog is no longer saved along with the Views form
+ * information (see the unpack_options() and option_definition() methods of the
+ * views_object object).
+ */
+
+/**
+ * Implements hook_views_api().
+ */
+function better_exposed_filters_views_api() {
+  return array(
+    'api' => 3.0,
+  );
+}
+
+/**
+ * Unpacks sort_by and sort_order from the sort_bef_combine element.
+ */
+function bef_sort_combine_submit($form, &$form_state) {
+  $combine_param = $form_state['#combine_param'];
+  if (empty($form_state['values'][$combine_param])) {
+    $form_state['values']['sort_by'] = $form_state['values']['sort_order'] = '';
+  }
+  else {
+    list($form_state['values']['sort_by'], $form_state['values']['sort_order']) = explode(' ', $form_state['values'][$combine_param]);
+  }
+
+  // And pass this along to Views.
+  views_exposed_form_submit($form, $form_state);
+}
+
+/**
+ * Form element validation handler for BEF jQuery slider required fields.
+ */
+function better_exposed_filters_element_validate_slider_required($element, &$form_state) {
+  $value = $element['#value'];
+  // If a jQuery slider format has been selected make sure the min & max value
+  // fields are not empty.
+  if ($value == '' && _better_exposed_filters_slider_selected($element, $form_state)) {
+    form_error($element, t('!name field is required.', array('!name' => $element['#title'])));
+  }
+}
+
+/**
+ * Form element validation handler for BEF jQuery slider animate setting.
+ */
+function better_exposed_filters_element_validate_slider_animate($element, &$form_state) {
+  $value = $element['#value'];
+  if ($value !== '' && _better_exposed_filters_slider_selected($element, $form_state) &&
+      ((!is_numeric($value) || intval($value) != $value || $value <= 0) &&
+       !in_array($value, array('slow', 'normal', 'fast')))) {
+    form_error($element, t('%name must be "slow", "normal", "fast" or the number of milliseconds to run the animation (e.g. 1000).', array('%name' => $element['#title'])));
+  }
+}
+
+/**
+ * Form element validation handler for BEF jQuery slider min and max settings.
+ *
+ * The max value must be greater than the min value.
+ */
+function better_exposed_filters_element_validate_slider_min_max($element, &$form_state) {
+  $value = $element['#value'];
+  $slider_min = $form_state['values']['exposed_form_options']['bef'][$element['#bef_filter_id']]['slider_options']['bef_slider_min'];
+  $slider_max = $form_state['values']['exposed_form_options']['bef'][$element['#bef_filter_id']]['slider_options']['bef_slider_max'];
+
+  if ($value !== '' && _better_exposed_filters_slider_selected($element, $form_state)) {
+    // Must not have more than 11 decimal places.
+    if (_better_exposed_filters_get_num_decimal_places($value) > 11) {
+      form_error($element, t('%name must not have more than 11 decimal places.', array('%name' => $element['#title'])));
+    }
+    // The slider min must be less than the slider max.
+    if (is_numeric($slider_min) && is_numeric($slider_max) && ($slider_max <= $slider_min)) {
+      form_error($element, t('The Range minimum value must be less than the Range maximum value.'));
+    }
+  }
+}
+
+/**
+ * Form element validation handler for BEF jQuery slider step setting.
+ *
+ * The full specified value range of the slider (range maximum - range minimum)
+ * should be evenly divisible by the step.
+ */
+function better_exposed_filters_element_validate_slider_step($element, &$form_state) {
+  $value = $element['#value'];
+
+  if ($value !== '' && _better_exposed_filters_slider_selected($element, $form_state)) {
+    $slider_min = $form_state['values']['exposed_form_options']['bef'][$element['#bef_filter_id']]['slider_options']['bef_slider_min'];
+    $slider_max = $form_state['values']['exposed_form_options']['bef'][$element['#bef_filter_id']]['slider_options']['bef_slider_max'];
+
+    // Must be positive.
+    if ($value < 0) {
+      form_error($element, t('%name must be a positive number.', array('%name' => $element['#title'])));
+    }
+    // Must not have more than 5 decimal places.
+    if (_better_exposed_filters_get_num_decimal_places($value) > 5) {
+      form_error($element, t('%name must not have more than 5 decimal places.', array('%name' => $element['#title'])));
+    }
+    // The slider range must be evenly divisible by the step.
+    // We check like this because of the issues PHP has with inaccurate floats,
+    // where 2 might actually be 1.9999999999.
+    // Because of this we can't reliably use fmod().
+    if (is_numeric($slider_min) && is_numeric($slider_max) && !ctype_digit((string) abs(($slider_max - $slider_min) / $value))) {
+      form_error($element, t('The range of the slider (Range maximum - Range minimum) should be evenly divisible by the step.'));
+    }
+  }
+}
+
+/**
+ * Return whether or not the slider has been selected for the given filter.
+ */
+function _better_exposed_filters_slider_selected($element, &$form_state) {
+  return (isset($element['#bef_filter_id']) &&
+          isset($form_state['values']['exposed_form_options']['bef'][$element['#bef_filter_id']]['bef_format']) &&
+          $form_state['values']['exposed_form_options']['bef'][$element['#bef_filter_id']]['bef_format'] == 'bef_slider');
+}
+
+/**
+ * Return the number of decimal places of the given number.
+ */
+function _better_exposed_filters_get_num_decimal_places($number) {
+  $str = (string) $number;
+  return strlen(substr(strrchr($str, '.'), 1));
+}
+
+/**
+ * Implements hook_preprocess_views_view().
+ */
+function better_exposed_filters_preprocess_views_view(&$variables) {
+  $filters = array();
+  foreach ($variables['view']->filter as $filter) {
+    if ($filter->options['exposed']) {
+      $identifier = $filter->options['is_grouped'] ? $filter->options['group_info']['identifier'] : $filter->options['expose']['identifier'];
+      $filters[$identifier] = array(
+        'required' => $filter->options['expose']['required'] ? TRUE : FALSE,
+      );
+    }
+  }
+
+  $bef_js['views'][$variables['view']->name]['displays'][$variables['view']->current_display]['filters'] = $filters;
+  drupal_add_js(array('better_exposed_filters' => $bef_js), 'setting');
+}

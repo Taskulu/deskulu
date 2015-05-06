@@ -1,0 +1,25 @@
+
+/* Since this style inherits from Silver Bells, only a few adjustments are
+   needed to account for having the Author Pane on top.
+*/
+
+/* Reset styles not needed with AP on top */
+.forum-post-info {
+  margin-bottom: 0;
+}
+
+.forum-post-wrapper {
+  background-color: transparent;
+}
+
+.forum-post-panel-main,
+.forum-post-links {
+  background-color: transparent;
+  border-left: none;
+}
+
+/* Add in our AP styling */
+.forum-post-panel-sub {
+  background-color: #F5F5F5;
+  border-bottom: 1px solid #C1C1C1;
+}

@@ -1,0 +1,15 @@
+; $Id
+name = Better Exposed Filters
+description = Allow the use of checkboxes or radio buttons for exposed Views filters
+core = 7.x
+package = Views
+dependencies[] = views
+files[] = better_exposed_filters_exposed_form_plugin.inc
+files[] = tests/better_exposed_filters.test
+
+; Information added by Drupal.org packaging script on 2015-04-03
+version = "7.x-3.2"
+core = "7.x"
+project = "better_exposed_filters"
+datestamp = "1428077889"
+

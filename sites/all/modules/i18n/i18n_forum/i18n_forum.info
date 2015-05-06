@@ -1,0 +1,15 @@
+name = Multilingual forum
+description = Enables multilingual forum, translates names and containers.
+dependencies[] = forum
+dependencies[] = i18n_taxonomy
+dependencies[] = i18n_node
+package = Multilingual - Internationalization
+core = 7.x
+files[] = i18n_forum.test
+
+; Information added by Drupal.org packaging script on 2015-01-26
+version = "7.x-1.12"
+core = "7.x"
+project = "i18n"
+datestamp = "1422286982"
+

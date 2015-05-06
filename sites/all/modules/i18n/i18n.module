@@ -1,0 +1,641 @@
+<?php
+
+/**
+ * @file
+ * Internationalization (i18n) module.
+ *
+ * This module extends multilingual support being the base module for the i18n package.
+ * - Multilingual variables
+ * - Extended languages for nodes
+ * - Extended language API
+ *
+ * @author Jose A. Reyero, 2004
+ */
+
+// All multilingual options disabled
+define('I18N_LANGUAGE_DISABLED', 0);
+// Language list will include all enabled languages
+define('I18N_LANGUAGE_ENABLED', 1);
+// Language list will include also disabled languages
+define('I18N_LANGUAGE_EXTENDED', 4);
+// Disabled languages will be hidden when possible
+define('I18N_LANGUAGE_HIDDEN', 8);
+// All defined languages will be allowed but hidden when possible
+define('I18N_LANGUAGE_EXTENDED_NOT_DISPLAYED', I18N_LANGUAGE_EXTENDED | I18N_LANGUAGE_HIDDEN);
+
+// No multilingual options
+define('I18N_MODE_NONE', 0);
+// Localizable object. Run through the localization system
+define('I18N_MODE_LOCALIZE', 1);
+// Predefined language for this object and all related ones.
+define('I18N_MODE_LANGUAGE', 2);
+// Multilingual objects, translatable but not localizable.
+define('I18N_MODE_TRANSLATE', 4);
+// Objects are translatable (if they have language or localizable if not)
+define('I18N_MODE_MULTIPLE', I18N_MODE_LOCALIZE | I18N_MODE_TRANSLATE);
+
+/**
+ * Global variable for i18n context language.
+ */
+define('I18N_LANGUAGE_TYPE_CONTEXT', 'i18n_language_context');
+
+/**
+ * Implements hook_boot().
+ */
+function i18n_boot() {
+  // Just make sure the module is loaded for boot and the API is available.
+}
+
+/**
+ * Implements hook_hook_info().
+ */
+function i18n_hook_info() {
+  $hooks['i18n_object_info'] = array(
+    'group' => 'i18n',
+  );
+  return $hooks;
+}
+
+/**
+ * WARNING: Obsolete function, use other i18n_language_* instead.
+ *
+ * Get global language object, make sure it is initialized
+ *
+ * @param $language
+ *   Language code or language object to convert to valid language object
+ */
+function i18n_language($language = NULL) {
+  if ($language && ($language_object = i18n_language_object($language))) {
+    return $language_object;
+  }
+  else {
+    return i18n_language_interface();
+  }
+}
+
+/**
+ * Get language object from language code or object.
+ *
+ * @param $language
+ *   Language code or language object to convert to valid language object.
+ * @return
+ *   Language object if this is an object or a valid language code.
+ */
+function i18n_language_object($language) {
+  if (is_object($language)) {
+    return $language;
+  }
+  else {
+    $list = language_list();
+    return isset($list[$language]) ? $list[$language] : NULL;
+  }
+}
+
+/**
+ * Get interface language, make sure it is initialized.
+ */
+function i18n_language_interface() {
+  if (empty($GLOBALS[LANGUAGE_TYPE_INTERFACE])) {
+    // We don't have language yet, initialize the language system and retry
+    drupal_bootstrap(DRUPAL_BOOTSTRAP_LANGUAGE);
+  }
+  return $GLOBALS[LANGUAGE_TYPE_INTERFACE];
+}
+
+/**
+ * Get content language, make sure it is initialized.
+ */
+function i18n_language_content() {
+  if (empty($GLOBALS[LANGUAGE_TYPE_CONTENT])) {
+    // We don't have language yet, initialize the language system and retry
+    drupal_bootstrap(DRUPAL_BOOTSTRAP_LANGUAGE);
+  }
+  return $GLOBALS[LANGUAGE_TYPE_CONTENT];
+}
+
+/**
+ * Get / set language from current context / content.
+ *
+ * Depending on the page content we may need to use a different language for some operations.
+ *
+ * This should be the language of the specific page content. I.e. node language for node pages
+ * or term language for taxonomy term page.
+ *
+ * @param $language
+ *   Optional language object to set for context.
+ * @return
+ *   Context language object, which defaults to content language.
+ *
+ * @see hook_i18n_context_language().
+ */
+function i18n_language_context($language = NULL) {
+  if ($language) {
+    $GLOBALS[I18N_LANGUAGE_TYPE_CONTEXT] = $language;
+  }
+  elseif (!isset($GLOBALS[I18N_LANGUAGE_TYPE_CONTEXT])) {
+    // It will default to content language.
+    $GLOBALS[I18N_LANGUAGE_TYPE_CONTEXT] = i18n_language_content();
+    // Get language from the first module that provides it.
+    foreach (module_implements('i18n_context_language') as $module) {
+      if ($language = module_invoke($module, 'i18n_context_language')) {
+        $GLOBALS[I18N_LANGUAGE_TYPE_CONTEXT] = $language;
+        break;
+      }
+    }
+  }
+  return $GLOBALS[I18N_LANGUAGE_TYPE_CONTEXT];
+}
+
+/**
+ * Menu object loader, language
+ */
+function i18n_language_load($langcode) {
+  $list = language_list();
+  return isset($list[$langcode]) ? $list[$langcode] : FALSE;
+}
+
+/**
+ * Get language selector form element
+ */
+function i18n_element_language_select($default = LANGUAGE_NONE) {
+  if (is_object($default) || is_array($default)) {
+    $default = i18n_object_langcode($default, LANGUAGE_NONE);
+  }
+  return array(
+    '#type' => 'select',
+    '#title' => t('Language'),
+    '#default_value' => $default,
+    '#options' => array(LANGUAGE_NONE => t('Language neutral')) + i18n_language_list(),
+  );
+}
+
+/**
+ * Get language field for hook_field_extra_fields()
+ */
+function i18n_language_field_extra() {
+  return array(
+    'form' => array(
+      'language' => array(
+        'label' => t('Language'),
+        'description' => t('Language selection'),
+        'weight' => 0,
+      ),
+    ),
+    'display' => array(
+      'language' => array(
+        'label' => t('Language'),
+        'description' => t('Language'),
+        'weight' => 0,
+      ),
+    ),
+  );
+}
+
+/**
+ * Get full language list
+ *
+ * @todo See about creating a permission for seeing disabled languages
+ */
+function i18n_language_list($field = 'name', $mode = NULL) {
+  $mode = isset($mode) ? $mode : variable_get('i18n_language_list', I18N_LANGUAGE_ENABLED);
+  return locale_language_list($field, I18N_LANGUAGE_EXTENDED & $mode);
+}
+
+/**
+ * Get language name for any defined (enabled or not) language
+ *
+ * @see locale_language_list()
+ */
+function i18n_language_name($lang) {
+  $list = &drupal_static(__FUNCTION__);
+  if (!isset($list)) {
+    $list = locale_language_list('name', TRUE);
+  }
+  if (!$lang || $lang === LANGUAGE_NONE) {
+    return t('Undefined');
+  }
+  elseif (isset($list[$lang])) {
+    return check_plain($list[$lang]);
+  }
+  else {
+    return t('Unknown');
+  }
+}
+
+/**
+ * Get valid language code for current page or check whether the code is a defined language
+ */
+function i18n_langcode($langcode = NULL) {
+  return $langcode && $langcode !== LANGUAGE_NONE ? $langcode : i18n_language()->language;
+}
+
+/**
+ * Implements hook_help().
+ */
+function i18n_help($path = 'admin/help#i18n', $arg) {
+  switch ($path) {
+    case 'admin/help#i18n' :
+      $output = '<p>' . t('This module improves support for multilingual content in Drupal sites:') . '</p>';
+      $output .= '<ul>';
+      $output .= '<li>' . t('Shows content depending on page language.') . '</li>';
+      $output .= '<li>' . t('Handles multilingual variables.') . '</li>';
+      $output .= '<li>' . t('Extended language option for chosen content types. For these content types transations will be allowed for all defined languages, not only for enabled ones.') . '</li>';
+      $output .= '<li>' . t('Provides a block for language selection and two theme functions: <em>i18n_flags</em> and <em>i18n_links</em>.') . '</li>';
+      $output .= '</ul>';
+      $output .= '<p>' . t('This is the base module for several others adding different features:') . '</p>';
+      $output .= '<ul>';
+      $output .= '<li>' . t('Multilingual menu items.') . '</li>';
+      $output .= '<li>' . t('Multilingual taxonomy adds a language field for taxonomy vocabularies and terms.') . '</li>';
+      $output .= '</ul>';
+      $output .= '<p>' . t('For more information, see the online handbook entry for <a href="@i18n">Internationalization module</a>.', array('@i18n' => 'http://drupal.org/node/133977')) . '</p>';
+      return $output;
+
+    case 'admin/config/language/i18n':
+      $output = '<ul>';
+      $output .= '<li>' . t('To enable multilingual support for specific content types go to <a href="@configure_content_types">configure content types</a>.', array('@configure_content_types' => url('admin/structure/types'))) . '</li>';
+      $output .= '</ul>';
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function i18n_menu() {
+  $items['admin/config/regional/i18n'] = array(
+    'title' => 'Multilingual settings',
+    'description' => 'Configure extended options for multilingual content and translations.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('variable_module_form', 'i18n'),
+    'access arguments' => array('administer site configuration'),
+    'weight' => 10,
+  );
+  $items['admin/config/regional/i18n/configure'] = array(
+    'title' => 'Multilingual system',
+    'description' => 'Configure extended options for multilingual content and translations.',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  module_load_include('pages.inc', 'i18n');
+  $items += i18n_page_menu_items();
+  return $items;
+}
+
+/**
+ * Simple i18n API
+ */
+
+/**
+ * Switch select Mode on off if enabled
+ *
+ * Usage for disabling content selection for a while then return to previous state
+ *
+ *   // Disable selection, but store previous mode
+ *   $previous = i18n_select(FALSE);
+ *
+ *   // Other code to be run without content selection here
+ *   ..........................
+ *
+ *   // Return to previous mode
+ *   i18n_select($previous);
+ *
+ * @param $value
+ *   Optional, enable/disable selection: TRUE/FALSE
+ * @return boolean
+ *   Previous selection mode (TRUE/FALSE)
+ */
+function i18n_select($value = NULL) {
+  static $mode = FALSE;
+
+  if (isset($value)) {
+    $previous = $mode;
+    $mode = $value;
+    return $previous;
+  }
+  else {
+    return $mode;
+  }
+}
+
+/**
+ * Get language properties.
+ *
+ * @param $code
+ *   Language code.
+ * @param $property
+ *   It may be 'name', 'native', 'ltr'...
+ */
+function i18n_language_property($code, $property) {
+  $languages = language_list();
+  return isset($languages[$code]->$property) ? $languages[$code]->$property : NULL;
+}
+
+/**
+ * Implements hook_preprocess_html().
+ */
+function i18n_preprocess_html(&$variables) {
+  global $language;
+  $variables['classes_array'][] = 'i18n-' . $language->language;
+}
+
+/**
+ * Translate or update user defined string. Entry point for i18n_string API if enabled.
+ *
+ * This function is from i18n_string sub module and is subject to be moved back.
+ *
+ * @param $name
+ *   Textgroup and context glued with ':'.
+ * @param $default
+ *   String in default language. Default language may or may not be English.
+ * @param $options
+ *   An associative array of additional options, with the following keys:
+ *   - 'langcode' (defaults to the current language) The language code to translate to a language other than what is used to display the page.
+ *   - 'filter' Filtering callback to apply to the translated string only
+ *   - 'format' Input format to apply to the translated string only
+ *   - 'callback' Callback to apply to the result (both to translated or untranslated string
+ *   - 'update' (defaults to FALSE) Whether to update source table
+ *   - 'translate' (defaults to TRUE) Whether to return a translation
+ *
+ * @return $string
+ *   Translated string, $string if not found
+ */
+function i18n_string($name, $string, $options = array()) {
+  $options += array('translate' => TRUE, 'update' => FALSE);
+  if ($options['update']) {
+    $result = function_exists('i18n_string_update') ? i18n_string_update($name, $string, $options) : FALSE;
+  }
+  if ($options['translate']) {
+    $result = function_exists('i18n_string_translate') ? i18n_string_translate($name, $string, $options) : $string;
+  }
+  return $result;
+}
+
+/**
+ * Get object wrapper.
+ *
+ * Create an object wrapper or retrieve it from the static cache if
+ * a wrapper for the same object was created before.
+ *
+ * @see i18n_object_info()
+ *
+ * @param $type
+ *   The object type.
+ */
+function i18n_object($type, $object) {
+  $key = i18n_object_key($type, $object);
+  return i18n_get_object($type, $key, $object);
+}
+
+/**
+ * Get object wrapper by object key.
+ *
+ * @param $type
+ *   The object type to load e.g. node_type, menu, taxonomy_term.
+ * @param $key
+ *   The object key, can be an scalar or an array.
+ * @param $object
+ *   Optional Drupal object or array. It will be autoloaded using the key if not present.
+ *
+ * @return
+ *   A fully-populated object wrapper.
+ */
+function i18n_get_object($type, $key, $object = NULL) {
+  $cache = &drupal_static(__FUNCTION__);
+  $index = is_array($key) ? implode(':', $key) : $key;
+  if (!isset($cache[$type][$index])) {
+    $class = i18n_object_info($type, 'class', 'i18n_object_wrapper');
+    $object_wrapper = new $class($type, $key, $object);
+    // Do not cache object with empty index.
+    if (!empty($index)) {
+      $cache[$type][$index] = $object_wrapper;
+    }
+  }
+  else {
+    $object_wrapper = $cache[$type][$index];
+  }
+
+  return $object_wrapper;
+}
+
+/**
+ * Get object language code
+ *
+ * @param $object
+ *   Object or array having language field or plain language field
+ * @param $default
+ *   What value to return if the object doesn't have a valid language
+ */
+function i18n_object_langcode($object, $default = FALSE, $field = 'language') {
+  $value = i18n_object_field($object, $field, $default);
+  return $value && $value != LANGUAGE_NONE ? $value : $default;
+}
+
+/**
+ * Get translation information for objects
+ */
+function i18n_object_info($type = NULL, $property = NULL, $default = NULL) {
+  $info = &drupal_static(__FUNCTION__);
+  if (!$info) {
+    $info = module_invoke_all('i18n_object_info');
+    drupal_alter('i18n_object_info', $info);
+  }
+  if ($property) {
+    return isset($info[$type][$property]) ? $info[$type][$property] : $default;
+  }
+  elseif ($type) {
+    return isset($info[$type]) ? $info[$type] : array();
+  }
+  else {
+    return $info;
+  }
+}
+
+/**
+ * Get field value from object/array
+ */
+function i18n_object_field($object, $field, $default = NULL) {
+  if (is_array($field)) {
+    // We can handle a list of fields too. This is useful for multiple keys (like blocks)
+    foreach ($field as $key => $name) {
+      $values[$key] = i18n_object_field($object, $name);
+    }
+    return $values;
+  }
+  elseif (strpos($field, '.')) {
+    // Access nested properties with the form 'name1.name2..', will map to $object->name1->name2...
+    $names = explode('.', $field);
+    $current = array_shift($names);
+    if ($nested = i18n_object_field($object, $current)) {
+      return i18n_object_field($nested, implode('.', $names), $default);
+    }
+    else {
+      return $default;
+    }
+  }
+  elseif (is_object($object)) {
+    return isset($object->$field) ? $object->$field : $default;
+  }
+  elseif (is_array($object)) {
+    return isset($object[$field]) ? $object[$field] : $default;
+  }
+  else {
+    return $default;
+  }
+}
+
+/**
+ * Get key value from object/array
+ */
+function i18n_object_key($type, $object, $default = NULL) {
+  if ($field = i18n_object_info($type, 'key')) {
+    return i18n_object_field($object, $field, $default);
+  }
+  else {
+    return $default;
+  }
+}
+
+/**
+ * Menu access callback for mixed translation tab
+ */
+function i18n_object_translate_access($type, $object) {
+  return i18n_object($type, $object)->get_translate_access();
+}
+
+/**
+ * Get translations for path.
+ *
+ * @param $path
+ *   Path to get translations for or '<front>' for front page.
+ * @param $check_access
+ *   Whether to check access to paths, defaults to TRUE
+ */
+function i18n_get_path_translations($path, $check_access = TRUE) {
+  $translations = &drupal_static(__FUNCTION__);
+
+  if (!isset($translations[$path])) {
+    $translations[$path] = array();
+    foreach (module_implements('i18n_translate_path') as $module) {
+      $translated = call_user_func($module . '_i18n_translate_path', $path);
+      // Add into the array, if two modules returning a translation first takes precedence.
+      if ($translated) {
+        $translations[$path] += $translated;
+      }
+    }
+    // Add access information if not there.
+    foreach ($translations[$path] as $langcode => &$info) {
+      if (!isset($info['access'])) {
+        $item = menu_get_item($info['href']);
+        // If no menu item, it may be an external URL, we allow access.
+        $info['access'] = $item ? !empty($item['access']) : TRUE;
+      }
+    }
+    // Chance for altering the results.
+    drupal_alter('i18n_translate_path', $translations[$path], $path);
+  }
+
+  if ($check_access) {
+    return array_filter($translations[$path], '_i18n_get_path_translations_access');
+  }
+  else {
+    return $translations[$path];
+  }
+}
+
+/**
+ * Helper function to check access to path translation.
+ */
+function _i18n_get_path_translations_access($path) {
+  return $path['access'];
+}
+
+/**
+ * Implements hook_language_switch_links_alter().
+ *
+ * Replaces links with pointers to translated versions of the content.
+ */
+function i18n_language_switch_links_alter(array &$links, $type, $path) {
+  // For the front page we have nothing to add to Drupal core links.
+  if ($path != '<front>' && ($translations = i18n_get_path_translations($path))) {
+    foreach ($translations as $langcode => $translation) {
+      if (isset($links[$langcode])) {
+        $links[$langcode]['href'] = $translation['href'];
+        if (!empty($translation['title'])) {
+          $links[$langcode]['attributes']['title'] = $translation['title'];
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Build translation link
+ */
+function i18n_translation_link($path, $langcode, $link = array()) {
+  $language = i18n_language_object($langcode);
+  $link += array(
+    'href' => $path,
+    'title' => $language->native,
+    'language' => $language,
+    'i18n_translation' => TRUE,
+  );
+  $link['attributes']['class'] = array('language-link');
+  // @todo Fix languageicons weight, but until that
+  if (function_exists('languageicons_link_add')) {
+    languageicons_link_add($link);
+  }
+  return $link;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function i18n_form_block_admin_display_form_alter(&$form, &$form_state) {
+  $form['#submit'][] = 'i18n_form_block_admin_display_form_submit';
+}
+
+/**
+ * Display a help message when enabling the language switcher block.
+ */
+function i18n_form_block_admin_display_form_submit($form, &$form_state) {
+  foreach ($form_state['values']['blocks'] as $key => $block) {
+    $previous = $form['blocks'][$key]['region']['#default_value'];
+    if (empty($previous) && $block['region'] != -1 && $block['module'] == 'locale') {
+      $message = t('The language switcher will appear only after configuring <a href="!url">language detection</a>. You need to enable at least one method that alters URLs like <em>URL</em> or <em>Session</em>.', array('!url' => url('admin/config/regional/language/configure')));
+      drupal_set_message($message, 'warning', FALSE);
+      break;
+    }
+  }
+}
+
+/**
+ * Normal path should be checked with menu item's language to avoid
+ * troubles when a node and it's translation has the same url alias.
+ */
+function i18n_prepare_normal_path($link_path, $language) {
+  $normal_path = drupal_get_normal_path($link_path, $language);
+  if ($link_path != $normal_path) {
+    drupal_set_message(t('The menu system stores system paths only, but will use the URL alias for display. %link_path has been stored as %normal_path', array('%link_path' => $link_path, '%normal_path' => $normal_path)));
+  }
+  return $normal_path;
+}
+
+/**
+ * Checks if an entity translation is enabled for the given entity type.
+ * @param $entity_type
+ */
+function i18n_entity_translation_enabled($entity_type) {
+  $cache = &drupal_static(__FUNCTION__);
+  if (!isset($cache[$entity_type])) {
+    // Check if the entity_translation module exists and if so if the given
+    // entity type is handled.
+    $cache[$entity_type] = module_exists('entity_translation') && entity_translation_enabled($entity_type);
+  }
+  return $cache[$entity_type];
+}
+
+/**
+ * Implements hook_modules_enabled().
+ */
+function i18n_modules_enabled($modules) {
+  drupal_static_reset('i18n_object_info');
+}

@@ -1,0 +1,391 @@
+<?php
+
+/**
+ * @file
+ * Component module for sending Mime-encoded emails.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function mimemail_menu() {
+  $path = drupal_get_path('module', 'mimemail') . '/includes';
+  // Configuration links.
+  $items['admin/config/system/mimemail'] = array(
+    'title' => 'Mime Mail',
+    'description' => 'Manage mime mail system settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('mimemail_admin_settings'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'mimemail.admin.inc',
+    'file path' => $path,
+  );
+  $items['mimemail'] = array(
+    'page callback' => 'mimemail_post',
+    'access callback' => 'mimemail_incoming_access',
+    'type' => MENU_CALLBACK,
+    'file' => 'mimemail.incoming.inc',
+    'file path' => $path,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function mimemail_permission() {
+  return array(
+    'edit mimemail user settings' => array(
+      'title' => t('Edit Mime Mail user settings'),
+      'description' => t('Edit user specific settings for Mime Mail.'),
+    ),
+    'send arbitrary files' => array(
+      'title' => t('Send arbitrary files'),
+      'description' => t('Attach or embed files located outside the public files directory.'),
+      'restrict access' => TRUE,
+    ),
+  );
+}
+
+/**
+ * Access callback to process incoming messages.
+ */
+function mimemail_incoming_access() {
+  return variable_get('mimemail_incoming', FALSE);
+}
+
+/**
+ * Implements hook_field_extra_fields().
+ */
+function mimemail_field_extra_fields() {
+  $extra['user']['user'] = array(
+    'form' => array(
+      'mimemail' => array(
+        'label' => t('Email'),
+        'description' => t('Mime Mail module settings form elements.'),
+        'weight' => 0,
+      ),
+    ),
+    'display' => array(
+      'mimemail' => array(
+        'label' => t('Email'),
+        'description' => t('Mime Mail module settings form elements.'),
+        'weight' => 0,
+      ),
+    ),
+  );
+
+  return $extra;
+}
+
+/**
+ * Implements hook_user_view().
+ */
+function mimemail_user_view($account, $view_mode, $langcode) {
+  $account->content['mimemail'] = array(
+    '#type' => 'user_profile_category',
+    '#title' => t('Email'),
+  );
+
+  $account->content['mimemail']['textonly'] = array(
+    '#type' => 'user_profile_item',
+    '#title' => t('Plaintext email only'),
+    '#markup' => empty($account->data['mimemail_textonly']) ? t('No') : t('Yes'),
+  );
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Adds the Mime Mail settings on the user settings page.
+ */
+function mimemail_form_user_profile_form_alter(&$form, &$form_state) {
+  if ($form['#user_category'] == 'account') {
+    $account = $form['#user'];
+    $form['mimemail'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Email settings'),
+      '#weight' => 5,
+      '#collapsible' => TRUE,
+      '#access' => user_access('edit mimemail user settings'),
+    );
+    $form['mimemail']['mimemail_textonly'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Plaintext email only'),
+      '#default_value' => !empty($account->data['mimemail_textonly']) ? $account->data['mimemail_textonly'] : FALSE,
+      '#description' => t('Check this option if you do not wish to receive email messages with graphics and styles.'),
+    );
+  }
+}
+
+/**
+ * Implements hook_user_presave().
+ */
+function mimemail_user_presave(&$edit, $account, $category) {
+  $edit['data']['mimemail_textonly'] = isset($edit['mimemail_textonly']) ? $edit['mimemail_textonly'] : 0;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function mimemail_theme() {
+  module_load_include('inc', 'mimemail', 'theme/mimemail.theme');
+  return mimemail_theme_theme();
+}
+
+/**
+ * Implements hook_mail().
+ */
+function mimemail_mail($key, &$message, $params) {
+  $context = $params['context'];
+  $options = array('clear' => TRUE);
+
+  // Prepare the array of the attachments.
+  $attachments = array();
+  $attachments_string = trim($params['attachments']);
+  if (!empty($attachments_string)) {
+    $attachment_lines = array_filter(explode("\n", trim($attachments_string)));
+    foreach ($attachment_lines as $filepath) {
+      $attachments[] = array(
+        'filepath' => trim($filepath),
+      );
+    }
+  }
+
+  // We handle different address headers if set.
+  $address_headers = array(
+    'cc' => 'Cc',
+    'bcc' => 'Bcc',
+    'reply-to' => 'Reply-to',
+  );
+  foreach ($address_headers as $param_key => $address_header) {
+    $params[$param_key] = empty($params[$param_key]) ? array() : explode(',', $params[$param_key]);
+    if (!empty($params[$param_key])) {
+      foreach ($params[$param_key] as $key => $address) {
+        $params[$param_key][$key] = token_replace($address, $context, $options);
+      }
+      $message['headers'][$address_header] = implode(',', $params[$param_key]);
+    }
+  }
+
+  $message['to'] = token_replace($message['to'], $context, $options);
+  $message['subject'] = token_replace($context['subject'], $context, $options);
+  $message['body'][] = token_replace($context['body'], $context, $options);
+  $message['params']['plaintext'] = token_replace($params['plaintext'], $context, $options);
+  $message['params']['attachments'] = $attachments;
+}
+
+/**
+ * Retreives a list of all available mailer engines.
+ *
+ * @return array
+ *   Mailer engine names.
+ */
+function mimemail_get_engines() {
+  $engines = array();
+  foreach (module_implements('mailengine') as $module) {
+    $engines[$module] = module_invoke($module, 'mailengine', 'list');
+  }
+  return $engines;
+}
+
+/**
+ * Implements hook_mailengine().
+ *
+ * @param string $op
+ *   The operation to perform on the message.
+ * @param array $message
+ *   The message to perform the operation on.
+ *
+ * @return boolean
+ *   Returns TRUE if the operation was successful or FALSE if it was not.
+ */
+function mimemail_mailengine($op, $message = array()) {
+  module_load_include('inc', 'mimemail');
+
+  switch ($op) {
+    case 'list':
+      $engine = array(
+        'name' => t('Mime Mail'),
+        'description' => t("Default mailing engine."),
+      );
+      return $engine;
+    case 'settings':
+      // Not implemented.
+      break;
+    case 'multiple':
+    case 'single':
+    case 'send':
+      // Default values.
+      $default = array(
+        'to' => '',
+        'subject' => '',
+        'body' => '',
+        'from' => '',
+        'headers' => ''
+      );
+      $message = array_merge($default, $message);
+
+      // If 'Return-Path' isn't already set in php.ini, we pass it separately
+      // as an additional parameter instead of in the header.
+      // However, if PHP's 'safe_mode' is on, this is not allowed.
+      if (isset($message['headers']['Return-Path']) && !ini_get('safe_mode')) {
+        $return_path_set = strpos(ini_get('sendmail_path'), ' -f');
+        if (!$return_path_set) {
+          $return_path = trim($message['headers']['Return-Path'], '<>');
+          unset($message['headers']['Return-Path']);
+        }
+      }
+
+      $crlf = variable_get('mimemail_crlf', MAIL_LINE_ENDINGS);
+
+      $recipients = (!is_array($message['to'])) ? array($message['to']) : $message['to'];
+      $subject = mime_header_encode($message['subject']);
+      $body = preg_replace('@\r?\n@', $crlf, $message['body']);
+      $headers = mimemail_rfc_headers($message['headers']);
+
+      $result = TRUE;
+      foreach ($recipients as $to) {
+        if (isset($return_path) && !empty($return_path)) {
+          if (isset($_SERVER['WINDIR']) || strpos($_SERVER['SERVER_SOFTWARE'], 'Win32') !== FALSE) {
+            // On Windows, PHP will use the value of sendmail_from for the
+            // Return-Path header.
+            $old_from = ini_get('sendmail_from');
+            ini_set('sendmail_from', $return_path);
+            $result = @mail($to, $subject, $body, $headers) && $result;
+            ini_set('sendmail_from', $old_from);
+          }
+          else {
+            // On most non-Windows systems, the "-f" option to the sendmail command
+            // is used to set the Return-Path.
+            $result = @mail($to, $subject, $body, $headers, '-f' . $return_path) && $result;
+          }
+        }
+        else {
+          // The optional $additional_parameters argument to mail() is not allowed
+          // if safe_mode is enabled. Passing any value throws a PHP warning and
+          // makes mail() return FALSE.
+          $result = @mail($to, $subject, $body, $headers) && $result;
+        }
+      }
+
+      return $result;
+  }
+
+  return FALSE;
+}
+
+/**
+ * Prepares the message for sending.
+ *
+ * @param array $message
+ *   An array containing the message data. The optional parameters are:
+ *   - plain: Whether to send the message as plaintext only or HTML. If evaluates to TRUE,
+ *     then the message will be sent as plaintext.
+ *   - plaintext: Optional plaintext portion of a multipart email.
+ *   - attachments: An array of arrays which describe one or more attachments.
+ *     Existing files can be added by path, dinamically-generated files
+ *     can be added by content. The internal array contains the following elements:
+ *      - filepath: Relative Drupal path to an existing file (filecontent is NULL).
+ *      - filecontent: The actual content of the file (filepath is NULL).
+ *      - filename: The filename of the file.
+ *      - filemime: The MIME type of the file.
+ *      The array of arrays looks something like this:
+ *      Array
+ *      (
+ *        [0] => Array
+ *        (
+ *         [filepath] => '/sites/default/files/attachment.txt'
+ *         [filecontent] => 'My attachment.'
+ *         [filename] => 'attachment.txt'
+ *         [filemime] => 'text/plain'
+ *        )
+ *      )
+ *
+ * @return array
+ *   All details of the message.
+ */
+function mimemail_prepare_message($message) {
+  module_load_include('inc', 'mimemail');
+
+  $module = $message['module'];
+  $key = $message['key'];
+  $to = $message['to'];
+  $from = $message['from'];
+  $subject = $message['subject'];
+  $body = $message['body'];
+
+  $headers = isset($message['params']['headers']) ? $message['params']['headers'] : array();
+  $plain = isset($message['params']['plain']) ? $message['params']['plain'] : NULL;
+  $plaintext = isset($message['params']['plaintext']) ? $message['params']['plaintext'] : NULL;
+  $attachments = isset($message['params']['attachments']) ? $message['params']['attachments'] : array();
+
+  $site_name = variable_get('site_name', 'Drupal');
+  $site_mail = variable_get('site_mail', ini_get('sendmail_from'));
+  $simple_address = variable_get('mimemail_simple_address', 0);
+
+  // Override site mails default sender when using default engine.
+  if ((empty($from) || $from == $site_mail)
+      && variable_get('mimemail_engine', 'mimemail') == 'mimemail') {
+    $mimemail_name = variable_get('mimemail_name', $site_name);
+    $mimemail_mail = variable_get('mimemail_mail', $site_mail);
+    $from = array(
+      'name' => !empty($mimemail_name) ? $mimemail_name : $site_name,
+      'mail' => !empty($mimemail_mail) ? $mimemail_mail : $site_mail,
+    );
+  }
+
+  // Body is empty, this is a plaintext message.
+  if (empty($body)) {
+    $plain = TRUE;
+  }
+  // Try to determine recipient's text mail preference.
+  elseif (is_null($plain)) {
+    if (is_object($to) && isset($to->data['mimemail_textonly'])) {
+      $plain = $to->data['mimemail_textonly'];
+    }
+    elseif (is_string($to) && valid_email_address($to)) {
+      if (is_object($account = user_load_by_mail($to)) && isset($account->data['mimemail_textonly'])) {
+        $plain = $account->data['mimemail_textonly'];
+        // Might as well pass the user object to the address function.
+        $to = $account;
+      }
+    }
+  }
+
+  // Removing newline character introduced by _drupal_wrap_mail_line();
+  $subject = str_replace(array("\n"), '', trim(drupal_html_to_text($subject)));
+
+  $hook = array(
+    'mimemail_message__' . $key,
+    'mimemail_message__' . $module .'__'. $key,
+  );
+
+  $variables = array(
+    'module' => $module,
+    'key' => $key,
+    'recipient' => $to,
+    'subject' => $subject,
+    'body' => $body
+  );
+
+  $body = theme($hook, $variables);
+
+  foreach (module_implements('mail_post_process') as $module) {
+    $function = $module . '_mail_post_process';
+    $function($body, $key);
+  }
+
+  $plain = $plain || variable_get('mimemail_textonly', 0);
+  $from = mimemail_address($from);
+  $mail = mimemail_html_body($body, $subject, $plain, $plaintext, $attachments);
+  $headers = array_merge($message['headers'], $headers, $mail['headers']);
+
+  $message['to'] = mimemail_address($to, $simple_address);
+  $message['from'] = $from;
+  $message['subject'] = $subject;
+  $message['body'] = $mail['body'];
+  $message['headers'] = mimemail_headers($headers, $from);
+
+  return $message;
+}

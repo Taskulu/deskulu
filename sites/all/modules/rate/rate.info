@@ -1,0 +1,16 @@
+name = Rate
+description = Flexible voting options for nodes and comments
+core = 7.x
+package = Voting
+dependencies[] = votingapi
+files[] = rate.install
+files[] = rate.module
+files[] = rate.results.inc
+files[] = rate.hooks.inc
+files[] = rate.admin.inc
+; Information added by Drupal.org packaging script on 2014-02-10
+version = "7.x-1.7"
+core = "7.x"
+project = "rate"
+datestamp = "1392071605"
+

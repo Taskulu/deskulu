@@ -1,0 +1,470 @@
+
+/*
+This document contains structural markup such as widths, margins, padding, and
+floats.
+*/
+
+/*** PAGER ******************************************************************/
+/* This is the pager on the topics in the list */
+.topic-pager {
+  font-size: 90%;
+  font-style: italic;
+}
+
+/* Other pagers in the forum */
+#forum-comments .pager {
+  text-align: right;
+}
+
+#forum-comments .pager li {
+  padding: 3px;
+  margin: 0;
+}
+
+
+.forum-pager .pager,
+.forum-comment-wrapper .pager {
+  text-align: right;
+  float: right;
+  clear: none;
+  width: 30%;
+}
+
+#forum-pager-top .pager{
+  padding: 14px 0 0 0;
+}
+
+#forum-pager-bottom .pager{
+  padding: 0 0 10px 0;
+}
+
+/* The rest of the pager styles are invisible on naked but will show up
+   for substyles that set a background and/or border. */
+.forum-pager .pager a,
+.forum-comment-wrapper .pager a {
+  padding: 1px 3px;
+  margin: 0pt;
+}
+
+.forum-pager .pager li,
+.forum-comment-wrapper .pager li {
+  padding:0pt;
+  margin: 0pt;
+}
+
+.forum-pager.pager li.pager-current,
+.forum-comment-wrapper .pager li.pager-current {
+  padding: 2px 3px 2px 3px;
+}
+
+/*** FORUM LINK LISTS *******************************************************/
+
+/* Applies to all forum links */
+ul.forum-links li {
+  display: inline;
+}
+
+/*** FORUM NODE CREATION ****************************************************/
+
+.forum-node-create-links {
+  width: 30%;
+  float: left;
+}
+
+.forum-node-create-links-top {
+  clear: both;
+  padding-top: 20px; /* Lines up horizontally with pager. */
+}
+
+.forum-node-create-links .forum-add-node {
+  float: left;
+  margin-right: 10px;
+}
+
+/*** FORUM & TOPIC LIST TABLES **********************************************/
+
+.forum-table {
+  margin: 0;
+}
+
+.forum-table-wrap,
+.forum-table-topics {
+  margin-bottom: 15px;
+   clear: both;
+}
+
+.forum-table-superheader {
+  padding: 10px;
+}
+
+.forum-table-superheader .forum-table-name {
+  margin: 5px 0 3px 5px;
+  width: 90%;
+  display: inline;
+  font-size: 1.2em;
+}
+
+.forum-table-superheader .forum-table-description {
+  margin: 0 0 3px 5px;
+  width: 90%;
+}
+
+/* Header, both tables */
+.forum-table th {
+  text-align: left;
+}
+
+/* Forum listing */
+th.forum-name {
+  text-align: left;
+}
+
+th.forum-icon {
+ width: 5%;
+}
+
+td.forum-details {
+
+}
+
+td.forum-details .forum-description {
+  margin: 0;
+  font-size: 0.9em;
+}
+
+td.forum-details .forum-subforums,
+td.forum-details .forum-subcontainers {
+  margin-left: 10px;
+}
+
+th.forum-topics,
+th.forum-posts {
+  width: 10%;
+  text-align: center;
+}
+
+td.forum-number-topics,
+td.forum-number-posts {
+  text-align: center;
+}
+
+th.forum-last-post {
+  width: 20%;
+}
+
+td.forum-last-reply {
+}
+/**** Topic listing ****/
+
+ .view-advanced-forum-topic-list .view-empty {
+  clear: both;
+  margin: 20px 0 20px 0;
+  padding: 10px;
+}
+
+/* Set column widths */
+.forum-table-topics td.views-field-topic-icon {
+  width: 26px;
+}
+
+.forum-table-topics td.views-field-title {
+
+}
+
+.forum-table-topics td.views-field-comment-count,
+.forum-table-topics td.views-field-totalcount {
+  width: 10%;
+}
+
+.forum-table-topics td.views-field-last-updated {
+  width: 30%;
+}
+
+/* Set alignments & spacing */
+.forum-table-topics .views-field-title {
+  text-align: left;
+}
+
+.forum-table-topics td.views-field-comment-count,
+.forum-table-topics td.views-field-totalcount {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.forum-table-topics td.views-field-last-updated {
+  line-height: 140%;
+  white-space: normal !important;
+}
+
+/* Topic icon */
+.forum-table-topics span.topic-icon {
+  display: block;
+}
+
+/*** FORUM SORT *************************************************************/
+#advanced-forum-forum-topic-list-sort-form,
+#advanced-forum-forum-topic-list-sort-form input,
+#advanced-forum-forum-topic-list-sort-form .form-item {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  vertical-align: center;
+}
+
+#forum-sort {
+  clear: both;
+  float: left;
+}
+
+/*** FORUM TOOLS ***********************************************************/
+
+.forum-tools{
+  float: right;
+  margin-top: 10px;
+}
+
+/*** FORUM STATISTICS *******************************************************/
+
+#forum-statistics-header,
+.forum-statistics-sub-header {
+  padding: 0.3em 0.5em;
+}
+
+.forum-statistics-sub-body {
+  padding: 0.3em 0.5em 0 2em;
+}
+
+
+/*** ICONS LEGEND ***********************************************************/
+
+.forum-list-icon-legend {
+  margin-bottom: 30px;
+}
+
+.forum-list-icon-legend div {
+  float: left;
+  margin-right: 30px;
+}
+
+.forum-topic-legend div {
+  clear: both;
+  float: left;
+  padding: 5px 0 5px 25px;
+  margin-right: 7px;
+}
+
+
+/*** FORUM TOPICS **********************************************************/
+
+/* Header at the top of each topic/thread */
+.forum-topic-header {
+  margin: 10px 0 2px 0;
+}
+
+.forum-topic-header .search-topic {
+  float: right;
+}
+
+.forum-topic-header .topic-post-count {
+  clear: right;
+  float: right;
+  margin: 7px 7px 0 0;
+}
+
+.forum-topic-header .topic-reply-link,
+.forum-topic-header .topic-new-post-link,
+.forum-topic-header .last-post-link {
+  float: left;
+  margin: 0 7px 7px 0;
+}
+
+
+.forum-topic-header .reply-count {
+  float: right;
+  margin: 10px 0 2px 0;
+}
+
+/* Individual forum post */
+div.forum-post {
+  margin: 0 0 5px 0;
+  padding: 0;
+}
+
+.forum-post-wrapper {
+  clear: both;
+  height: 100%;
+}
+
+/* Header at the top of each post */
+.forum-post-info {
+  height:100%;
+  clear: both;
+}
+
+.forum-posted-on {
+  padding: 0 5px;
+  float: left;
+  font-size: .8em;
+}
+
+.forum-post .new {
+  float: none;
+}
+
+.forum-post-number {
+  float: right;
+  margin-right: 5px;
+}
+
+.forum-post-title {
+  padding: 1px 1px 1px 10px;
+}
+
+/* Author information pane */
+.forum-post-panel-sub {
+  float: left;
+  line-height: 100%;
+  width: 150px;
+}
+
+.forum-post-panel-sub .author-pane {
+  margin: 10px;
+}
+
+.forum-post-panel-sub .author-pane .author-name {
+  font-size: 120%;
+}
+
+.forum-post-panel-sub .author-pane .picture {
+  float: none;
+  padding-left: 0px;
+  margin: 2px 0 10px 0;
+}
+
+.forum-post-panel-sub .author-pane .picture img {
+  padding: 5px;
+}
+
+.forum-post-panel-sub .author-pane .author-pane-section {
+  margin-bottom: 10px;
+}
+
+.forum-post-panel-sub .author-pane .author-pane-line {
+  margin-bottom: 7px;
+}
+
+/* Post text area */
+.forum-post-panel-main {
+  margin-left: 150px; /*Set left margin to LeftColumnWidth*/
+
+/* These heights keep the AP items from jumping out of the bottom. Depending
+   on how many items you display, there, this number may need to be adjusted
+   to avoid having unnecessary white space in your posts. */
+  min-height: 230px;
+  height: auto !important;
+  height: 230px;
+}
+
+.forum-post-panel-main .forum-post-content {
+  padding-top: 2px;
+}
+
+.forum-post-panel-main .post-title,
+.forum-post-panel-main .forum-post-content {
+  margin-left: 0;
+  padding-left: 10px;
+}
+
+.forum-post-panel-main p {
+  margin-right: 10px;
+}
+
+/* Signature */
+.author-signature {
+  margin: 10px 0 5px 10px;
+}
+
+/* Edited */
+.post-edited {
+  margin: 10px;
+}
+
+/* Post footer */
+.forum-post-footer {
+  margin-top: 0;
+  clear: both;
+}
+
+.forum-jump-links {
+  float: left;
+  line-height: 2em;
+  margin: 5px;
+}
+
+.forum-post-links {
+  float: right;
+  line-height: 2em;
+  text-align: right;
+  margin: 10px 0 5px 5px;
+}
+
+.forum-post-links ul.links li {
+  display: block;
+  float: left;
+}
+
+.forum-top-post-footer {
+  margin: 10px 0 10px 0;
+  padding: 5px;
+}
+
+/* Defeat garland */
+#comments.forum-comment-wrapper {
+  margin-top: 0;
+}
+
+.forum-comment-wrapper .box {
+  clear: both;
+}
+
+/*** SEARCH ****************************************************************/
+
+#search-all-forums {
+  float: right;
+}
+
+#search-single-forum {
+  float: left;
+}
+
+#advanced-forum-search-forum,
+.forum-topic-header #advanced-forum-search-topic {
+  margin: 0;
+  padding: 14px 0 0 0;
+}
+
+#advanced-forum-search-forum input,
+.forum-topic-header #advanced-forum-search-topic input {
+  margin: 0;
+  padding: 0;
+}
+
+.forum-topic-header #advanced-forum-search-topic {
+  margin-bottom: 10px;
+}
+
+.view-avf-search .views-row,
+.view-avf-search-topic .views-row {
+  margin-bottom: 2em;
+}
+
+.forum-search-result {
+  margin-bottom: 10px;
+}
+
+/*** PREVIEW MODE ****************************************************************/
+/* override inline-block */
+.preview {
+  display: block;
+}

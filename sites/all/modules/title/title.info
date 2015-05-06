@@ -1,0 +1,17 @@
+name = Title
+description = Replaces entity legacy fields with regular fields.
+core = 7.x
+package = Fields
+configure = admin/config/content/title
+dependencies[] = system (>7.14)
+
+files[] = title.module
+files[] = views/views_handler_title_field.inc
+files[] = tests/title.test
+
+; Information added by drupal.org packaging script on 2013-03-18
+version = "7.x-1.0-alpha7"
+core = "7.x"
+project = "title"
+datestamp = "1363626024"
+

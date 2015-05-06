@@ -1,0 +1,25 @@
+/**
+ * @file better_exposed_filters.css
+ * 
+ * Basic styling for features added by Better Exposed Filters
+ */
+
+
+/*
+ * Prevents collapsed filters from disappearing completely
+ */
+fieldset.bef-select-as-radios-fieldset.collapsed legend,
+fieldset.bef-select-as-checkboxes-fieldset.collapsed legend
+{
+  position: relative;
+}
+
+/*
+ * Styles for the jQuery UI slider widgets.
+ */
+.bef-slider.ui-slider-horizontal {
+  margin-top: 6px;
+}
+.bef-slider.ui-slider-vertical {
+  margin-top: 12px;
+}

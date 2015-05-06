@@ -1,0 +1,42 @@
+name = Search API
+description = "Provides a generic API for modules offering search capabilites."
+dependencies[] = entity
+core = 7.x
+package = Search
+
+files[] = search_api.test
+files[] = includes/callback.inc
+files[] = includes/callback_add_aggregation.inc
+files[] = includes/callback_add_hierarchy.inc
+files[] = includes/callback_add_url.inc
+files[] = includes/callback_add_viewed_entity.inc
+files[] = includes/callback_bundle_filter.inc
+files[] = includes/callback_comment_access.inc
+files[] = includes/callback_language_control.inc
+files[] = includes/callback_node_access.inc
+files[] = includes/callback_node_status.inc
+files[] = includes/callback_role_filter.inc
+files[] = includes/datasource.inc
+files[] = includes/datasource_entity.inc
+files[] = includes/datasource_external.inc
+files[] = includes/exception.inc
+files[] = includes/index_entity.inc
+files[] = includes/processor.inc
+files[] = includes/processor_highlight.inc
+files[] = includes/processor_html_filter.inc
+files[] = includes/processor_ignore_case.inc
+files[] = includes/processor_stopwords.inc
+files[] = includes/processor_tokenizer.inc
+files[] = includes/processor_transliteration.inc
+files[] = includes/query.inc
+files[] = includes/server_entity.inc
+files[] = includes/service.inc
+
+configure = admin/config/search/search_api
+
+; Information added by Drupal.org packaging script on 2014-12-26
+version = "7.x-1.14"
+core = "7.x"
+project = "search_api"
+datestamp = "1419580682"
+

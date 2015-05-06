@@ -1,0 +1,245 @@
+
+/*
+This file contains colors, graphics, and text effects. For structural markup,
+see advanced_forum-structure.css.
+*/
+
+/*** PAGER *******************************************************************/
+
+/* This is the pager on the topics in the list */
+.topic-pager {
+  font-style: italic;
+}
+
+/* Other pagers in the forum */
+.forum-pager .pager a,
+#forum-comments .pager a {
+  font-weight: bold;
+}
+
+.forum-pager .pager a:link,
+.forum-pager .pager a:visited,
+#forum-comments .pager a:link,
+#forum-comments .pager a:visited {
+  text-decoration: none;
+  border: 1px solid #91CDF5;
+  background: #EDF5FA;
+  background: -webkit-gradient(linear, left top, left bottom, from(#CBE2F1), to(#EDF5FA));
+  background: -moz-linear-gradient(top, #CBE2F1, #EDF5FA);
+  font-weight: bold;
+}
+
+.forum-pager .pager-current,
+.forum-pager .pager a:hover,
+#forum-comments .pager-current,
+#forum-comments .pager a:hover {
+  color: #0062A0;
+}
+
+.forum-pager .pager a.active,
+#forum-comments .pager a.active {
+  background: #EDF5FA;
+  background: -webkit-gradient(linear, left top, left bottom, from(#CBE2F1), to(#EDF5FA));
+  background: -moz-linear-gradient(top, #CBE2F1, #EDF5FA);
+  color: #0062A0;
+}
+
+/*** FORUM & TOPIC LIST ******************************************************/
+
+/* Forum list and topic list tables */
+.forum-table {
+  border: 1px solid #2587C4;
+}
+
+/* Table name and description on forum list and table header on topic list */
+.forum-table-wrap .forum-table-superheader,
+.forum-table-topics thead tr  {
+  border-top: 1px solid #2587C4;
+  background: #2587C4;
+  background: -webkit-gradient(linear, left top, left bottom, from(#2587C4), to(#58B3ED));
+  background: -moz-linear-gradient(top, #2587C4, #58B3ED);
+  color: #EDF5FA;
+}
+
+/* Table name on forum list */
+.forum-table-superheader .forum-table-name,
+.forum-table-superheader .forum-table-name a {
+ font-weight: bold;
+}
+
+
+.forum-table th a,
+.forum-table th a:visited,
+.forum-table th a:link {
+  color: #ffffff;
+}
+
+/* Table header on forum list */
+.forum-table-wrap thead tr {
+  background-color: #F5F5F5;
+  border: 1px solid #2587C4;
+}
+
+/* Table header on forum list and topic list */
+.forum-table thead tr a,
+.forum-table thead tr a:visited,
+.forum-table thead tr a:link {
+  color: #ffffff;
+  font-weight: bold;
+}
+
+/* Reset to avoid bleed-thru from theme */
+.forum-table thead th {
+  border-bottom: none;
+}
+
+
+/* Rows on both tables */
+.forum-table tr.even,
+.forum-table tr.odd {
+  border: none; /* reset */
+  border-top: 1px solid #FFFFFF;
+  background: #EDF5FA;
+  background: -webkit-gradient(linear, left top, left bottom, from(#CBE2F1), to(#EDF5FA));
+  background: -moz-linear-gradient(top, #CBE2F1, #EDF5FA);
+}
+
+/* Active column on both tables - reset to prevent bleed thru from theme */
+.forum-table tr.even td.active,
+.forum-table tr.odd td.active{
+  background-color: transparent;
+}
+
+/* Individual cells on both tables */
+.forum-table td {
+  border: none;
+}
+
+/* Placeholder when there are no topics in the list */
+.view-advanced-forum-topic-list .view-empty {
+  border: 3px solid #2587C4;
+}
+
+/*** Sticky topics ***/
+.forum-table tr.sticky {
+  background-color: #E6EDEC;
+}
+
+.forum-table tr.forum-last-sticky {
+  border-bottom: 10px solid #91CDF5;
+}
+
+.forum-table .sticky-label {
+  font-weight: bold;
+}
+
+/*** FORUM STATISTICS *******************************************************/
+
+#forum-statistics {
+  border: 1px solid #91CDF5;
+}
+
+#forum-statistics-header {
+  border-top: 1px solid #2587C4;
+  background: #2587C4;
+  background: -webkit-gradient(linear, left top, left bottom, from(#2587C4), to(#58B3ED));
+  background: -moz-linear-gradient(top, #2587C4, #58B3ED);
+  color: #ffffff;
+  font-weight: bold;
+  border-bottom: 1px solid #2587C4;
+
+}
+
+.forum-statistics-sub-header {
+  background-color: #CBE2F1;
+  font-weight: bold;
+}
+
+.forum-statistics-sub-body {
+  background-color: #F5F5F5;
+}
+
+
+/*** FORUM TOPICS **********************************************************/
+
+div.forum-post {
+  border: 2px solid #2587C4;
+}
+
+/* Header at the top of each post */
+.forum-post-info {
+  border-top: 1px solid #2587C4;
+  background: #2587C4;
+  background: -webkit-gradient(linear, left top, left bottom, from(#2587C4), to(#58B3ED));
+  background: -moz-linear-gradient(top, #2587C4, #58B3ED);
+  color: #ffffff;
+  font-weight: bold;
+  border-bottom: 1px solid #2587C4;
+}
+
+.forum-posted-on {
+  font-weight: bold;
+}
+
+.forum-forum-post .new {
+  color: #ffffff;
+}
+
+.forum-post-number a {
+  color: #ffffff !important;
+}
+
+/* Wrapper around author pane and content */
+.forum-post-wrapper {
+  background-color: #EDF5FA;
+}
+
+/* Author information pane */
+.forum-post-panel-sub .author-pane .author-name {
+  font-weight: bold;
+}
+
+.forum-post-panel-sub .author-pane .picture img {
+  border: 1px solid #2587C4;
+  background-color: #FFFFFF;
+}
+
+.forum-post-panel-sub .author-pane .author-pane-label {
+  font-weight: bold;
+}
+
+/* Post text area */
+.forum-post-panel-main {
+  background-color: #FFFFFF;
+  border-left: 1px solid #2587C4;
+}
+
+.forum-post-title {
+  font-weight: bold;
+  border-bottom: 1px solid #2587C4;
+}
+
+/* Post footer */
+.forum-post-footer {
+  background-color: #FFFFFF;
+  border-top: 1px solid #2587C4;
+}
+
+/* Box under top post before first reply */
+.forum-top-post-footer {
+  border: 2px solid #2587C4;
+  background: #EDF5FA;
+  background: -webkit-gradient(linear, left top, left bottom, from(#CBE2F1), to(#EDF5FA));
+  background: -moz-linear-gradient(top, #CBE2F1, #EDF5FA);
+}
+
+/* Topic navigation */
+.forum-topic-navigation {
+  border: 2px solid #2587C4;
+  background: #EDF5FA;
+  background: -webkit-gradient(linear, left top, left bottom, from(#CBE2F1), to(#EDF5FA));
+  background: -moz-linear-gradient(top, #CBE2F1, #EDF5FA);
+}
+
+
+

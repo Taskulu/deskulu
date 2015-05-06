@@ -1,0 +1,31 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for Mime Mail Compress module.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function mimemail_compress_requirements($phase) {
+  $requirements = array();
+  // Ensure translations don't break at install time.
+  $t = get_t();
+
+  // Test PHP DOM extension.
+  if (extension_loaded('dom')) {
+    $requirements['dom']['value'] = $t('Enabled');
+  }
+  else {
+    $requirements['dom'] = array(
+      'description' => $t('Mime Mail Compress requires the PHP DOM extension to be enabled.'),
+      'severity' => REQUIREMENT_ERROR,
+      'value' => $t('Disabled'),
+    );
+  }
+
+  $requirements['dom']['title'] = $t('PHP DOM extension');
+
+  return $requirements;
+}

@@ -1,0 +1,21 @@
+<?php
+
+/**
+ * @file
+ * Migration integration for Date Migrate Example.
+ */
+
+include_once 'date_migrate_example.features.inc';
+
+/**
+ * Implements hook_migrate_api().
+ */
+function date_migrate_example_migrate_api() {
+  $api = array(
+    'api' => 2,
+    'migrations' => array(
+      'DateExample' => array('class_name' => 'DateExampleMigration')
+    ),
+  );
+  return $api;
+}

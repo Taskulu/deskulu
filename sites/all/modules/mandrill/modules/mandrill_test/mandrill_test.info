@@ -1,0 +1,15 @@
+name = Mandrill Test
+description = "Used to test Mandrill API hooks. DO NOT ENABLE UNLESS YOU KNOW WHAT YOU ARE DOING. This module is for the purpose of testing Mandrill only."
+core = 7.x
+package = Mandrill
+
+dependencies[] = mandrill
+
+files[] = tests/mandrill_hooks.test
+
+; Information added by Drupal.org packaging script on 2015-01-09
+version = "7.x-2.1"
+core = "7.x"
+project = "mandrill"
+datestamp = "1420838882"
+

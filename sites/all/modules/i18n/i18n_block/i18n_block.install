@@ -1,0 +1,109 @@
+<?php
+
+/**
+ * @file
+ * Installation file for i18nblocks module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function i18n_block_install() {
+  module_load_install('i18n');
+  i18n_install_create_fields('block', array('i18n_mode'));
+  // Set module weight for it to run after all block visibility modules have run
+  db_query("UPDATE {system} SET weight = 100 WHERE name = 'i18n_block' AND type = 'module'");
+  // If updating from D6, module changed name
+  if (variable_get('i18n_drupal6_update')) {
+    i18n_block_update_7000();
+    i18n_block_update_7001();
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function i18n_block_uninstall() {
+  db_drop_field('block', 'i18n_mode');
+}
+
+/**
+ * Implements hook_schema().
+ */
+function i18n_block_schema() {
+  $schema['i18n_block_language'] = array(
+    'description' => 'Sets block visibility based on language',
+    'fields' => array(
+      'module' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'description' => "The block's origin module, from {block}.module.",
+      ),
+      'delta' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'description' => "The block's unique delta within module, from {block}.delta.",
+      ),
+      'language' => array(
+        'type' => 'varchar',
+        'length' => 12,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => "Language code, e.g. 'de' or 'en-US'.",
+      ),
+    ),
+    'primary key' => array('module', 'delta', 'language'),
+    'indexes' => array(
+      'language' => array('language'),
+    ),
+  );
+  return $schema;
+}
+
+/**
+ * Implements hook_schema_alter().
+ *
+ * Add block table i18n_mode field
+ */
+function i18n_block_schema_alter(&$schema) {
+  $schema['block']['fields']['i18n_mode'] = array('type' => 'int', 'not null' => TRUE, 'default' => 0, 'description' => 'Block multilingual mode.');
+}
+
+/**
+ * Drupal 6 update from old i18nblocks module.
+ */
+function i18n_block_update_7000() {
+  // D6-D7 updates, to be written
+  // move block language from i18n_blocks into i18n_block_language
+  // Move block type from i18n_blocks into block table (i18n_mode)
+  if (db_table_exists('i18n_blocks')) {
+    foreach (db_query("SELECT * FROM {i18n_blocks}")->fetchAll() as $block) {
+      if ($block->language) {
+        // Set language for block
+        db_merge('i18n_block_language')
+          ->key(array('module' => $block->module, 'delta' => $block->delta))
+          ->fields(array('language' => $block->language))
+          ->execute();
+      }
+      else {
+        // Mark block as translatable
+        db_update('block')
+          ->fields(array('i18n_mode' => 1))
+          ->condition('module', $block->module)
+          ->condition('delta', $block->delta)
+          ->execute();
+      }
+    }
+  }
+}
+
+/**
+ * Drop Drupal 6 {i18n_blocks} table after migration.
+ */
+function i18n_block_update_7001() {
+  if (db_table_exists('i18n_blocks')) {
+    db_drop_table('i18n_blocks');
+  }
+}

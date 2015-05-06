@@ -1,0 +1,14 @@
+name = Entity Translation testing
+description = Tests Entity Translation module functionality. Do not enable.
+core = 7.x
+package = Testing
+hidden = TRUE
+dependencies[] = entity_translation
+files[] = entity_translation_test.module
+
+; Information added by Drupal.org packaging script on 2015-01-22
+version = "7.x-1.0-beta4"
+core = "7.x"
+project = "entity_translation"
+datestamp = "1421971088"
+

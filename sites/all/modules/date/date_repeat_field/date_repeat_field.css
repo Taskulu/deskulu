@@ -1,0 +1,109 @@
+.date-repeat-input {
+  float: left; /* LTR */
+  margin-right: 5px; /* LTR */
+  width: auto;
+}
+.date-repeat-input select {
+  min-width: 7em;
+}
+.date-repeat fieldset {
+  clear: both;
+  float: none;
+}
+
+.date-repeat-radios {
+  margin-bottom: 1em;
+}
+
+.date-repeat-radios input[type=radio] {
+  float: left;
+  margin: 0.75em 0.75em 0 0;
+}
+
+.date-repeat-radios .form-wrapper {
+  float: left;
+}
+
+.date-repeat-radios .form-type-checkboxes .form-type-checkbox {
+  width: 15%;
+  float: left;
+  margin: 0;
+}
+
+.date-repeat-radios .date-repeat-radios-item {
+  margin-bottom: 1em;
+}
+
+.weekly .form-type-checkboxes .form-type-checkbox {
+  float: left;
+  margin-right: 10px;
+}
+
+.date-repeat-input.byday-count label,
+.date-repeat-input.byday-count select,
+.date-clear.bymonthday label,
+.date-clear.bymonthday select {
+  display: inline;
+}
+
+.date-repeat-input.byday-day label,
+.date-clear.bymonthday .field-suffix {
+  font-weight: bold;
+}
+
+.range-of-repeat .form-radios > div {
+  margin-top: 0.5em;
+}
+
+.range-of-repeat .count input[type=text] {
+  margin: 0 0.5em;
+}
+
+.range-of-repeat .until .form-wrapper {
+  margin: 0 0.5em;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.range-of-repeat .until .form-radio,
+.range-of-repeat .until .date-prefix-inline {
+  margin: 0 0 1.4em 0;
+  vertical-align: middle;
+}
+
+.range-of-repeat .until.widget-date_popup.label-above .form-radio,
+.range-of-repeat .until.widget-date_popup.label-above .date-prefix-inline {
+  margin: 0;
+  vertical-align: middle;
+}
+
+.range-of-repeat .until.widget-date_select.label-within .form-radio,
+.range-of-repeat .until.widget-date_select.label-within .date-prefix-inline {
+  margin: 0;
+  vertical-align: middle;
+}
+
+.range-of-repeat .until.widget-date_select.label-above .form-radio,
+.range-of-repeat .until.widget-date_select.label-above .date-prefix-inline {
+  margin: 1.4em 0 0 0;
+  vertical-align: middle;
+}
+
+.range-of-repeat .until .form-type-date-text .date-padding {
+  padding: 0;
+}
+
+.range-of-repeat .until.widget-date_select.label-within .date-padding {
+  padding: 0;
+}
+
+.range-of-repeat .until.widget-date_select.label-above .date-padding {
+  padding: 0;
+}
+
+.range-of-repeat .until .form-type-date-select,
+.range-of-repeat .until .form-type-date-popup,
+.range-of-repeat .until .form-type-date-text {
+  border: none;
+  margin: 0;
+}

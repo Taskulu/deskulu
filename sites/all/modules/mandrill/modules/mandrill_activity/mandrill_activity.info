@@ -1,0 +1,18 @@
+name = Mandrill Activity
+description = View activity for an email address associated with any entity.
+package = Mandrill
+core = 7.x
+
+dependencies[] = mandrill
+dependencies[] = entity
+
+files[] = lib/mandrill_activity.entity.inc
+files[] = lib/mandrill_activity.ui_controller.inc
+files[] = tests/mandrill_activity.test
+
+; Information added by Drupal.org packaging script on 2015-01-09
+version = "7.x-2.1"
+core = "7.x"
+project = "mandrill"
+datestamp = "1420838882"
+

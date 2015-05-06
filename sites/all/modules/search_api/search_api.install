@@ -1,0 +1,1003 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the Search API module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function search_api_schema() {
+  $schema['search_api_server'] = array(
+    'description' => 'Stores all search servers created through the Search API.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'The primary identifier for a server.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'name' => array(
+        'description' => 'The displayed name for a server.',
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => TRUE,
+      ),
+      'machine_name' => array(
+        'description' => 'The machine name for a server.',
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => TRUE,
+      ),
+      'description' => array(
+        'description' => 'The displayed description for a server.',
+        'type' => 'text',
+        'not null' => FALSE,
+      ),
+      'class' => array(
+        'description' => 'The id of the service class to use for this server.',
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => TRUE,
+      ),
+      'options' => array(
+        'description' => 'The options used to configure the service object.',
+        'type' => 'text',
+        'size' => 'medium',
+        'serialize' => TRUE,
+        'not null' => TRUE,
+      ),
+      'enabled' => array(
+        'description' => 'A flag indicating whether the server is enabled.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+      'status' => array(
+        'description' => 'The exportable status of the entity.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0x01,
+        'size' => 'tiny',
+      ),
+      'module' => array(
+        'description' => 'The name of the providing module if the entity has been defined in code.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+    ),
+    'indexes' => array(
+      'enabled' => array('enabled'),
+    ),
+    'unique keys' => array(
+      'machine_name' => array('machine_name'),
+    ),
+    'primary key' => array('id'),
+  );
+
+  $schema['search_api_index'] = array(
+    'description' => 'Stores all search indexes on a {search_api_server}.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'An integer identifying the index.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'name' => array(
+        'description' => 'A name to be displayed for the index.',
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => TRUE,
+      ),
+      'machine_name' => array(
+        'description' => 'The machine name of the index.',
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => TRUE,
+      ),
+      'description' => array(
+        'description' => "A string describing the index' use to users.",
+        'type' => 'text',
+        'not null' => FALSE,
+      ),
+      'server' => array(
+        'description' => 'The {search_api_server}.machine_name with which data should be indexed.',
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => FALSE,
+      ),
+      'item_type' => array(
+        'description' => 'The type of items stored in this index.',
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => TRUE,
+      ),
+      'options' => array(
+        'description' => 'An array of additional arguments configuring this index.',
+        'type' => 'text',
+        'size' => 'medium',
+        'serialize' => TRUE,
+        'not null' => TRUE,
+      ),
+      'enabled' => array(
+        'description' => 'A flag indicating whether this index is enabled.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+      'read_only' => array(
+        'description' => 'A flag indicating whether to write to this index.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'status' => array(
+        'description' => 'The exportable status of the entity.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0x01,
+        'size' => 'tiny',
+      ),
+      'module' => array(
+        'description' => 'The name of the providing module if the entity has been defined in code.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+    ),
+    'indexes' => array(
+      'item_type' => array('item_type'),
+      'server' => array('server'),
+      'enabled' => array('enabled'),
+    ),
+    'unique keys' => array(
+      'machine_name' => array('machine_name'),
+    ),
+    'primary key' => array('id'),
+  );
+
+  $schema['search_api_item'] = array(
+    'description' => 'Stores the items which should be indexed for each index, and their status.',
+    'fields' => array(
+      'item_id' => array(
+        'description' => "The item's entity id (e.g. {node}.nid for nodes).",
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'index_id' => array(
+        'description' => 'The {search_api_index}.id this item belongs to.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'changed' => array(
+        'description' => 'Either a flag or a timestamp to indicate if or when the item was changed since it was last indexed.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+    ),
+    'indexes' => array(
+      'indexing' => array('index_id', 'changed'),
+    ),
+    'primary key' => array('item_id', 'index_id'),
+  );
+
+  $schema['search_api_task'] = array(
+    'description' => 'Stores pending tasks for servers.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'An integer identifying this task.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'server_id' => array(
+        'description' => 'The {search_api_server}.machine_name for which this task should be executed.',
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => TRUE,
+      ),
+      'type' => array(
+        'description' => 'A keyword identifying the type of task that should be executed.',
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => TRUE,
+      ),
+      'index_id' => array(
+        'description' => 'The {search_api_index}.machine_name to which this task pertains, if applicable for this type.',
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => FALSE,
+      ),
+      'data' => array(
+        'description' => 'Some data needed for the task, might be optional depending on the type.',
+        'type' => 'text',
+        'size' => 'medium',
+        'serialize' => TRUE,
+        'not null' => FALSE,
+      ),
+    ),
+    'indexes' => array(
+      'server' => array('server_id'),
+    ),
+    'primary key' => array('id'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ *
+ * Creates a default node index if the module is installed manually.
+ */
+function search_api_install() {
+  // In case the module is installed via an installation profile, a batch is
+  // active and we skip that.
+  if (batch_get()) {
+    return;
+  }
+
+  $name = t('Default node index');
+  $values = array(
+    'name' => $name,
+    'machine_name' => preg_replace('/[^a-z0-9]+/', '_', drupal_strtolower($name)),
+    'description' => t('An automatically created search index for indexing node data. Might be configured to specific needs.'),
+    'server' => NULL,
+    'item_type' => 'node',
+    'options' => array(
+      'index_directly' => 1,
+      'cron_limit' => '50',
+      'data_alter_callbacks' => array(
+        'search_api_alter_node_access' => array(
+          'status' => 1,
+          'weight' => '0',
+          'settings' => array(),
+        ),
+      ),
+      'processors' => array(
+        'search_api_case_ignore' => array(
+          'status' => 1,
+          'weight' => '0',
+          'settings' => array(
+            'strings' => 0,
+          ),
+        ),
+        'search_api_html_filter' => array(
+          'status' => 1,
+          'weight' => '10',
+          'settings' => array(
+            'title' => 0,
+            'alt' => 1,
+            'tags' => "h1 = 5\n" .
+                "h2 = 3\n" .
+                "h3 = 2\n" .
+                "strong = 2\n" .
+                "b = 2\n" .
+                "em = 1.5\n" .
+                "u = 1.5",
+          ),
+        ),
+        'search_api_tokenizer' => array(
+          'status' => 1,
+          'weight' => '20',
+          'settings' => array(
+            'spaces' => '[^\\p{L}\\p{N}]',
+            'ignorable' => '[-]',
+          ),
+        ),
+      ),
+      'fields' => array(
+        'type' => array(
+          'type' => 'string',
+        ),
+        'title' => array(
+          'type' => 'text',
+          'boost' => '5.0',
+        ),
+        'promote' => array(
+          'type' => 'boolean',
+        ),
+        'sticky' => array(
+          'type' => 'boolean',
+        ),
+        'created' => array(
+          'type' => 'date',
+        ),
+        'changed' => array(
+          'type' => 'date',
+        ),
+        'author' => array(
+          'type' => 'integer',
+          'entity_type' => 'user',
+        ),
+        'comment_count' => array(
+          'type' => 'integer',
+        ),
+        'search_api_language' => array(
+          'type' => 'string',
+        ),
+        'body:value' => array(
+          'type' => 'text',
+        ),
+      ),
+    ),
+  );
+  search_api_index_insert($values);
+  drupal_set_message('The Search API module was installed. A new default node index was created.');
+}
+
+/**
+ * Implements hook_enable().
+ *
+ * Mark all items as "dirty", since we can't know whether they are.
+ */
+function search_api_enable() {
+  $types = array();
+  foreach (search_api_index_load_multiple(FALSE) as $index) {
+    if ($index->enabled) {
+      $types[$index->item_type][] = $index;
+    }
+  }
+  foreach ($types as $type => $indexes) {
+    try {
+      $controller = search_api_get_datasource_controller($type);
+      $controller->startTracking($indexes);
+    }
+    catch (SearchApiException $e) {
+      watchdog_exception('search_api', $e);
+    }
+  }
+}
+
+/**
+ * Implements hook_disable().
+ */
+function search_api_disable() {
+  $types = array();
+  foreach (search_api_index_load_multiple(FALSE) as $index) {
+    $types[$index->item_type][] = $index;
+  }
+  foreach ($types as $type => $indexes) {
+    try {
+      $controller = search_api_get_datasource_controller($type);
+      $controller->stopTracking($indexes);
+    }
+    catch (SearchApiException $e) {
+      // Modules defining entity or item types might have been disabled. Ignore.
+    }
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function search_api_uninstall() {
+  variable_del('search_api_index_worker_callback_runtime');
+}
+
+/**
+ * Update function that adds the machine names for servers and indexes.
+ */
+function search_api_update_7101() {
+  $tx = db_transaction();
+  try {
+    // Servers
+    $spec = array(
+      'description' => 'The machine name for a server.',
+      'type' => 'varchar',
+      'length' => 50,
+      'not null' => TRUE,
+      'default' => '',
+    );
+    db_add_field('search_api_server', 'machine_name', $spec);
+
+    $names = array();
+    $servers = db_select('search_api_server', 's')
+      ->fields('s')
+      ->execute();
+    foreach ($servers as $server) {
+      $base = $name = drupal_strtolower(preg_replace('/[^a-z0-9]+/i', '_', $server->name));
+      $i = 0;
+      while (isset($names[$name])) {
+        $name = $base . '_' . ++$i;
+      }
+      $names[$name] = TRUE;
+      db_update('search_api_server')
+        ->fields(array('machine_name' => $name))
+        ->condition('id', $server->id)
+        ->execute();
+    }
+
+    db_add_unique_key('search_api_server', 'machine_name', array('machine_name'));
+
+    //Indexes
+    $spec = array(
+      'description' => 'The machine name of the index.',
+      'type' => 'varchar',
+      'length' => 50,
+      'not null' => TRUE,
+      'default' => '',
+    );
+    db_add_field('search_api_index', 'machine_name', $spec);
+
+    $names = array();
+    $indexes = db_select('search_api_index', 'i')
+      ->fields('i')
+      ->execute();
+    foreach ($indexes as $index) {
+      $base = $name = drupal_strtolower(preg_replace('/[^a-z0-9]+/i', '_', $index->name));
+      $i = 0;
+      while (isset($names[$name])) {
+        $name = $base . '_' . ++$i;
+      }
+      $names[$name] = TRUE;
+      db_update('search_api_index')
+        ->fields(array('machine_name' => $name))
+        ->condition('id', $index->id)
+        ->execute();
+    }
+
+    db_add_unique_key('search_api_index', 'machine_name', array('machine_name'));
+  }
+  catch (Exception $e) {
+    $tx->rollback();
+    try {
+      db_drop_field('search_api_server', 'machine_name');
+      db_drop_field('search_api_index', 'machine_name');
+    }
+    catch (Exception $e1) {
+      // Ignore.
+    }
+    throw new DrupalUpdateException(t('An exception occurred during the update: @msg.', array('@msg' => $e->getMessage())));
+  }
+}
+
+/**
+ * Update replacing IDs with machine names for foreign keys.
+ * {search_api_index}.server and {search_api_item}.index_id are altered.
+ */
+function search_api_update_7102() {
+  // Update of search_api_index:
+  $indexes = array();
+  $select = db_select('search_api_index', 'i')->fields('i');
+  foreach ($select->execute() as $index) {
+    $indexes[$index->id] = $index;
+  }
+  $servers = db_select('search_api_server', 's')->fields('s', array('id', 'machine_name'))->execute()->fetchAllKeyed();
+
+  db_drop_index('search_api_index', 'server');
+  db_drop_field('search_api_index', 'server');
+  $spec = array(
+    'description' => 'The {search_api_server}.machine_name with which data should be indexed.',
+    'type' => 'varchar',
+    'length' => 50,
+    'not null' => FALSE,
+  );
+  db_add_field('search_api_index', 'server', $spec);
+
+  foreach ($indexes as $index) {
+    db_update('search_api_index')
+      ->fields(array('server' => $servers[$index->server]))
+      ->condition('id', $index->id)
+      ->execute();
+  }
+  db_add_index('search_api_index', 'server', array('server'));
+
+  // Update of search_api_item:
+  db_drop_index('search_api_item', 'indexing');
+  db_drop_primary_key('search_api_item');
+  $spec = array(
+    'description' => 'The {search_api_index}.machine_name this item belongs to.',
+    'type' => 'varchar',
+    'length' => 50,
+    'not null' => TRUE,
+  );
+  $keys_new = array(
+    'indexes' => array(
+      'indexing' => array('index_id', 'changed'),
+    ),
+    'primary key' => array('item_id', 'index_id'),
+  );
+  db_change_field('search_api_item', 'index_id', 'index_id', $spec, $keys_new);
+
+  foreach ($indexes as $index) {
+    // We explicitly forbid numeric machine names, therefore we don't have to
+    // worry about conflicts here.
+    db_update('search_api_item')
+      ->fields(array(
+        'index_id' => $index->machine_name,
+      ))
+      ->condition('index_id', $index->id)
+      ->execute();
+  }
+}
+
+/**
+ * Add the database fields newly required for entities by the Entity API.
+ */
+function search_api_update_7103() {
+  if (!function_exists('entity_exportable_schema_fields')) {
+    throw new DrupalUpdateException(t('Please update the Entity API module first.'));
+  }
+  foreach (array('search_api_server', 'search_api_index') as $table) {
+    foreach (entity_exportable_schema_fields() as $field => $spec) {
+      db_add_field($table, $field, $spec);
+    }
+  }
+}
+
+/**
+ * Initialize the "Fields to run on" settings for processors.
+ */
+function search_api_update_7107() {
+  $rows = db_select('search_api_index', 'i')
+    ->fields('i', array('id', 'options'))
+    ->execute()
+    ->fetchAllKeyed();
+  foreach ($rows as $id => $options) {
+    $opt = unserialize($options);
+    $processors = &$opt['processors'];
+    // Only update our own processors, don't mess with others.
+    $check_processors = array(
+      'search_api_case_ignore' => 1,
+      'search_api_html_filter' => 1,
+      'search_api_tokenizer' => 1,
+    );
+    foreach (array_intersect_key($processors, $check_processors) as $name => $info) {
+      $types = array('text');
+      if (!empty($info['settings']['strings'])) {
+        $types[] = 'string';
+        unset($processors[$name]['settings']['strings']);
+      }
+      foreach ($opt['fields'] as $field => $info) {
+        if ($info['indexed'] && search_api_is_text_type($info['type'], $types)) {
+          $processors[$name]['settings']['fields'][$field] = $field;
+        }
+      }
+    }
+    $opt = serialize($opt);
+    if ($opt != $options) {
+      db_update('search_api_index')
+        ->fields(array(
+          'options' => $opt,
+        ))
+        ->condition('id', $id)
+        ->execute();
+    }
+  }
+}
+
+/**
+ * Change {search_api_item}.index_id back to the index' numeric ID.
+ */
+function search_api_update_7104() {
+  $select = db_select('search_api_index', 'i')->fields('i');
+  foreach ($select->execute() as $index) {
+    // We explicitly forbid numeric machine names, therefore we don't have to
+    // worry about conflicts here.
+    db_update('search_api_item')
+      ->fields(array(
+        'index_id' => $index->id,
+      ))
+      ->condition('index_id', $index->machine_name)
+      ->execute();
+  }
+
+  // Update primary key and index.
+  db_drop_index('search_api_item', 'indexing');
+  db_drop_primary_key('search_api_item');
+  $spec = array(
+    'description' => 'The {search_api_index}.id this item belongs to.',
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+  );
+  $keys_new = array(
+    'indexes' => array(
+      'indexing' => array('index_id', 'changed'),
+    ),
+    'primary key' => array('item_id', 'index_id'),
+  );
+  db_change_field('search_api_item', 'index_id', 'index_id', $spec, $keys_new);
+}
+
+/**
+ * Remove all empty aggregated fields for the search_api_alter_add_fulltext data
+ * alterations.
+ */
+function search_api_update_7105() {
+  $rows = db_select('search_api_index', 'i')
+    ->fields('i', array('id', 'options'))
+    ->execute()
+    ->fetchAllKeyed();
+  foreach ($rows as $id => $options) {
+    $opt = unserialize($options);
+    if (isset($opt['data_alter_callbacks']['search_api_alter_add_fulltext']['settings']['fields'])) {
+      foreach ($opt['data_alter_callbacks']['search_api_alter_add_fulltext']['settings']['fields'] as $name => $field) {
+        if (empty($field['name']) || empty($field['fields'])) {
+          unset($opt['data_alter_callbacks']['search_api_alter_add_fulltext']['settings']['fields'][$name]);
+        }
+      }
+    }
+    $opt = serialize($opt);
+    if ($opt != $options) {
+      db_update('search_api_index')
+        ->fields(array(
+          'options' => $opt,
+        ))
+        ->condition('id', $id)
+        ->execute();
+    }
+  }
+}
+
+/**
+ * Update the settings for the "Aggregated fields" data alteration.
+ */
+function search_api_update_7106() {
+  $rows = db_select('search_api_index', 'i')
+    ->fields('i')
+    ->execute()
+    ->fetchAll();
+  foreach ($rows as $row) {
+    $opt = unserialize($row->options);
+    $callbacks = &$opt['data_alter_callbacks'];
+    if (isset($callbacks['search_api_alter_add_fulltext'])) {
+      $callbacks['search_api_alter_add_aggregation'] = $callbacks['search_api_alter_add_fulltext'];
+      unset($callbacks['search_api_alter_add_fulltext']);
+      if (!empty($callbacks['search_api_alter_add_aggregation']['settings']['fields'])) {
+        foreach ($callbacks['search_api_alter_add_aggregation']['settings']['fields'] as &$info) {
+          if (!isset($info['type'])) {
+            $info['type'] = 'fulltext';
+          }
+        }
+      }
+    }
+    $opt = serialize($opt);
+    if ($opt != $row->options) {
+      // Mark the entity as overridden, in case it has been defined in code
+      // only.
+      $row->status |= 0x01;
+      db_update('search_api_index')
+        ->fields(array(
+          'options' => $opt,
+          'status' => $row->status,
+        ))
+        ->condition('id', $row->id)
+        ->execute();
+    }
+  }
+}
+
+/**
+ * Add "read only" property to Search API index entities.
+ */
+function search_api_update_7108() {
+  $db_field = array(
+    'description' => 'A flag indicating whether to write to this index.',
+    'type' => 'int',
+    'size' => 'tiny',
+    'not null' => TRUE,
+    'default' => 0,
+  );
+  db_add_field('search_api_index', 'read_only', $db_field);
+  return t('Added a "read only" property to index entities.');
+}
+
+/**
+ * Clear entity info cache, as entity controller classes hae changed.
+ */
+function search_api_update_7109() {
+  cache_clear_all('entity_info:', 'cache', TRUE);
+}
+
+/**
+ * Rename the "entity_type" field to "item_type" in the {search_api_index} table.
+ */
+function search_api_update_7110() {
+  $table = 'search_api_index';
+  // This index isn't used anymore.
+  db_drop_index($table, 'entity_type');
+  // Rename the "item_type" field (and change the description).
+  $item_type = array(
+    'description' => 'The type of items stored in this index.',
+    'type' => 'varchar',
+    'length' => 50,
+    'not null' => TRUE,
+  );
+  // Also add the new "item_type" index, while we're at it.
+  $keys_new['indexes']['item_type'] = array('item_type');
+  db_change_field($table, 'entity_type', 'item_type', $item_type, $keys_new);
+  // Mark all indexes in code as "OVERRIDDEN".
+  db_update($table)
+    ->fields(array(
+      'status' => 0x03,
+    ))
+    ->condition('status', 0x02)
+    ->execute();
+  // Clear entity info caches.
+  cache_clear_all('*', 'cache', TRUE);
+}
+
+/**
+ * Change the definition of the {search_api_item}.changed field.
+ */
+function search_api_update_7111() {
+  $spec = array(
+    'description' => 'Either a flag or a timestamp to indicate if or when the item was changed since it was last indexed.',
+    'type' => 'int',
+    'size' => 'big',
+    'not null' => TRUE,
+    'default' => 1,
+  );
+  db_change_field('search_api_item', 'changed', 'changed', $spec);
+}
+
+/**
+ * Changes the size of the {search_api_index}.options and {search_api_server}.options fields to "medium".
+ */
+function search_api_update_7112() {
+  $spec = array(
+    'description' => 'The options used to configure the service object.',
+    'type' => 'text',
+    'size' => 'medium',
+    'serialize' => TRUE,
+    'not null' => TRUE,
+  );
+  db_change_field('search_api_server', 'options', 'options', $spec);
+  $spec = array(
+    'description' => 'An array of additional arguments configuring this index.',
+    'type' => 'text',
+    'size' => 'medium',
+    'serialize' => TRUE,
+    'not null' => TRUE,
+  );
+  db_change_field('search_api_index', 'options', 'options', $spec);
+}
+
+/**
+ * Removes superfluous data from the stored index options.
+ */
+function search_api_update_7113() {
+  $indexes = db_select('search_api_index', 'i')
+    ->fields('i')
+    ->execute();
+  foreach ($indexes as $index) {
+    $options = unserialize($index->options);
+    // Weed out fields settings.
+    if (!empty($options['fields'])) {
+      foreach ($options['fields'] as $key => $field) {
+        if (isset($field['indexed']) && !$field['indexed']) {
+          unset($options['fields'][$key]);
+          continue;
+        }
+        unset($options['fields'][$key]['name'], $options['fields'][$key]['indexed']);
+        if (isset($field['boost']) && $field['boost'] == '1.0') {
+          unset($options['fields'][$key]['boost']);
+        }
+      }
+    }
+    // Weed out processor settings.
+    if (!empty($options['processors'])) {
+      // Only weed out settings for our own processors.
+      $processors = array('search_api_case_ignore', 'search_api_html_filter', 'search_api_tokenizer', 'search_api_stopwords');
+      foreach ($processors as $key) {
+        if (empty($options['processors'][$key])) {
+          continue;
+        }
+        $processor = $options['processors'][$key];
+        if (empty($processor['settings']['fields'])) {
+          continue;
+        }
+        $fields = array_filter($processor['settings']['fields']);
+        if ($fields) {
+          $fields = array_combine($fields, array_fill(0, count($fields), TRUE));
+        }
+        $options['processors'][$key]['settings']['fields'] = $fields;
+      }
+    }
+    // Weed out settings for the „Aggregated fields“ data alteration.
+    if (!empty($options['data_alter_callbacks']['search_api_alter_add_aggregation']['settings']['fields'])) {
+      unset($options['data_alter_callbacks']['search_api_alter_add_aggregation']['settings']['actions']);
+      $aggregated_fields = &$options['data_alter_callbacks']['search_api_alter_add_aggregation']['settings']['fields'];
+      foreach ($aggregated_fields as $key => $field) {
+        unset($aggregated_fields[$key]['actions']);
+        if (!empty($field['fields'])) {
+          $aggregated_fields[$key]['fields'] = array_values(array_filter($field['fields']));
+        }
+      }
+    }
+    $options = serialize($options);
+    if ($options != $index->options) {
+      // Mark the entity as overridden, in case it has been defined in code
+      // only.
+      $index->status |= 0x01;
+      db_update('search_api_index')
+        ->fields(array(
+          'options' => $options,
+          'status' => $index->status,
+        ))
+        ->condition('id', $index->id)
+        ->execute();
+    }
+  }
+}
+
+/**
+ * Sanitize watchdog messages.
+ */
+function search_api_update_7114() {
+  if (db_table_exists('watchdog')) {
+    try {
+      $entries = db_select('watchdog', 'w')
+        ->fields('w', array('wid', 'message'))
+        ->condition('type', 'search_api')
+        ->execute();
+      foreach ($entries as $entry) {
+        db_update('watchdog')
+          ->fields(array(
+            'message' => check_plain($entry->message),
+          ))
+          ->condition('wid', $entry->wid)
+          ->execute();
+      }
+    }
+    catch (Exception $e) {
+      throw new DrupalUpdateException(t('An exception occurred during the update: @msg.', array('@msg' => $e->getMessage())));
+    }
+  }
+}
+
+/**
+ * Switch to indexing without the use of a cron queue.
+ */
+function search_api_update_7115() {
+  variable_del('search_api_batch_per_cron');
+  DrupalQueue::get('search_api_indexing_queue')->deleteQueue();
+  db_update('search_api_item')
+    ->fields(array(
+      'changed' => 1,
+    ))
+    ->condition('changed', 0, '<')
+    ->execute();
+}
+
+/**
+ * Transfers the tasks for disabled servers to a separate database table.
+ */
+function search_api_update_7116() {
+  // Create table.
+  $table = array(
+    'description' => 'Stores pending tasks for servers.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'An integer identifying this task.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'server_id' => array(
+        'description' => 'The {search_api_server}.machine_name for which this task should be executed.',
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => TRUE,
+      ),
+      'type' => array(
+        'description' => 'A keyword identifying the type of task that should be executed.',
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => TRUE,
+      ),
+      'index_id' => array(
+        'description' => 'The {search_api_index}.machine_name to which this task pertains, if applicable for this type.',
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => FALSE,
+      ),
+      'data' => array(
+        'description' => 'Some data needed for the task, might be optional depending on the type.',
+        'type' => 'text',
+        'size' => 'medium',
+        'serialize' => TRUE,
+        'not null' => FALSE,
+      ),
+    ),
+    'indexes' => array(
+      'server' => array('server_id'),
+    ),
+    'primary key' => array('id'),
+  );
+  db_create_table('search_api_task', $table);
+
+  // Collect old tasks.
+  $tasks = array();
+  foreach (variable_get('search_api_tasks', array()) as $server => $indexes) {
+    foreach ($indexes as $index => $old_tasks) {
+      if (in_array('clear all', $old_tasks)) {
+        $tasks[] = array(
+          'server_id' => $server,
+          'type' => 'deleteItems',
+        );
+      }
+      if (in_array('remove', $old_tasks)) {
+        $tasks[] = array(
+          'server_id' => $server,
+          'type' => 'removeIndex',
+          'index_id' => $index,
+        );
+      }
+    }
+  }
+  variable_del('search_api_tasks');
+
+  $select = db_select('search_api_index', 'i')
+    ->fields('i', array('machine_name', 'server'));
+  $select->innerJoin('search_api_server', 's', 'i.server = s.machine_name AND s.enabled = 0');
+  $index_ids = array();
+  foreach ($select->execute() as $index) {
+    $index_ids[] = $index->machine_name;
+    $tasks[] = array(
+      'server_id' => $index->server,
+      'type' => 'removeIndex',
+      'index_id' => $index->machine_name,
+    );
+  }
+  if ($index_ids) {
+    db_update('search_api_index')
+      ->fields(array(
+        'enabled' => 0,
+        'server' => NULL,
+      ))
+      ->condition('machine_name', $index_ids)
+      ->execute();
+  }
+
+  if ($tasks) {
+    $insert = db_insert('search_api_task')
+      ->fields(array('server_id', 'type', 'index_id', 'data'));
+    foreach ($tasks as $task) {
+      $task += array(
+        'index_id' => NULL,
+        'data' => NULL,
+      );
+      $insert->values($task);
+    }
+    $insert->execute();
+  }
+}
+
+/**
+ * Checks the database for illegal {search_api_index}.server values.
+ */
+function search_api_update_7117() {
+  $servers = db_select('search_api_server', 's')
+    ->fields('s', array('machine_name'))
+    ->condition('enabled', 1);
+  $indexes = db_select('search_api_index', 'i')
+    ->fields('i', array('id'))
+    ->condition('server', $servers, 'NOT IN')
+    ->execute()
+    ->fetchCol();
+  if ($indexes) {
+    db_delete('search_api_item')
+      ->condition('index_id', $indexes)
+      ->execute();
+    db_update('search_api_index')
+      ->fields(array(
+        'server' => NULL,
+        'enabled' => 0,
+      ))
+      ->condition('id', $indexes)
+      ->execute();
+  }
+}

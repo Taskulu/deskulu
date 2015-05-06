@@ -1,0 +1,28 @@
+<?php
+
+/**
+ * @file
+ * Install, uninstall, and requirements operations.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function select2widget_requirements($phase) {
+  $requirements = array();
+  if($phase == 'runtime') {
+    module_load_include('module', 'libraries');
+    $available = libraries_get_path('select2');
+    $t = get_t();
+
+    $requirements = array(
+      'select2widget_library' => array(
+        'title' => $t('Select2'),
+        'value' => $available ? $t('Library is available') : $t('Library is missing'),
+        'description' => $available ? NULL : $t('Please download the Select2 library into "sites/all/libraries" or any alternative path that is supported by the libraries module.'),
+        'severity' => $available ? REQUIREMENT_OK : REQUIREMENT_ERROR,
+      ),
+    );
+  }
+  return $requirements;
+}

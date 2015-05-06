@@ -1,0 +1,65 @@
+<?php
+
+/**
+ * @file
+ * Removes fonts on disable.
+ */
+
+/**
+ * Implements hook_enable().
+ */
+function local_fonts_enable() {
+
+  // Set weight to 1 to ensure local_fonts_preprocess_html() is executed after
+  // fontyourface_preprocess_html(), which has weight of 0.
+  db_update('system')
+    ->fields(array('weight' => 1))
+    ->condition('name', 'local_fonts')
+    ->execute();
+
+} // local_fonts_enable
+
+/**
+ * Implements hook_disable().
+ */
+function local_fonts_disable() {
+
+  fontyourface_provider_disable('local_fonts');
+
+} // local_fonts_disable
+
+/**
+ * Update local fonts metadata.
+ */
+function local_fonts_update_7200() {
+  $fonts = fontyourface_get_fonts($where = "provider = 'local_fonts'");
+  if (!$fonts) {
+    return NULL;
+  }
+  foreach ($fonts as $font) {
+    $metadata = unserialize($font->metadata);
+    if (isset($metadata['font_uri'])) {
+      unset($metadata['font_uri']);
+    }
+    $dirname = drupal_dirname($metadata['path']);
+    if ($handle = opendir($dirname)) {
+      while ($file_name = readdir($handle)) {
+        if (preg_match("/\.ttf/i", $file_name) == 1) {
+          $metadata['font_uri']['truetype'] = $dirname . '/' . $file_name;
+        }
+        if (preg_match("/\.eot/i", $file_name) == 1) {
+          $metadata['font_uri']['eot'] = $dirname . '/' . $file_name;
+        }
+        if (preg_match("/\.woff/i", $file_name) == 1) {
+          $metadata['font_uri']['woff'] = $dirname . '/' . $file_name;
+        }
+        if (preg_match("/\.svg/i", $file_name) == 1) {
+          $metadata['font_uri']['svg'] = $dirname . '/' . $file_name;
+        }
+      }
+      closedir($handle);
+    }
+    $font->metadata = serialize($metadata);
+    fontyourface_save_font($font);
+  }
+}

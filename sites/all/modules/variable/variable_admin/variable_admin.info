@@ -1,0 +1,11 @@
+name = Variable admin
+description = Variable Administration UI
+dependencies[] = variable
+package = Variable
+core = 7.x
+; Information added by Drupal.org packaging script on 2014-04-23
+version = "7.x-2.5"
+core = "7.x"
+project = "variable"
+datestamp = "1398250128"
+

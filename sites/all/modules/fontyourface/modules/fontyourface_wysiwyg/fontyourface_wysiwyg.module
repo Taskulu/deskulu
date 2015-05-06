@@ -1,0 +1,81 @@
+<?php
+// $Id$
+
+/**
+ * Implements template_preprocess_page().
+ */
+function fontyourface_wysiwyg_preprocess_page(&$vars) {
+
+  $fonts = fontyourface_get_fonts();
+
+  $css = fontyourface_wysiwyg_generate_css($fonts);
+  $css_md5 = md5($css);
+  
+  if ($css_md5 != variable_get('fontyourface_wysiwyg_css_md5', '')) {
+
+    fontyourface_wysiwyg_rewrite_css($css);
+    variable_set('fontyourface_wysiwyg_css_md5', $css_md5);
+
+  } // if
+
+  if ($css != '') {
+    fontyourface_add_css_in_preprocess($vars, 'fontyourface/wysiwyg.css');
+  } // if
+
+} // fontyourface_wysiwyg_preprocess_page
+
+/**
+ * Generates CSS.
+ */
+function fontyourface_wysiwyg_generate_css($fonts = FALSE) {
+  
+  // Get font list.
+
+  if (!$fonts) {
+    $fonts = fontyourface_get_fonts();
+  } // if
+
+  // Generate CSS.
+
+  $css = '';
+
+  foreach ($fonts as $font) {
+
+    $font_css = fontyourface_font_css($font);
+
+    if ($font_css != '') {
+      $css .= '.fontyourface-' . $font->fid . ' { ' . $font_css . ' }' . "\n";
+    } // if
+
+  } // foreach
+
+  return $css;
+
+} // fontyourface_wysiwyg_generate_css
+
+/**
+ * Re-writes wysiwyg.css file.
+ */
+function fontyourface_wysiwyg_rewrite_css($css) {
+
+  // Write CSS.
+
+  $destination = file_stream_wrapper_uri_normalize('public://fontyourface/wysiwyg.css');
+  $destination_directory = dirname($destination);
+
+  if (file_prepare_directory($destination_directory, FILE_CREATE_DIRECTORY)) {
+    file_unmanaged_save_data($css, $destination, FILE_EXISTS_REPLACE);
+  } // if
+  
+} // fontyourface_wysiwyg_rewrite_css
+
+/**
+ * Implements hook_wysiwyg_include_directory().
+ */
+function fontyourface_wysiwyg_wysiwyg_include_directory($type) {
+
+  if ($type == 'plugins') {
+    return 'plugins';
+  } // if
+
+} // fontyourface_wysiwyg_wysiwyg_include_directory

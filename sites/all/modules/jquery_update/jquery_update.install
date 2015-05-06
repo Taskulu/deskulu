@@ -1,0 +1,49 @@
+<?php
+
+/**
+ * @file
+ * Install file for jQuery Update.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function jquery_update_requirements($phase) {
+  $requirements = array();
+
+  if ($phase == 'runtime') {
+    $t = get_t();
+    $jquery = drupal_get_library('system', 'jquery');
+    $ui = drupal_get_library('system', 'ui');
+    $requirements['jquery_update'] = array(
+      'title' => $t('jQuery Update'),
+      'severity' => REQUIREMENT_OK,
+      'value' => t('jQuery %jquery (<a href="@link">configure</a>) and jQuery UI %ui', array('%jquery' => $jquery['version'], '%ui' => $ui['version'], '@link' => url('admin/config/development/jquery_update'))),
+    );
+  }
+
+  return $requirements;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function jquery_update_uninstall() {
+  variable_del('jquery_update_compression_type');
+  variable_del('jquery_update_jquery_version');
+  variable_del('jquery_update_jquery_admin_version');
+  variable_del('jquery_update_jquery_cdn');
+}
+
+/**
+ * Update from Drupal 6.
+ */
+function jquery_update_update_7000() {
+  if (variable_get('jquery_update_compression_type', 'min') == 'pack') {
+    variable_set('jquery_update_compression_type', 'min');
+  }
+  variable_del('jquery_update_replace');
+
+  // Restore the default version of jQuery.
+  variable_del('jquery_update_jquery_version');
+}

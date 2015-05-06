@@ -1,0 +1,15 @@
+name = Title Test
+description = Testing module for Title module functionality. Do not enable.
+core = 7.x
+package = Testing
+hidden = TRUE
+dependencies[] = title
+dependencies[] = entity
+dependencies[] = entity_translation
+
+; Information added by drupal.org packaging script on 2013-03-18
+version = "7.x-1.0-alpha7"
+core = "7.x"
+project = "title"
+datestamp = "1363626024"
+

@@ -1,0 +1,252 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the date_api module.
+ */
+
+/**
+ * Helper function for setting Date variables.
+ */
+function date_api_set_variables() {
+  // Set absolute minimum and maximum year for dates on this site.
+  // There is actually no maximum and minimum year in PHP 5, but a date with
+  // a year less than 0 would result in negative ISO and DATETIME dates,
+  // like -1250-01-01T00:00:00, which probably won't make sense or work
+  // correctly anywhere.
+  // The odd construct of using variable_get() instead of variable_set()
+  // is so we don't accidentally write over an existing value. If
+  // no value is set, variable_get() will set it.
+  variable_get('date_max_year', 4000);
+  variable_get('date_min_year', 1);
+  variable_get('date_php_min_year', 1901);
+
+  // Set an API version in a way that other modules can test for compatibility.
+  variable_set('date_api_version', '7.2');
+}
+
+/**
+ * Implements hook_requirements().
+ */
+function date_api_requirements($phase) {
+  $requirements = array();
+
+  if ($phase == 'runtime') {
+    $t = get_t();
+    module_load_include('module', 'date_api');
+    $messages = date_api_status();
+    $error_messages = !empty($messages['errors']) ? $messages['errors'] : array();
+    $success_messages = !empty($messages['success']) ? $messages['success'] : array();
+
+    if (!empty($error_messages)) {
+      $requirements['date'] = array(
+        'title' => $t('Date API'),
+        'value' => $t('Missing system date settings'),
+        'description' => implode(' ', array_merge($error_messages, $success_messages)),
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+    else {
+      $requirements['date'] = array(
+        'title' => $t('Date API'),
+        'value' => $t('System date settings'),
+        'description' => implode(' ', $success_messages),
+      );
+    }
+  }
+  return $requirements;
+}
+
+/**
+ * Implements hook_install().
+ */
+function date_api_install() {
+  // Only set the message if Drupal itself is already installed.
+  if (variable_get('install_task') == 'done') {
+    // Ensure translations don't break at install time.
+    $t = get_t();
+
+    // date_api_set_variables can install date_timezone. The
+    // date_timezone_install() function does a module_enable('date_api'). This
+    // means that date_api_enable() can be called before date_api_install()
+    // finishes! So the date_api schema needs to be installed before this line!
+    date_api_set_variables();
+
+    $message = $t('The Date API requires that you set up the <a href="@regional_settings">site timezone and first day of week settings</a> and the <a href="@regional_date_time">date format settings</a> to function correctly.', array('@regional_settings' => url('admin/config/regional/settings'), '@regional_date_time' => url('admin/config/regional/date-time')));
+    drupal_set_message(filter_xss_admin($message), 'warning');
+  }
+}
+
+/**
+ * Implements hook_enable().
+ */
+function date_api_enable() {
+  date_api_set_variables();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function date_api_uninstall() {
+  cache_clear_all('date_timezone_identifiers_list', 'cache');
+  $variables = array(
+    'date_api_version',
+    'date_min_year',
+    'date_max_year',
+    'date_php_min_year',
+    'date_db_tz_support',
+    'date_api_use_iso8601',
+    );
+  foreach ($variables as $variable) {
+    variable_del($variable);
+  }
+
+  if (db_table_exists('views_display')) {
+    $displays = array(
+      'date_nav',
+    );
+    db_query("DELETE FROM {views_display} WHERE display_plugin IN ('" . implode("','", $displays) . "')");
+    db_query("DELETE FROM {cache_views}");
+  }
+}
+
+/**
+ * Implements hook_update_last_removed().
+ */
+function date_api_update_last_removed() {
+  return 6005;
+}
+
+/**
+ * Move old date format data to new date format tables, and delete the old
+ * tables. Insert only values that don't already exist in the new tables, in
+ * case new version of those custom values have already been created.
+ */
+function date_api_update_7000() {
+  // Move format data from the old 'date_format_types' table to the new
+  // 'date_format_type' table.
+  if (db_table_exists('date_format_types')) {
+    // Find all the custom entries in the D6 table.
+    $result = db_select('date_format_types', 'old')
+      ->fields('old', array('type', 'title', 'locked'))
+      ->condition('locked', 0)
+      ->execute()
+      ->fetchAll(PDO::FETCH_ASSOC);
+
+    // Iterate over all the old values.
+    foreach ($result as $row) {
+      // See if this value already exists in the new table
+      // (it might have been added manually before this update got run).
+      $count = db_select('date_format_type', 'new')
+        ->condition('type', $row['type'])
+        ->countQuery()
+        ->execute()
+        ->fetchField();
+
+      // If the value is missing, insert it.
+      // Do nothing if it already exists, assume the value in the
+      // new table trumps the old values.
+      if (empty($count)) {
+        db_insert('date_format_type')
+          ->fields(array(
+            'type' => $row['type'],
+            'title' => $row['title'],
+            'locked' => $row['locked'],
+          ))
+          ->execute();
+      }
+    }
+
+    // Drop the old table.
+    db_drop_table('date_format_types');
+
+  }
+
+  // Move format data from the old 'date_formats' table (which was renamed to
+  // 'd6_date_formats') to the new 'date_formats' table.
+  if (db_table_exists('d6_date_formats')) {
+    // Find all the custom entries in the D6 table.
+    $result = db_select('d6_date_formats', 'old')
+      ->fields('old', array('format', 'type', 'locked'))
+      ->condition('type', 'custom')
+      ->execute()
+      ->fetchAll(PDO::FETCH_ASSOC);
+
+    // Iterate over all the old values.
+    foreach ($result as $row) {
+      // See if this value already exists in the new table (it might have been
+      // added manually before this update got run).
+      $count = db_select('date_formats', 'new')
+        ->condition('format', $row['format'])
+        ->condition('type', $row['type'])
+        ->countQuery()
+        ->execute()
+        ->fetchField();
+
+      // If the value is missing, insert it. Do nothing if it already exists,
+      // assume the value in the new table trumps the old values.
+      if (empty($count)) {
+        db_insert('date_formats')
+          ->fields(array(
+            'format' => $row['format'],
+            'type' => $row['type'],
+            'locked' => $row['locked'],
+          ))
+          ->execute();
+      }
+    }
+
+    // Drop the old table.
+    db_drop_table('d6_date_formats');
+  }
+
+  // Move format data from the old 'date_format_locale' table (which was renamed
+  // to 'd6_date_format_locale') to the new 'date_format_locale' table.
+  if (db_table_exists('d6_date_format_locale')) {
+    // Find all the custom entries in the D6 table.
+    $result = db_select('d6_date_format_locale', 'old')
+      ->fields('old', array('format', 'type', 'language'))
+      ->condition('type', 'custom')
+      ->execute()
+      ->fetchAll(PDO::FETCH_ASSOC);
+
+    // Iterate over all the old values.
+    foreach ($result as $row) {
+      // See if this value already exists in the new table (it might have been
+      // added manually before this update got run).
+      $count = db_select('date_format_locale', 'new')
+        ->condition('format', $row['format'])
+        ->condition('type', $row['type'])
+        ->condition('language', $row['language'])
+        ->countQuery()
+        ->execute()
+        ->fetchField();
+
+      // If the value is missing, insert it.
+      // Do nothing if it already exists, assume the value in the
+      // new table trumps the old values.
+      if (empty($count)) {
+        db_insert('date_format_locale')
+          ->fields(array(
+            'format' => $row['format'],
+            'type' => $row['type'],
+            'language' => $row['language'],
+          ))
+          ->execute();
+      }
+    }
+
+    // Drop the old table.
+    db_drop_table('d6_date_format_locale');
+  }
+}
+
+
+/**
+ * Drop D6 timezone_name field on {users} after upgrading to D7.
+ */
+function date_api_update_7001() {
+  if (db_field_exists('users', 'timezone_name')) {
+    db_drop_field('users', 'timezone_name');
+  }
+}

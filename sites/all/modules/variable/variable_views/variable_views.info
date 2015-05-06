@@ -1,0 +1,17 @@
+name = Variable views
+description = Provides views integration for variable, included a default variable argument.
+dependencies[] = variable
+dependencies[] = views
+package = Variable
+core = 7.x
+
+files[] = includes/views_plugin_argument_default_variable.inc
+files[] = includes/views_handler_field_variable_title.inc
+files[] = includes/views_handler_field_variable_value.inc
+
+; Information added by Drupal.org packaging script on 2014-04-23
+version = "7.x-2.5"
+core = "7.x"
+project = "variable"
+datestamp = "1398250128"
+

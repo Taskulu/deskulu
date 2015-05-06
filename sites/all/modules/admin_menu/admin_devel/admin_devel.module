@@ -1,0 +1,33 @@
+<?php
+
+/**
+ * @file
+ * Administration and debugging functionality for developers and site builders.
+ */
+
+/**
+ * Implements hook_form_FORMID_alter().
+ */
+function admin_devel_form_admin_menu_theme_settings_alter(&$form, &$form_state) {
+  $form['actions']['wipe_rebuild'] = array(
+    '#type' => 'submit',
+    '#value' => t('Rebuild system links'),
+    '#submit' => array('admin_devel_form_admin_menu_theme_settings_alter_rebuild_submit'),
+    // @todo Not necessarily ready for mass-consumption yet.
+    '#access' => FALSE,
+  );
+}
+
+/**
+ * Form submit handler to wipe and rebuild all 'module' = 'system' menu links.
+ */
+function admin_devel_form_admin_menu_theme_settings_alter_rebuild_submit($form, &$form_state) {
+  // Delete all auto-generated menu links derived from menu router items.
+  db_delete('menu_links')
+    ->condition('module', 'system')
+    ->execute();
+  // Rebuild menu links from current menu router items.
+  menu_rebuild();
+
+  drupal_set_message(t('System links derived from menu router paths have been rebuilt.'));
+}

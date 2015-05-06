@@ -1,0 +1,321 @@
+<?php
+
+define('TYPEKIT_API_BASE_URL', 'https://typekit.com/api/v1/json/');
+
+/**
+ * Implements hook_fontyourface_info().
+ */
+function typekit_api_fontyourface_info() {
+
+  return array(
+    'name' => 'Typekit',
+    'url' => 'http://typekit.com/',
+    'base_path' => 'http://typekit.com/fonts/',
+  );
+
+  return $info;
+
+} // typekit_api_fontyourface_info
+
+/**
+ * Implements hook_fontyourface_import().
+ */
+function typekit_api_fontyourface_import() {
+  
+  $success = TRUE;
+  $kits = typekit_api_get_kits();
+
+  fontyourface_log('Imported Typekit kits: @kits', array('@kits' => print_r($kits, TRUE)));
+
+  foreach ($kits as $kit) {
+
+    $kit_info = typekit_api_get_kit($kit->id);
+
+    fontyourface_log('Imported Typekit kit info: @kit', array('@kit' => print_r($kit_info, TRUE)));
+
+    if (typekit_api_kit_matches_domain($kit_info, $_SERVER['HTTP_HOST'])) {
+
+      foreach ($kit_info->families as $family_info) {
+
+        foreach ($family_info->variations as $variant_index => $variant_id) {
+
+          $variant = typekit_api_get_variant($family_info->id, $variant_id);
+
+          fontyourface_log('Imported Typekit variant info: @variant', array('@variant' => print_r($variant, TRUE)));
+
+          $metadata = array(
+            'typekit_id' => $variant->id,
+            'variant' => $variant->font_variant,
+            'kit' => $kit_info->id,
+          );
+
+          $font = new stdClass;
+          $font->name = $variant->name;
+          $font->url = 'http://typekit.com/fonts/' . $family_info->slug . '#' . $variant_id;
+          $font->provider = 'typekit_api';
+          $font->enabled = 1;
+          $font->metadata = serialize($metadata);
+          // Enclose each family name in single quotes.
+          $font->css_family = "'" . implode("', '", $family_info->css_names) . "'";
+          $font->css_style = $variant->font_style;
+          $font->css_weight = $variant->font_weight;
+          $font->foundry = $variant->foundry->name;
+          $font->foundry_url = 'http://typekit.com/foundries/' . $variant->foundry->slug;
+          $font->tags = array();
+
+          fontyourface_save_font($font);
+
+        } // foreach
+
+      } // foreach
+
+    } // if
+    else {
+      $success = FALSE;
+      fontyourface_log('Typekit kit did not match current domain, @domain', array('@domain' => $_SERVER['HTTP_HOST']));
+    }
+  } // foreach
+
+  return $success; 
+  
+} // typekit_api_fontyourface_import
+
+/**
+ * Implements template_preprocess_html().
+ */
+function typekit_api_preprocess_html(&$vars) {
+
+  if (!empty($vars['fontyourface'])) {
+
+    $kits = array();
+
+    foreach ($vars['fontyourface'] as $used_font) {
+
+      if ($used_font->provider == 'typekit_api') {
+
+        $metadata = unserialize($used_font->metadata);
+        $kits[$metadata['kit']] = TRUE;
+
+      } // if
+
+    } // foreach
+
+    if (count($kits) > 0) {
+
+      $base = 'http://use.typekit.com/';
+
+      if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') {
+        $base = 'https://use.typekit.com/';
+      } // if
+
+      foreach (array_keys($kits) as $kit) {
+
+        drupal_add_js($base . $kit . '.js', array('type' => 'external'));
+
+      } // foreach
+
+      drupal_add_js('try{Typekit.load();}catch(e){}', array('type' => 'inline'));
+
+    } // if
+
+  } // if
+
+} // typekit_api_preprocess_html
+
+/**
+ * Implements hook_form_alter().
+ */
+function typekit_api_form_alter(&$form, &$form_state, $form_id) {
+
+  if ($form_id == 'fontyourface_ui_settings_form') {
+
+    $form['typekit_api'] = array(
+      '#type' => 'fieldset',
+      '#title' => 'Typekit',
+      '#weight' => -1,
+      'typekit_api_token' => array(
+        '#type' => 'textfield',
+        '#title' => t('TypeKit API token'),
+        '#description' => t('Provided at ') . l('Typekit.com/account/tokens', 'https://typekit.com/account/tokens'),
+        '#default_value' => variable_get('typekit_api_token', ''),
+      ),
+      'typekit_api_save' => array(
+        '#type' => 'submit',
+        '#value' => t('Save TypeKit API token'),
+      ),
+    );
+    
+    // Move the default update/import button to the Typekit fieldset
+    if (isset($form['providers']['typekit_api_import'])) {
+      $form['typekit_api']['typekit_api_import'] = $form['providers']['typekit_api_import'];
+      unset($form['providers']['typekit_api_import']);
+    }
+    
+    $form['#submit'][] = 'typekit_api_token_submit';
+
+  } // if
+
+} // typekit_api_form_alter
+
+/**
+ * Updates API token.
+ */
+function typekit_api_token_submit($form, &$form_state) {
+
+  if ($form_state['clicked_button']['#parents'][0] == 'typekit_api_save') {
+
+    variable_set('typekit_api_token', $form_state['values']['typekit_api_token']);
+    drupal_set_message(t('Typeit API token updated.'));
+
+  } // if
+
+} // typekit_api_token_submit
+
+/**
+ * Implements hook_fontyourface_preview().
+ */
+function typekit_api_fontyourface_preview($font, $text = NULL, $size = 18) {
+
+  $output = '';
+
+  if ($text == NULL) {
+    $text = $font->name;
+  } // if
+
+  if ($size == 'all') {
+
+    // Display variety of sizes.
+
+    $sizes = array(32, 24, 18, 14, 12, 10);
+
+    foreach ($sizes as $size) {
+
+      $output .= '<div style="' . fontyourface_font_css($font) . ' font-size: ' . $size . 'px; line-height: ' . $size . 'px;">' . $text . '</div>';
+
+    } // foreach
+
+  } // if
+  else {
+
+    // Display single size.
+
+    $output = '<span style="' . fontyourface_font_css($font) . ' font-size: ' . $size . 'px; line-height: ' . $size . 'px;">' . $text . '</span>';
+
+  } // else
+
+  return $output;
+
+} // typekit_api_fontyourface_preview
+
+/**
+ * Provides header with token.
+ */
+function typekit_api_token_headers() {
+
+  return array('X-Typekit-Token' => variable_get('typekit_api_token', ''));
+
+} // typekit_api_token_headers
+
+/**
+ * Gets list of kits from API.
+ */
+function typekit_api_get_kits() {
+
+  $kits = array();
+
+  $response = drupal_http_request(TYPEKIT_API_BASE_URL . 'kits', array('headers' => typekit_api_token_headers()));
+
+  if ($response->code == 200) {
+
+    $data = json_decode($response->data);
+    $kits = $data->kits;
+
+  } // if
+  else {
+
+    drupal_set_message(t('There was an error importing kit list from Typekit.'), 'error');
+    fontyourface_log('Invalid drupal_http_request response: @response', array('@response' => print_r($response, TRUE)));
+
+  } // else
+
+  return $kits;
+
+} // typekit_api_get_kits
+
+/**
+ * Get a specific kit from API based on ID.
+ */
+function typekit_api_get_kit($kit_id) {
+
+  $response = drupal_http_request(TYPEKIT_API_BASE_URL . 'kits/' . $kit_id, array('headers' => typekit_api_token_headers()));
+
+  if ($response->code == 200) {
+
+    $data = json_decode($response->data);
+    $kit = $data->kit;
+
+  } // if
+  else {
+
+    drupal_set_message(t('There was an error importing a kit (@kit) from Typekit.', array('@kit' => $kit_id)), 'error');
+    fontyourface_log('Invalid drupal_http_request response: @response', array('@response' => print_r($response, TRUE)));
+
+  } // else
+
+  return $kit;
+
+} // typekit_api_get_kit
+
+/**
+ * Checks if a given kit matches a given domain.
+ */
+function typekit_api_kit_matches_domain($kit, $domain) {
+
+  $domain = drupal_strtolower($domain);
+
+  foreach ($kit->domains as $kit_domain) {
+
+    $kit_domain = drupal_strtolower($kit_domain);
+
+    if ($kit_domain == $domain) {
+      return TRUE;
+    } // if
+    else {
+
+      $regex = '#' . str_replace(array('.', '*'), array('\.', '.*'), $kit_domain) . '#';
+
+      if (preg_match($regex, $domain)) {
+        return TRUE;
+      } // if
+
+    } // else
+
+  } // foreach
+
+  return FALSE;
+
+} // typekit_api_kit_matches_domain
+
+/**
+ * Get a specific variant from API based on family and variant IDs.
+ */
+function typekit_api_get_variant($family_id, $variant_id) {
+
+  $response = drupal_http_request(TYPEKIT_API_BASE_URL . 'families/' . $family_id . '/' . $variant_id, array('headers' => typekit_api_token_headers()));
+
+  if ($response->code == 200) {
+
+    $data = json_decode($response->data);
+    $variant = $data->variation;
+
+  } // if
+  else {
+
+    drupal_set_message(t('There was an error importing a variant (@kit, @variant) from Typekit.', array('@kit' => $kit_id, '@variant' => $variant_id)), 'error');
+    fontyourface_log('Invalid drupal_http_request response: @response', array('@response' => print_r($response, TRUE)));
+
+  } // else
+
+  return $variant;
+
+} // typekit_api_get_variant

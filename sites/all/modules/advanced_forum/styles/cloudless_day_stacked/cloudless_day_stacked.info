@@ -1,0 +1,13 @@
+
+name = Cloudless Day Stacked
+description = A style with light blues reminiscent of the sky.
+version = 2.x
+base style = cloudless_day
+extra style = naked_stacked
+
+; Information added by Drupal.org packaging script on 2015-02-10
+version = "7.x-2.5"
+core = "7.x"
+project = "advanced_forum"
+datestamp = "1423590792"
+

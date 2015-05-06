@@ -1,0 +1,502 @@
+2013-07-15
+New stable release 7.x-1.15
+
+Updated the default URL to CKEditor CDN to use the 4.4.3 version.
+[#2175565] removed ckeditor.make added in 7.x-1.14.
+
+2013-05-08
+New stable release 7.x-1.14
+
+[#2255129] by wwalc: Introduced support for the codesnippet and mathjax plugins.
+[#1762328] by wwalc: IMPORTANT: <code> tags are no longer protected by default.
+[#1327898] by grasmash: Adding new ckeditor_security_filter_alter() hook.
+[#2175565] by hswong3i: Download Library with ckeditor.make for Simple Profile Integration. (removed in 7.x-1.15)
+[#2249139] by wwalc: Use CKEditor 4.4.0 from CKEditor CDN (http://cdn.ckeditor.com) by default.
+[#1370894] by uberhacker, mgifford, Devin Carlson: Conditionally load ckeditor.css only when necessary.
+[#1960808] by valkum, wwalc: Avoid using arg() in code.
+[#1914496] by Danylo Dragan: Drush integration code doesn't respect --skip option.
+[#2085245] by jlyon: Fix theme path displayed on Edit CKEditor Profile page.
+[#2123669] by wwalc: Better support for loading custom CKEditor skins.
+[#1914904] by rooby: Media plugin not working in IE 9 and below.
+[#2244835] by loopduplicate: CKEditor is not visible in Panels IPE in IE11.
+[#2244817] by wwalc: CKEditor from CDN does not load in Panels IPE when a form is loaded in a popup for the first time.
+[#2244387] by wwalc: 3rd party plugins with large icons break the toolbar configurator.
+[#2013657] by pfrenssen: Allow other modules to alter the default settings.
+[#2236367] by greenSkin: Add $conf array to ckeditor_settings alter hook.
+[#1452544] by covenantd, RedRat: DrupalPageBreak button not visible when using Smart Paging module.
+[#2231005] by ChinggizKhan: Only set "window.CKEDITOR_BASEPATH" when it isnt already set.
+[#1659576] by ChinggizKhan: Text of "Switch to plain text editor" link doesn't toggle.
+[#2043365] by Erik Erskine, Danny_Joris: CKEditor profile exported as feature with filter format does not import properly.
+[#2234971] by wwalc: Adjust the default toolbars.
+[#2234967] by wwalc: Add support for loading CKEditor from remote URL.
+[#2234943] by wwalc: Use the moono icons in the administration area.
+[#2127467] by wwalc: Support Pantheon Live Environment.
+[#1971566] by wwalc: Mediaembed throws JS error with ACF enabled.
+[#1950498] by wwalc: Advanced Content Filter introduced in CKEditor 4.1 is now configurable in CKEditor profile.
+[#1971502] by wwalc: Mediaembed plugin should define allowedContent for ACF.
+
+2013-04-12
+New stable release 7.x-1.13
+
+Bug fixes:
+
+[#1063482] by nod_, wwalc, roderik, helior, hadsie: Use Libraries API for CKEditor
+[#1898294] by kscheirer: Fatal error if Libraries module is enabled after CKEditor
+[#1961596] by jcisio: Added 'feature_source()' option so that ckeditor_profile() component is visible in drush.
+[#1356026] by Volx, hctom: Fixed Profile loses text formats when exported into a feature using Drush.
+[#1895278] by wwalc WYSIWYG editor should allow Drupal to trigger 'formUpdated' event
+[#1957066] by rudiedirkx: Use field_extra_fields to be able to position the "Rich text editor settings" fieldset
+[#1959754] by wwalc: CKFinder is not installed correctly - improve information in the status report
+[#1810910] by mokaspar, jcisio, DeFr: Fixed Comments gets filtered out by ckeditor_filter_xss().
+[#1909318] by Simon Georges: Useless file inclusion in ckeditor.info.
+[#1603014] by anou, SebCorbin: Corrected strings used in Security section.
+[#1889010] by michal_cksource: Problem with CKFinder files upload when private download method is used
+[#1885950] by michal_cksource: Fix HTML validation for iframe in profile configuration
+[#1885938] by michal_cksource: Disable div based editor on default
+[#1872064] by dczepierga: Undefined index: loadPlugins in ckeditor_modules_disabled() and ckeditor_modules_uninstalled()
+
+2012-12-22
+New stable release 7.x-1.12
+
+Bug fixes:
+[#1871918] by matulis: Bug in checking if a file "contents.css" exists
+[#1870270] by dczepierga: Disable plugins which not exists and are stored in ckeditor profiles
+[#1864760] by dczepierga: Wrong path to plugins stored in database
+[#1868416] by dczepierga: Move skin selection option to CKEditor Global Profile
+[#1866654] by dczepierga: Remove "Skin" and "Toolbar state on startup" options from user profile
+[#1865086] by dczepierga: Set default theme if selected not exists
+
+2012-12-12
+New stable release 7.x-1.11
+
+New features:
+[#1858840] by dczepierga: Add option to enable/disable aggregate ckeditor.js script
+[#1847662] by dczepierga: Add support for CKEditor v4
+[#1577518] by dczepierga: Remove unused/unsupported hook_user from code
+[#1559700] by dczepierga: Disable HTML Entities conversion by default
+[#1692666] by dczepierga: Unset Ckeditor-Plugin upon module disabling/uninstalling
+
+Bug fixes:
+[#1760506] by ceng: CKEditor features are not reverted or applied from the command line
+[#1857910] by dczepierga: Using extraPlugins config option in Custom JavaScript (Advanced options) not working
+[#1850626] by dczepierga: Wrong path to external plugins loaded by hook
+[#1844390] by dczepierga: Undefined index: loadPlugins in ckeditor_modules_enabled()
+[#1790082] by dczepierga: Order of filters calling in ckeditor filter XSS function
+[#1728318] by dczepierga: Text format filters are not properly given $format; cannot look up their per-format settings
+[#1698600] by azovsky: Undefined index: format in ckeditor_pre_render_text_format()
+[#1651130] by lmeurs: Wrong variable substitution using t()
+[#1637416] by michal_cksource: Fix description to "Custom JavaScript configuration" option
+[#1595606] by kmcnamee: Wrong instructions for configuring CKFinder
+[#1350998] by MegaChriz: CKEditor settings appear on all user profile edit pages
+[#1567022] by dczepierga: Overlays of administration toolbar appears in CKEditor maximized mode
+[#1557526] by dczepierga: CKEditor gets inserted multiple times on text format selection
+[#1554840] by dczepierga: Missing argument - WYSIWYG Filter, HTML Purifier & HTMLawed
+
+2012-04-18
+New stable release 7.x-1.9
+
+New features:
+[#1489358] by dczepierga: Add support for the Stylesheet Parser plugin
+[#1483402] by dczepierga: Change security filters policy
+[#1489074] by acbramley: Change CKEditor XSS URL to be passed through url()
+[#1473010] by michal_cksource: Set spellchecker to use the interface language
+
+Bug fixes:
+[#1537824] by dczepierga: External plugins do not work when the ckeditor_basic.js loading method is used
+[#1507852] by dczepierga: 'drush ckeditor-download' fails if SVN is not installed
+[#1432068] by kruser:  Fix path to the sites/all/libraries/ckeditor/ckeditor.styles.js file
+[#1504398] by ndeschildre: Importing CKEditor profile features fails, manual revert is needed
+[#1508342] by dczepierga: WSOD on saving content from CKEditor using Ajax when the node edit form is embedded in the display of another node
+[#1491210] by michal_cksource: CKEditor gets disabled/enabled on all AJAX calls
+[#1512196] by dczepierga: Refactor code with titles and descriptions now available for translation
+[#1496164] by michal_cksource: Buttons are too high when using the drag & drop feature in Firefox
+[#1492344] by dczepierga: Portuguese language missing
+
+2012-03-15
+New stable release 7.x-1.8
+
+Bug fixes:
+[#1371660] by dczepierga: CKFinder requirement check needs fixing
+
+2012-03-14
+New stable release 7.x-1.7
+
+New features:
+[#1338044] by dczepierga: Add an option to disable the toolbar wizard
+[#1349330] by dczepierga: Add a configuration option to set the CKFinder library path
+
+Bug fixes:
+[#1345738] by michal_cksource: Included JavaScript files for the toolbar drag & drop wizard should be minified
+[#1361846] by mrsimonelliott: CKEditor does not load on a 'Long Text' CCK field
+[#1371660] by dczepierga: CKFinder requirement check needs fixing
+[#1043230] by KoCo: D7 administration toolbar overlays CKEditor in maximized mode
+[#1357794] by dczepierga: Invalid attribute "disc-type" in ckeditor.css
+[#1324990] by michal_cksource: Problems with access to private files (download)
+[#1343310] by michal_cksource: Change settings for private download
+[#1351470] by dczepierga: CKEditor plugins added with the "hook_ckeditor_plugin" button do not appear in the toolbar
+[#1329980] by jherencia: Problem with CKEditor module update
+[#1347682] by jherencia: D6 to D7 - error in update #7003 when running update.php
+[#1350382] by michal_cksource: Improve regex pattern to find plugins for CKEditor
+[#1349304] by michal_cksource: Change descriptions in CKEditor help page
+[#1343310] by michal_cksource: Change settings for private download
+[#1348196] by michal_cksource: Change of the default path for CKFinder settings
+[#1346818] by michal_cksource: Change of Full toolbar buttons
+[#1345658] by michal_cksource: Enable the Drupal Breaks plugin by default
+
+2011-11-10
+New stable relase 7.x-1.6
+
+Bug fixes:
+[#1337064] by michal_cksource: Fix Fatal error: Call to undefined function db_fetch_object()
+
+2011-11-09
+New stable relase 7.x-1.5
+
+Bug fixes:
+[#1334140] by michal_cksource: CKEditor is cut off in comments form
+[#1331728] by michal_cksource: Remove unnecessary Drupal Page Break button if there is no module to support this feature
+[#1331720] by michal_cksource: Fix broken link to Global Profile in CKEditor configuration main page
+[#1331716] by michal_cksource: Fix missing version number in report status
+[#1324554] by dczepierga: Fix adding custom plugin - change in ckeditor.api.php
+[#1283918] by michal_cksource: Fix UTF-8 issues
+[#1327540] by michal_cksource: Fix hook_file_download allows downloading of private files created by another module
+[#1325412] by michal_cksource: Fix problem with list-style-type in ckeditor.css
+
+
+2011-10-26
+New stable release 7.x-1.4
+
+-- 2011-10-24
+- [#1319658] by michal_cksource: Correct language list in the CKEditor profile configuration
+
+-- 2011-10-20
+- [#1259510] by michal_cksource: Fix for setting a private files folder breaks CKEditor file uploads
+
+-- 2011-10-17
+- [#1310280] by dczepierga: Improve icons detection from CKEditor plugins (part 2)
+- [#1298972] by michal_cksource: Correct messages and add language fixes
+- [#1311928] by dczepierga: Add jquery_ui support to the Drag & Drop toolbar configuration
+
+-- 2011-10-14
+- [#1310280] by dczepierga: Improve icons detection from CKEditor plugins
+- [#1295176] by dczepierga: Fix Notice: Undefined index: default in ckeditor_admin_profile_form() - when editing CKEditor profile
+- [#1310198] by duozersk: Add plugin to count symbols and words inside CKEditor
+
+-- 2011-10-04
+- [#1298972] by michal_cksource: Correct messages and add language fixes
+
+-- 2011-09-26
+- [#1154264] by dczepierga: Fix for deleting profle - after deleting the Advanced profile, Full HTML profile doesn't load
+
+-- 2011-09-23
+- [#1288084] by dczepierga: Disable Media and IMCE module selection if these modules are not installed
+
+-- 2011-09-20
+- [#1283788] by dczepierga: Fix Notice: Undefined index: buttons in ckeditor_toolbar_buttons_all()
+
+-- 2011-09-19
+- [#1219348] by dczepierga: Fix for WYSIWYG filter - add missing argument
+
+-- 2011-09-15
+- [#1280298] by dczepierga: Add configuration option to disable text format filters in filter/xss request
+- [#1270792] by dczepierga: Further improvements to the Drag & Drop toolbar configuration
+
+-- 2011-09-13
+- [#1173294] by dczepierga: Fix for incorrect file path for uploaded Images
+
+-- 2011-09-12
+- [#1270792] by michal_cksource: Improved Drag & Drop toolbar configuration - fixed css styles
+- [#1270792] by michal_cksource: Improved Drag & Drop toolbar configuration - fixed errors (dragged item was to low in Firefox and validation failed when 'group' button was first in buttons row)
+
+-- 2011-09-06
+- [#1270792] by dczepierga: Add Drag & Drop toolbar configuration
+
+-- 2011-08-31
+- [#1264884] by dczepierga: Fix warning: is_dir(): open_basedir restriction in effect
+
+-----------------------------
+ 2011-08-29
+ Released CKEditor 7.x-1.3
+-----------------------------
+
+-- 2011-08-29
+- [#1260892] by dczepierga: Add regex to work with new CKEditor toolbar format (toolbar groups compatible with WAI-ARIA)
+- [#1258326] by dczepierga: Add configuration option for setting CKEditor plugins directory
+
+-- 2011-08-25
+- [#1257308] by dczepierga: Add loading sample toolbar to profile configuration
+- [#1192622] by dczepierga: Replace static paths to plugins in the database with dynamic paths
+
+-- 2011-08-16
+- [#1250496] by dczepierga: 'CKEDITOR' is not defined - problem with ckeditor.styles.js
+
+-- 2011-08-11
+- [#1231130] by dczepierga: The "Use theme style" setting now always uses the "seven" theme (admin menu theme)
+
+-- 2011-08-10
+- [#1245306] by dczepierga: "Custom JavaScript configuration" field description is wrong
+
+-- 2011-08-08
+- [#1231338] by dczepierga: Features module support for Drupal 7 (exporting profiles)
+
+-- 2011-08-02
+- [#1235142] by madmanmax: README.TXT - Installing CKFinder - wrong permission name
+
+-- 2011-07-12
+- [#1216104] by dczepierga: Bug in custom JavaScript configuration - semicolon problem
+- [#1215032] by dczepierga: Bad location of the configuration file in the description of CKEditor profile
+
+-- 2011-07-04
+- [#1190278] by dczepierga: CKEditor does not work with the Insert module
+
+-- 2011-06-28
+- [#1198068] by michal_cksource: Confusing behavior with IMCE button implementation
+
+-- 2011-06-27
+- [#1201180] by dczepierga: SCAYT spelling language does not match node language
+
+-- 2011-06-22
+- [#1196166] by dczepierga: Bug in custom JavaScript configuration - editor not showing in some cases
+
+-- 2011-06-17
+- [#1032120] by dczepierga: Formatting is lost when editing a node
+
+-- 2011-06-14
+- [#1187808] by RolandK: Not formatting text between code tags
+
+-- 2011-06-13
+- [#1186880] by dczepierga: Handling arrays in the "Custom JavaScript configuration"
+
+-- 2011-06-09
+- [#1183218] by neclimdul: Fix broken teasers for long paragraphs
+
+-- 2011-06-06
+- [#1179880] by dczepierga: Add hook to register a plugin
+- [#1063646] by dczepierga: Fix calling Undefined index: "loadPlugins" in ckeditor_admin_values_to_settings()
+
+-- 2011-06-02
+- [#1176212] by dczepierga: Remove not supported linktomenu and linktonode plugins
+- [#1176208] by dczepierga: Add plugins management in profile settings
+
+-----------------------------
+ 2011-05-30
+ Released CKEditor 7.x-1.2
+-----------------------------
+
+-- 2011-05-27
+- [#1170612] by dczepierga: Add support for autogrow and tableresize plugin
+
+-- 2011-05-26
+- [#1169402] by dczepierga:  Fix duplicated path in the error message displayed when CKEditor is not installed correctly
+
+-- 2011-05-23
+- [#1165864] by dczepierga: Improve manual selection of the user interface color
+- [#1093038] by marhak: CKEDITOR is not defined when using ckeditor_basic.js - Editor is not loading
+- [#1039810] by cwc: Fix to predefined styles path errors (fix typo)
+- [#1164270] by TommyChris: Fix to work with ckeditor_link module (http://drupal.org/project/ckeditor_link)
+
+-- 2011-05-16
+- [#1158898] by dczepierga: Add Google PageSpeed and Drupal JS/CSS aggregation support
+
+-- 2011-05-09
+- [#1134252] by dczepierga: Add HTML Entities configurable option in each profile
+
+-- 2011-05-04
+- [#1022986] by dczepierga: Add integration with Media Module
+
+-- 2011-05-02
+- [#1142600] by taite11: Readme file edit - there is no core upload module in Drupal 7
+
+-- 2011-04-28
+- [#1022986] by dczepierga: Add integration with Media Module  (http://drupal.org/project/media)
+
+-- 2011-04-11
+- [#1116516] by weboide: Fix to CKEditor and Profile2 - remove call to undefined function ckeditor_user_customize_form_validate() on uid=1
+
+-- 2011-04-07
+- [#1093028] by marhak: Text written in rich text editor (WYSIWYG) mode disappears when switching to plain text editor mode
+- [#1102824] by dczepierga: CKEditor loses all text when uploading an image or file via field API
+
+-- 2011-03-31
+- [#1093038] by marhak: CKEDITOR is not defined when using ckeditor_basic.js - Editor is not loading
+
+-- 2011-03-30
+- [#1109366] by dczepierga: #1052604 Fix remove call to undefined function ckeditor_user_customize_form_validate
+
+-- 2011-03-29
+- [#1107882] by dczepierga: Add a warning message when the wysiwyg module is enabled in Drupal 7
+
+-- 2011-03-28
+- [#1107882] by dczepierga: Add a warning message when the wysiwyg module is enabled in Drupal 7
+
+-- 2011-03-23
+- [#1039810] by cwc: Fix to predefined styles path errors
+
+-- 2011-03-17
+- [#1095954] by dczepierga: Fix to prevent calling "Toggle rich text link" multiple times
+
+-----------------------------
+ 2011-03-10
+ Released CKEditor 7.x-1.1
+-----------------------------
+
+-- 2011-02-22
+- [#960576] by dczepierga:  Add loading ckeditor.css from theme.
+- [#1069012] by dczepierga: CKEditor version could not be determined
+
+-- 2011-02-21
+- [#1068186] by dczepierga: Added support for CKEditor SWF (http://drupal.org/project/ckeditor_swf) and CKEditor Link (http://drupal.org/project/ckeditor_link) modules
+
+-- 2011-02-17
+- [#1064422] by dczepierga: All changes to the text are lost when input format is changed
+
+-- 2011-02-14
+- [#1053222] by dczepierga: Two editors appeared when JavaScript Aggregation was enabled
+- [#1037390] by dczepierga: Cannot use CKEditor module to create header/footer in Views
+- [#1052604] by dczepierga: Call to undefined function ckeditor_user_customize_form_validate
+
+-- 2011-02-11
+- [#1056068] by dczepierga: Fix Warning: file_get_contents(/drupal7/sites/all/libraries/ckeditor/ckeditor.js)
+
+-- 2011-02-08
+- [#1054414] by dczepierga: Added support for elFinder (http://drupal.org/project/elfinder) file manager
+- [#1054606] by dczepierga: No detach method in Drupal.behaviors.ckeditor
+
+-- 2011-02-07
+- [#1037390] by dczepierga: Cannot use CKEditor module to create header/footer in Views
+- [#1053358] by dczepierga: Removed option to "Use CKEditor in a popup window" in "My account" settings
+
+-- 2011-02-04
+- [#1050034] by dczepierga: Disabled editor gets enabled again after ajax calls
+
+-- 2011-02-03
+- [#1037390] by dczepierga: Cannot use CKEditor module to create header/footer in Views
+
+-- 2011-02-01
+- [#1037390] by dczepierga: Cannot use CKEditor module to create header/footer in Views
+
+-- 2011-01-24
+- [#1035544] by dczepierga: Remove double http:// in ckeditor.drush.inc
+
+-- 2011-01-20
+- [#1006770] by OnkelTem: Fix Notice: Undefined index: filtered_html in ckeditor_profile_load()
+
+-----------------------------
+ 2011-01-13
+ Released CKEditor 7.x-1.0
+-----------------------------
+
+-- 2011-01-13
+- Added Upgrade.txt
+- Fixed filters description (HTML should be allowed there)
+- Link to CKEditor Global Profile was not displayed properly.
+- [#1025472] by dczepierga: Starting slash in editor path result in Warnings
+- [#1022562] by dczepierga: In IE8 break button icon doesn't appear
+- [#1023546] by dczepierga: Useless ajax call when no security filters are checked
+
+-- 2011-01-11
+- [#1022666] by dczepierga: Teaser break doesn't work with filtered html input format.
+- [#1022494] by dczepierga: CKEditor module - Compatibility with Drupal's coding standards
+
+-- 2011-01-10
+- [#1011112] by Oren_Held: Support RTL also when CSS is not in theme mode (self/none)
+- [#1020612] by amateescu: Extra table borders added by the Seven theme
+- [#1003462] by dczepierga: CKfinder path customization won't work
+- [#1020820] by dczepierga: CKEditor does not work after enabling javascript aggregation
+- [#1006230] by amateescu: Editor not loading for Full HTML
+
+-- 2011-01-05
+- [#1006770] by dczepierga: Notice: Undefined index: filtered_html in ckeditor_profile_load()
+
+-- 2010-12-29
+- [#1009816] by dczepierga: Access denied: ckeditor/xss
+- [#1004822] by dczepierga: Switching text format to filtered html deletes all "p" tags
+
+-- 2010-12-28
+- [#1006124] by dczepierga: Registered user gets "Undefined index: popup" message
+- [#1000330] by dczepierga: No Insert File button in IMCE
+
+-- 2010-12-20
+- [#1000838] by dczepierga: The Teaser button is absolutely necessary - important functionality has been deleted
+
+-----------------------------
+ 2010-12-15
+ Released CKEditor 7.x-1.0 RC
+-----------------------------
+
+-- 2010-12-15
+- [#991380] by dczepierga: Language files (D7)
+- Removed a link to delete the global profile
+- [#999292] by dczepierga: Remove filter_html as default option in Full HTML text format (D7)
+- Fixed a typo
+- Updated comments, minor corrections
+
+-- 2010-12-14
+- [#997136] by dczepierga: CKFinder - thumbnails not available
+- [#997124] by dczepierga: Invalid error message when CKFinder is enabled but not configured properly.
+- [#997116] by dczepierga: D7 Custom formatting options not used
+- [#997090] by dczepierga: XSS protection not working as expected
+- [#997098] by dczepierga: Error when CKEditor (the editor) is not present in the ckeditor folder
+
+-- 2010-12-13
+- [#997074] by dczepierga: Corect the default order of Bidi buttons
+
+-- 2010-12-10
+- [#994372] by dczepierga: Update README.TXT (D7)
+
+-- 2010-12-09
+- [#993436] by dczepierga: Disable option of using CKEditor in a popup window (D7)
+- [#993362] by dczepierga: CKEditor not work in popup window (D7)
+- [#993330] by dczepierga: Change editor theme in profile edit form (D7)
+- [#993272] by dczepierga: User Interface color change enabled only for Kama skin
+
+-- 2010-12-07
+- [#991380] by dczepierga: Language files (D7)
+- [#984986] by dczepierga: Code syntax after Coder module validation
+- [#984978] by dczepierga: Security filters not works (D7) - Security mode fix
+- [#984968] by dczepierga: Make sure that the help information is correct (D7)
+
+-- 2010-12-06
+- [#990368] by dczepierga: Cleanup code - modules not ported to Drupal 7
+- [#985006] by dczepierga: Review README.txt (D7)
+
+-- 2010-12-04
+- [#984978] by dczepierga: Security filters not works (D7)
+
+-- 2010-12-03
+- [#984976] by dczepierga: User Interface color not saved in D7
+- [#985002] by dczepierga: Remove DrupalPageBreak button from toolbar
+
+-- 2010-11-30
+- [#984986] by dczepierga: Code syntax after Coder module validation
+- Removed extra information that should be added by the packaging script
+
+-- 2010-11-29
+- [#984202] by dczepierga: Detecting of summary field in form
+- [#966490] by dczepierga: Comment form after ckeditor install.
+- [#966492] by dczepierga: CKEditor in edit summary/teaser mode
+- [#984096] by dczepierga: Compatibility of DrupalBreaks Plugin
+- [#984000] by dczepierga: CKeditor not works in node edit
+
+-- 2010-11-25
+- [#981624] by dczepierga: Compatibility with drupal 7.0-beta3
+- [#966488] by dczepierga: CKEditor should respect input format changes
+
+-- 2010-11-23
+- [#976968] by dczepierga: Toolbar config validation in profile
+
+-- 2010-11-19
+- [#901502] by dczepierga: Multi toolbar configuration, and different settings for each
+- [#975360] by dczepierga: Remove Minimum rows
+- [#975456] by dczepierga: Remove visibility settings in Global profile in D7
+- [#975458] by dczepierga: Selecting UI Color not working
+
+-- 2010-11-09
+- [#966598] by dczepierga: CKFinder compatibility
+
+-- 2010-11-08
+- [#965280] by dczepierga: Profiles after save lose all input formats
+- [#965258] by dczepierga: Compatibility with drupal 7.0-beta2
+
+-- 2010-10-26
+- Created initial dev version of the CKEditor module for Drupal 7.x

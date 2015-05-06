@@ -1,0 +1,20 @@
+.module-filter-inputs-wrapper {
+  display: none;
+}
+.module-filter-clear {
+  display: inline;
+  position: relative;
+}
+.module-filter-clear a {
+  margin-left: 5px;
+  font-size: 11px;
+  position: absolute;
+}
+#module-filter-show-wrapper .form-item {
+  display: inline;
+}
+.module-filter-no-results {
+  text-align: center;
+  text-transform: uppercase;
+  color: #888;
+}

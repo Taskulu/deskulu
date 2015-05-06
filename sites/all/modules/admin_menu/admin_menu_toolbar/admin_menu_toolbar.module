@@ -1,0 +1,118 @@
+<?php
+
+/**
+ * @file
+ * Renders Administration menu like Toolbar (core) module.
+ *
+ * @todo Separate shortcut functionality into own module/widget.
+ */
+
+/**
+ * Implements hook_form_FORMID_alter().
+ */
+function admin_menu_toolbar_form_admin_menu_theme_settings_alter(&$form) {
+  // Add the shortcut links as component on behalf of Shortcut module.
+  $form['plugins']['admin_menu_components']['#options']['shortcut.links'] = t('Shortcuts');
+  // The shortcut bar consists of two elements, so we target their class names
+  // instead of cluttering the markup with additional IDs.
+  $form['plugins']['admin_menu_components']['shortcut.links']['#attributes']['rel'] = '.shortcut-toggle, .shortcut-toolbar';
+}
+
+/**
+ * Implementation of hook_page_build().
+ */
+function admin_menu_toolbar_page_build(&$page) {
+  if (!isset($page['page_bottom']['admin_menu'])) {
+    return;
+  }
+  $path = drupal_get_path('module', 'admin_menu_toolbar');
+  $attached = &$page['page_bottom']['admin_menu']['#attached'];
+  $options = array('every_page' => TRUE);
+
+  $attached['css'][$path . '/admin_menu_toolbar.css'] = $options;
+  $attached['js'][$path . '/admin_menu_toolbar.js'] = $options;
+
+  // @todo Stop-gap fix until cached rendering is resolved.
+  // @see http://drupal.org/node/1567622
+  if (module_exists('shortcut')) {
+    $attached['css'][drupal_get_path('module', 'shortcut') . '/shortcut.css'] = $options;
+  }
+
+  $settings = array();
+  // Add current path to support menu item highlighting.
+  // @todo Compile real active trail here?
+  $args = explode('/', $_GET['q']);
+  if ($args[0] == 'admin' && !empty($args[1])) {
+    $settings['activeTrail'] = url($args[0] . '/' . $args[1]);
+  }
+  elseif (drupal_is_front_page()) {
+    $settings['activeTrail'] = url('<front>');
+  }
+
+  $attached['js'][] = array(
+    'data' => array('admin_menu' => array('toolbar' => $settings)),
+    'type' => 'setting',
+  );
+}
+
+/**
+ * Implements hook_admin_menu_output_build().
+ */
+function admin_menu_toolbar_admin_menu_output_build(&$content) {
+  if (empty($content['#components']['shortcut.links']) && !$content['#complete']) {
+    return;
+  }
+  // Add shortcuts toggle.
+  $content['shortcut-toggle'] = array(
+    '#access' => module_exists('shortcut'),
+    '#weight' => -200,
+    '#type' => 'link',
+    '#title' => t('Show shortcuts'),
+    '#href' => '',
+    '#options' => array(
+      'attributes' => array('class' => array('shortcut-toggle')),
+    ),
+  );
+
+  // Add shortcuts bar.
+  $content['shortcut'] = array(
+    '#access' => module_exists('shortcut'),
+    '#weight' => 200,
+    '#prefix' => '<div class="shortcut-toolbar">',
+    '#suffix' => '</div>',
+  );
+  $content['shortcut']['shortcuts'] = array(
+    // Shortcut module's CSS relies on Toolbar module's markup.
+    // @see http://drupal.org/node/1217038
+    '#prefix' => '<div id="toolbar">',
+    '#suffix' => '</div>',
+    // @todo Links may contain .active-trail classes.
+    '#pre_render' => array('shortcut_toolbar_pre_render'),
+  );
+}
+
+/**
+ * Implements hook_admin_menu_output_alter().
+ */
+function admin_menu_toolbar_admin_menu_output_alter(&$content) {
+  // Add a class to top-level items for styling.
+  if (isset($content['menu'])) {
+    foreach (element_children($content['menu']) as $link) {
+      $content['menu'][$link]['#attributes']['class'][] = 'admin-menu-toolbar-category';
+    }
+  }
+
+  // Alter icon.
+  if (isset($content['icon'])) {
+    unset($content['icon']['icon']['#theme']);
+    $content['icon']['icon']['#title'] = '<span>' . t('Home') . '</span>';
+    $content['icon']['icon']['#attributes']['class'][] = 'admin-menu-toolbar-category';
+  }
+
+  // Alter user account link.
+  if (isset($content['account'])) {
+    $content['account']['account']['#title'] = t('Hello <strong>@username</strong>', array('@username' => $content['account']['account']['#title']));
+    $content['account']['account']['#options']['html'] = TRUE;
+  }
+}
+

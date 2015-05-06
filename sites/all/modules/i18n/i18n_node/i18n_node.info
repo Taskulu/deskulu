@@ -1,0 +1,17 @@
+name = Multilingual content
+description = Extended node options for multilingual content
+dependencies[] = translation
+dependencies[] = i18n
+dependencies[] = i18n_string
+package = Multilingual - Internationalization
+core = 7.x
+configure = admin/config/regional/i18n/node
+files[]=i18n_node.test
+files[]=i18n_node.variable.inc
+
+; Information added by Drupal.org packaging script on 2015-01-26
+version = "7.x-1.12"
+core = "7.x"
+project = "i18n"
+datestamp = "1422286982"
+

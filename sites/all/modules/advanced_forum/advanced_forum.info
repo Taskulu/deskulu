@@ -1,0 +1,26 @@
+
+name = Advanced Forum
+description = Enables the look and feel of other popular forum software.
+core = 7.x
+package = Advanced Forum
+
+dependencies[] = forum
+dependencies[] = ctools
+dependencies[] = views
+
+configure = admin/config/content/advanced-forum
+
+; Views handlers
+files[] = includes/views/advanced_forum_handler_field_node_topic_icon.inc
+files[] = includes/views/advanced_forum_handler_field_node_topic_pager.inc
+files[] = includes/views/advanced_forum_plugin_style_forum_topic_list.inc
+
+; Tests
+files[] = tests/af.test
+
+; Information added by Drupal.org packaging script on 2015-02-10
+version = "7.x-2.5"
+core = "7.x"
+project = "advanced_forum"
+datestamp = "1423590792"
+

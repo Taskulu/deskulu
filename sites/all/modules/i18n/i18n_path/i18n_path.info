@@ -1,0 +1,14 @@
+name = Path translation
+description = Define translations for generic paths
+dependencies[] = i18n_translation
+package = Multilingual - Internationalization
+core = 7.x
+
+files[] = i18n_path.inc
+files[] = i18n_path.test
+; Information added by Drupal.org packaging script on 2015-01-26
+version = "7.x-1.12"
+core = "7.x"
+project = "i18n"
+datestamp = "1422286982"
+

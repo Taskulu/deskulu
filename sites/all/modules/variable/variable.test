@@ -1,0 +1,53 @@
+<?php
+
+/**
+ * @file
+ * Tests for variable.module.
+ */
+
+/**
+ * Helper class for module test cases.
+ */
+class VariableTestCase extends DrupalWebTestCase {
+  protected $admin_user;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Test Variable API',
+      'description' => 'Exercise the Variable API, default values, save and delete variables, etc.',
+      'group' => 'Variable',
+    );
+  }
+
+  function setUp() {
+    parent::setUp('variable', 'variable_admin');
+
+    $this->admin_user = $this->drupalCreateUser(array('access administration pages', 'administer site configuration'));
+    $this->drupalLogin($this->admin_user);
+  }
+
+  /**
+   * Test that all core modules can be enabled, disabled and uninstalled.
+   */
+  function testVariableAPI() {
+    // Check default values, set, get, delete.
+    $this->assertEqual(variable_get_value('site_name'), 'Drupal', 'Function variable_get_value() returns proper default values.');
+    $name = 'My test site';
+    variable_set_value('site_name', $name);
+    $this->assertTrue(variable_get('site_name'), 'Variable has been set using Variable API.');
+    $this->drupalGet('');
+    $this->assertText($name, 'Site name set with variable_set_value() is displayed.');
+    variable_delete('site_name');
+    $this->assertFalse(variable_get('site_name'), 'Variable has been deleted using Variable API.');
+    $this->assertEqual(variable_get_value('site_name'), 'Drupal', 'Variable has been reset to its default value.');
+    // Find variable information and specific variable in module and group list
+    $variable = variable_get_info('site_name');
+    $this->assertEqual($variable['title'], t('Site name'), 'Variable information can be retrieved for specific variable.');
+    // Check our admin pages just to make sure all variable widgets are properly displayed.
+    $this->drupalGet('admin/config/system/variable');
+    $this->drupalGet('admin/config/system/variable/module');
+    $this->drupalGet('admin/config/system/variable/edit/site_name');
+  }
+
+
+}

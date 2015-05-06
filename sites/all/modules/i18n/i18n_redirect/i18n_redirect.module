@@ -1,0 +1,38 @@
+<?php
+
+/**
+ * @file
+ * Internationalization (i18n) module.
+ *
+ * Redirect to language path when we have a translation for the current language.
+ */
+
+/**
+ * Implements hook_help().
+ */
+function i18n_redirect_help($path, $arg) {
+  switch ($path) {
+    case 'admin/config/regional/i18n':
+      if (!module_exists('i18n_node')) {
+        $output = '<p>' . t('To have <em>Translation redirect</em> working with your content you should <a href="@admin_modules">enable the <em>Multilingual content</em> module</a>.', array('@admin_modules' => url('admin/modules'))) . '</p>';
+        return $output;
+      }
+  }
+}
+
+/**
+ * Implements hook_init()
+ */
+function i18n_redirect_init() {
+  $path = $_GET['q'];
+  $language = i18n_language_interface();
+  // Not for logged in users nor for home page
+  if (!$path || drupal_is_front_page() || !empty($GLOBALS['user']->uid)) {
+    return;
+  }
+  elseif ($translations = i18n_get_path_translations($path)) {
+    if (isset($translations[$language->language]) && $translations[$language->language]['href'] != $path) {
+      drupal_goto($translations[$language->language]['href'], array('language' => $language), 301);
+    }
+  }
+}

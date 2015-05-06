@@ -1,0 +1,12 @@
+name = Date Migration
+description = Obsolete data migration module. Disable if no other modules depend on it.
+core = 7.x
+package = Date/Time
+hidden = TRUE
+
+; Information added by Drupal.org packaging script on 2014-07-29
+version = "7.x-2.8"
+core = "7.x"
+project = "date"
+datestamp = "1406653438"
+

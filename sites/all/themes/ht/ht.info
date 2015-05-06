@@ -1,0 +1,31 @@
+name = Helpdesk Theme
+core = 7.x
+base theme = bootstrap
+
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Regions
+;;;;;;;;;;;;;;;;;;;;;
+
+regions[navigation]     = 'Navigation'
+regions[header]         = 'Top Bar'
+regions[highlighted]    = 'Highlighted'
+regions[help]           = 'Help'
+regions[content]        = 'Content'
+regions[sidebar]  = 'Sidebar'
+regions[footer]         = 'Footer'
+regions[page_top]       = 'Page top'
+regions[page_bottom]    = 'Page bottom'
+
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Stylesheets
+;;;;;;;;;;;;;;;;;;;;;
+
+stylesheets[all][] = css/style.css
+
+scripts[] = 'js/bootstrap.min.js'
+settings[bootstrap_cdn] = ''
+
+
+plugins[advanced_forum][styles] = 'ht_forum'

@@ -1,0 +1,12 @@
+name = PHP filter
+description = Allows embedded PHP code/snippets to be evaluated.
+package = Core
+version = VERSION
+core = 7.x
+files[] = php.test
+
+; Information added by Drupal.org packaging script on 2015-04-02
+version = "7.36"
+project = "drupal"
+datestamp = "1427943826"
+

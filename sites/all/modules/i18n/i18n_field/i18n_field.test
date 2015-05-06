@@ -1,0 +1,129 @@
+<?php
+/**
+ * @file
+ * Test case for multilingual fields.
+ */
+
+
+class i18nFieldTestCase extends Drupali18nTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Field translation',
+      'group' => 'Internationalization',
+      'description' => 'Field translation functions'
+    );
+  }
+
+  function setUp() {
+    parent::setUp('i18n_field', 'field_test');
+    parent::setUpLanguages(array('access field_test content', 'administer field_test content'));
+    $this->translator = $this->drupalCreateUser(array('translate interface', 'translate user-defined strings'));
+  }
+
+  /**
+   * Test the translation of list fields, including allowed values.
+   */
+  function testListFieldTranslation() {
+    $field_name = drupal_strtolower($this->randomName());
+    $label = $this->randomName();
+    $description = $this->randomName();
+    $value = $this->randomName();
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'list_integer',
+      'cardinality' => 1,
+      'settings' => array(
+        'allowed_values' => array(1 => $value),
+      ),
+    );
+    $field = field_create_field($field);
+
+    $instance = array(
+      'field_name' => $field_name,
+      'entity_type' => 'test_entity',
+      'bundle' => 'test_bundle',
+      'label' => $label,
+      'description' => $description,
+      'widget' => array(
+        'type' => 'options_buttons',
+      ),
+    );
+    $instance = field_create_instance($instance);
+
+    // Refresh i18n_strings.
+    $edit = array('groups[field]' => TRUE);
+    $this->drupalPost('admin/config/regional/translate/i18n_string', $edit, t('Refresh strings'));
+
+    // Save translations for each attribute.
+    $label_translation = $this->createStringTranslation('field', $label);
+    $description_translation = $this->createStringTranslation('field', $description);
+    $value_translation = $this->createStringTranslation('field', $value);
+    $this->drupalLogin($this->admin_user);
+
+    // Test untranslated values in default language.
+    $this->drupalGet('test-entity/add/test-bundle');
+    $this->assertText($label, 'Field label is not translated');
+    $this->assertText($description, 'Field description is not translated');
+    $this->assertText($value, 'Field allowed values are not translated');
+
+    // Test translated values in secondary language.
+    $this->drupalGet($this->secondary_language . '/test-entity/add/test-bundle');
+    $this->assertText($label_translation[$this->secondary_language], 'Field label is translated');
+    $this->assertText($description_translation[$this->secondary_language], 'Field description is translated');
+    $this->assertText($value_translation[$this->secondary_language], 'Field allowed values are translated');
+  }
+
+  /**
+   * Test the translation of text fields, including default values.
+   */
+  function testTextFieldTranslation() {
+    $field_name = drupal_strtolower($this->randomName());
+    $label = $this->randomName();
+    $description = $this->randomName();
+    $default_value = $this->randomName();
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    $field = field_create_field($field);
+
+    $instance = array(
+      'field_name' => $field_name,
+      'entity_type' => 'test_entity',
+      'bundle' => 'test_bundle',
+      'label' => $label,
+      'description' => $description,
+      'default_value' => array(0 => array('value' => $default_value)),
+      'widget' => array(
+        'type' => 'text_textfield',
+      ),
+    );
+    $instance = field_create_instance($instance);
+
+    // Refresh i18n_strings.
+    $edit = array('groups[field]' => TRUE);
+    $this->drupalPost('admin/config/regional/translate/i18n_string', $edit, t('Refresh strings'));
+
+    // Save translations for each attribute.
+    $label_translation = $this->createStringTranslation('field', $label);
+    $description_translation = $this->createStringTranslation('field', $description);
+    $default_value_translation = $this->createStringTranslation('field', $default_value);
+    $this->drupalLogin($this->admin_user);
+
+    // Test untranslated values in default language.
+    $this->drupalGet('test-entity/add/test-bundle');
+    $this->assertText($label, 'Field label is not translated');
+    $this->assertText($description, 'Field description is not translated');
+    $this->assertRaw($default_value, 'Default value is not translated');
+
+    // Test translated values in secondary language.
+    $this->drupalGet($this->secondary_language . '/test-entity/add/test-bundle');
+    $this->assertText($label_translation[$this->secondary_language], 'Field label is translated');
+    $this->assertText($description_translation[$this->secondary_language], 'Field description is translated');
+    $this->assertRaw($default_value_translation[$this->secondary_language], 'Default value translated');
+  }
+}

@@ -1,0 +1,138 @@
+<?php
+/**
+ * @file
+ * Internationalization (i18n) package. Multilingual variables API.
+ */
+
+/**
+ * The type of language used for variables.
+ */
+define('I18N_VARIABLE_LANGUAGE_TYPE', 'i18n_language_variable');
+
+/**
+ * Implements hook_language_init()
+ */
+function i18n_variable_language_init() {
+  if (drupal_multilingual()) {
+    module_invoke('variable_realm', 'initialize', 'language');
+  }
+}
+
+/**
+ * Implements hook_variable_realm_info().
+ */
+function i18n_variable_variable_realm_info() {
+  $realm['language'] = array(
+    'title' => t('Language'),
+    'weight' => 100,
+    'controller class' => 'I18nVariableLanguageRealm',
+    'store class' => 'VariableStoreRealmStore',
+    // Variables for this realm can be selected from a list.
+    'select' => TRUE,
+    'select path' => 'admin/config/regional/i18n/variable',
+    // Name for variables that belong to this realm: 'multilingual' variable/s
+    'variable name' => t('multilingual'),
+    'variable class' => 'i18n-variable',
+    // Automatically handle these variables in system settings forms.
+    'form settings' => TRUE,
+    'form switcher' => TRUE,
+  );
+  return $realm;
+}
+
+/**
+ * Implements hook_menu()
+ */
+function i18n_variable_menu() {
+  $items['admin/config/regional/i18n/variable'] = array(
+    'title' => 'Variables',
+    'description' => 'Configure multilingual variables.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('variable_realm_select_variables_form', 'language'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'variable_realm.form.inc',
+    'file path' => drupal_get_path('module', 'variable_realm'),
+    'type' => MENU_LOCAL_TASK,
+  );
+  return $items;
+}
+
+
+/**
+ * Get variables language, make sure it is initialized
+ */
+function i18n_variable_language() {
+  // If we've got a variables language, it will be that one
+  if (!isset($GLOBALS[I18N_VARIABLE_LANGUAGE_TYPE])) {
+    $GLOBALS[I18N_VARIABLE_LANGUAGE_TYPE] = i18n_language_interface();
+  }
+  return $GLOBALS[I18N_VARIABLE_LANGUAGE_TYPE];
+}
+
+/**
+ * Get original value for global variable/s
+ */
+function i18n_variable_global($name = NULL, $default = NULL) {
+  return variable_realm_global_get($name, $default);
+}
+
+/**
+ * Get list of multilingual variables or check whether a variable is multilingual
+ */
+function i18n_variable_list($name = NULL) {
+  $variables = &drupal_static(__FUNCTION__);
+  if (!isset($variables)) {
+    $variables = variable_children(variable_get('variable_realm_list_language', array()));
+  }
+  return $name ? in_array($name, $variables) : $variables;
+}
+
+/**
+* Load language variables into array.
+*
+* Pull variables from the store but filter out the ones that are not multilingual.
+*/
+function i18n_variable_load($langcode) {
+  $variables = array();
+  foreach (variable_store('language', $langcode) as $name => $value) {
+    if (i18n_variable_list($name)) {
+      $variables[$name] = $value;
+    }
+  }
+  return $variables;
+}
+
+/**
+ * Set a persistent language dependent variable.
+ *
+ * @param $name
+ *   The name of the variable to set.
+ * @param $value
+ *   The value to set. This can be any PHP data type; these functions take care
+ *   of serialization as necessary.
+ * @param $langcode
+ *   Language code.
+ */
+function i18n_variable_set($name, $value, $langcode) {
+  variable_realm_set('language', $langcode, $name, $value);
+}
+
+/**
+ * Get single multilingual variable
+ */
+function i18n_variable_get($name, $langcode, $default = NULL) {
+  return variable_realm_get('language', $langcode, $name, $default);
+}
+
+/**
+ * Unset a persistent multilingual variable.
+ *
+ * @param $name
+ *   The name of the variable to undefine.
+ * @param $langcode
+ *   Language code.
+ */
+function i18n_variable_del($name, $langcode) {
+  variable_realm_del('language', $langcode, $name);
+}
+

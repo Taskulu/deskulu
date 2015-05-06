@@ -1,0 +1,7 @@
+.select2-results .select2-result:nth-child(odd){
+    background-color: #f3f4ee;
+}
+
+.select2-results .select2-result.select2-highlighted{
+    background-color: #848C99;
+}

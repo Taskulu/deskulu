@@ -1,0 +1,20 @@
+name = Mandrill Template
+description = "Use Mandrill templates for messages sent through Mandrill."
+core = 7.x
+package = Mandrill
+
+configure = admin/config/services/mandrill/templates
+
+dependencies[] = entity (>=1.0)
+dependencies[] = mandrill
+
+files[] = lib/mandrill_template_map.entity.inc
+files[] = lib/mandrill_template_map.ui_controller.inc
+files[] = tests/mandrill_template.test
+
+; Information added by Drupal.org packaging script on 2015-01-09
+version = "7.x-2.1"
+core = "7.x"
+project = "mandrill"
+datestamp = "1420838882"
+

@@ -1,0 +1,39 @@
+<?php
+
+/**
+ * @file
+ * Removes fonts on disable.
+ */
+
+/**
+ * Implements hook_enable().
+ */
+function fontdeck_enable() {
+
+  // Set weight to 1 to ensure fontdeck_preprocess_html() is executed after
+  // fontyourface_preprocess_html(), which has weight of 0.
+  db_update('system')
+    ->fields(array('weight' => 1))
+    ->condition('name', 'fontdeck')
+    ->execute();
+
+} // fontdeck_enable
+
+/**
+ * Implements hook_disable().
+ */
+function fontdeck_disable() {
+
+  fontyourface_provider_disable('fontdeck');
+
+} // fontdeck_disable
+
+/**
+ * Implements hook_uninstall().
+ */
+function fontdeck_uninstall() {
+
+  variable_del('fontdeck_project');
+  variable_del('fontdeck_css');
+
+} // fontdeck_uninstall

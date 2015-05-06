@@ -1,0 +1,5 @@
+.rate-info, .rate-description {
+  clear: left;
+  font-size: 0.8em;
+  color: #666;
+}

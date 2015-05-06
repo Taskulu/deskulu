@@ -1,0 +1,55 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the Search API test module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function search_api_test_schema() {
+  $schema['search_api_test'] = array(
+    'description' => 'Stores instances of a test entity.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'The primary identifier for an item.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'title' => array(
+        'description' => 'The title of the item.',
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => FALSE,
+      ),
+      'body' => array(
+        'description' => 'A text belonging to the item.',
+        'type' => 'text',
+        'not null' => FALSE,
+      ),
+      'type' => array(
+        'description' => 'A string identifying the type of item.',
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => FALSE,
+      ),
+      'keywords' => array(
+        'description' => 'A comma separated list of keywords.',
+        'type' => 'varchar',
+        'length' => 200,
+        'not null' => FALSE,
+      ),
+      'prices' => array(
+        'description' => 'A comma separated list of prices.',
+        'type' => 'varchar',
+        'length' => 200,
+        'not null' => FALSE,
+      ),
+    ),
+    'primary key' => array('id'),
+  );
+
+  return $schema;
+}

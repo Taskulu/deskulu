@@ -1,0 +1,147 @@
+name = Bootstrap
+description = Built to use Bootstrap, a sleek, intuitive, and powerful front-end framework for faster and easier web development.
+core = 7.x
+
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Regions
+;;;;;;;;;;;;;;;;;;;;;
+
+regions[navigation]     = 'Navigation'
+regions[header]         = 'Top Bar'
+regions[highlighted]    = 'Highlighted'
+regions[help]           = 'Help'
+regions[content]        = 'Content'
+regions[sidebar_first]  = 'Primary'
+regions[sidebar_second] = 'Secondary'
+regions[footer]         = 'Footer'
+regions[page_top]       = 'Page top'
+regions[page_bottom]    = 'Page bottom'
+
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Theme Settings
+;;;;;;;;;;;;;;;;;;;;;
+
+; Breadcrumbs
+; --------------
+settings[bootstrap_breadcrumb] = 1
+settings[bootstrap_breadcrumb_home] = 0
+settings[bootstrap_breadcrumb_title] = 1
+
+; Navbar
+; --------------
+settings[bootstrap_navbar_position] = ''
+settings[bootstrap_navbar_inverse] = 0
+
+; Region Wells
+; --------------
+settings[bootstrap_region_well-navigation] = ''
+settings[bootstrap_region_well-header] = ''
+settings[bootstrap_region_well-highlighted] = ''
+settings[bootstrap_region_well-help] = ''
+settings[bootstrap_region_well-content] = ''
+settings[bootstrap_region_well-sidebar_first] = 'well'
+settings[bootstrap_region_well-sidebar_second] = ''
+settings[bootstrap_region_well-footer] = ''
+
+; Anchors
+; --------------
+settings[bootstrap_anchors_fix] = 1
+settings[bootstrap_anchors_smooth_scrolling] = 1
+
+; Popovers
+; --------------
+settings[bootstrap_popover_enabled] = 1
+settings[bootstrap_popover_animation] = 1
+settings[bootstrap_popover_html] = 0
+settings[bootstrap_popover_placement] = 'right'
+settings[bootstrap_popover_selector] = ''
+settings[bootstrap_popover_trigger]['hover'] = 0
+settings[bootstrap_popover_trigger]['focus'] = 0
+settings[bootstrap_popover_trigger]['click'] = 'click'
+settings[bootstrap_popover_title] = ''
+settings[bootstrap_popover_content] = ''
+settings[bootstrap_popover_delay] = 0
+settings[bootstrap_popover_container] = 'body'
+
+; Tooltips
+; --------------
+settings[bootstrap_tooltip_enabled] = 1
+settings[bootstrap_tooltip_descriptions] = 1
+settings[bootstrap_tooltip_animation] = 1
+settings[bootstrap_tooltip_html] = 0
+settings[bootstrap_tooltip_placement] = 'auto left'
+settings[bootstrap_tooltip_selector] = ''
+settings[bootstrap_tooltip_trigger]['hover'] = 'hover'
+settings[bootstrap_tooltip_trigger]['focus'] = 'focus'
+settings[bootstrap_tooltip_trigger]['click'] = 0
+settings[bootstrap_tooltip_delay] = 0
+settings[bootstrap_tooltip_container] = 'body'
+
+; Advanced
+; --------------
+settings[bootstrap_cdn] = 3.0.2
+settings[bootstrap_bootswatch] = ''
+
+; Global
+; --------------
+settings[toggle_name] = 1
+settings[toggle_search] = 1
+
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Excludes
+;;;;;;;;;;;;;;;;;;;;;
+
+; JavaScript
+; --------------
+; exclude[js][] = 'modules/contextual/contextual.js'
+
+; CSS
+; --------------
+exclude[css][] = 'misc/vertical-tabs.css'
+exclude[css][] = 'modules/aggregator/aggregator.css'
+; Necessary administrative block CSS.
+; exclude[css][] = 'modules/block/block.css'
+exclude[css][] = 'modules/book/book.css'
+exclude[css][] = 'modules/comment/comment.css'
+exclude[css][] = 'modules/dblog/dblog.css'
+exclude[css][] = 'modules/file/file.css'
+exclude[css][] = 'modules/filter/filter.css'
+exclude[css][] = 'modules/forum/forum.css'
+exclude[css][] = 'modules/help/help.css'
+exclude[css][] = 'modules/menu/menu.css'
+exclude[css][] = 'modules/node/node.css'
+exclude[css][] = 'modules/openid/openid.css'
+exclude[css][] = 'modules/poll/poll.css'
+exclude[css][] = 'modules/search/search.css'
+exclude[css][] = 'modules/statistics/statistics.css'
+exclude[css][] = 'modules/syslog/syslog.css'
+exclude[css][] = 'modules/system/maintenance.css'
+exclude[css][] = 'modules/system/system.maintenance.css'
+exclude[css][] = 'modules/system/system.menus.css'
+exclude[css][] = 'modules/system/system.messages.css'
+exclude[css][] = 'modules/system/system.theme.css'
+exclude[css][] = 'modules/taxonomy/taxonomy.css'
+exclude[css][] = 'modules/tracker/tracker.css'
+exclude[css][] = 'modules/update/update.css'
+exclude[css][] = 'modules/user/user.css'
+;exclude[css][] = 'modules/system/admin.css'
+;exclude[css][] = 'modules/system/system.css'
+;exclude[css][] = 'modules/system/system.admin.css'
+;exclude[css][] = 'modules/system/system.base.css'
+
+
+;;;;;;;;;;;;;;;;;;;;;
+;; SimplyTest.me
+;;;;;;;;;;;;;;;;;;;;;
+
+simplytest_dependencies[] = jquery_update
+
+; Information added by  packaging script on 2013-11-17
+version = "7.x-3.0"
+core = "7.x"
+project = "bootstrap"
+datestamp = "1384678107"
+

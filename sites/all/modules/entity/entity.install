@@ -1,0 +1,134 @@
+<?php
+
+/**
+ * @file
+ * Install file for the entity API.
+ */
+
+/**
+ * Implements hook_enable().
+ */
+function entity_enable() {
+  // Create cache tables for entities that support Entity cache module.
+  entity_entitycache_installed_modules();
+}
+
+/**
+ * The entity API modules have been merged into a single module.
+ */
+function entity_update_7000() {
+  // This empty update is required such that all caches are cleared as
+  // necessary.
+}
+
+/**
+ * Remove the deprecated 'entity_defaults_built' variable.
+ */
+function entity_update_7001() {
+  variable_del('entity_defaults_built');
+}
+
+/**
+ * Clear caches and rebuild registry.
+ */
+function entity_update_7002() {
+  // Do nothing, update.php clears cache for us in case there is an update.
+}
+
+/**
+ * Create cache tables for entities that support Entity cache module.
+ */
+function entity_update_7003() {
+  entity_entitycache_installed_modules();
+}
+
+/**
+ * Create cache tables for entities of modules that support Entity cache module.
+ *
+ * @param $modules
+ *   (optional) An array of module names that have been installed.
+ *   If not specified, try to add cache tables for all modules.
+ */
+function entity_entitycache_installed_modules($modules = NULL) {
+  if (!module_exists('entitycache')) {
+    return;
+  }
+
+  // If no modules are specified or if entitycache is being installed,
+  // try to add entitycache tables for supporting entities of all modules.
+  if (!isset($modules) || in_array('entitycache', $modules)) {
+    $modules = module_list();
+  }
+
+  // Get all installed modules that support entity cache.
+  $entitycache_module_info = _entity_entitycache_get_module_info($modules);
+
+  // For uninstallation of modules, we need to keep a list of tables we created
+  // per module providing the entity type.
+  $tables_created = variable_get('entity_cache_tables_created');
+
+  foreach ($entitycache_module_info as $module => $module_entitycache_entities) {
+    foreach ($module_entitycache_entities as $entity_type => $entity_info) {
+      // Do not break modules that create the cache tables for themselves.
+      if (!db_table_exists('cache_entity_' . $entity_type)) {
+        $schema = drupal_get_schema_unprocessed('system', 'cache');
+        $schema['description'] = 'Cache table used to store' . $entity_type . ' entity records.';
+        db_create_table('cache_entity_' . $entity_type, $schema);
+        $tables_created[$module][] = 'cache_entity_' . $entity_type;
+      }
+    }
+  }
+  variable_set('entity_cache_tables_created', $tables_created);
+}
+
+/**
+ * Remove entity cache tables for entity types of uninstalled modules.
+ *
+ * @param $modules
+ *   (optional) An array of uninstalled modules. If not specified, try to remove
+ *   cache tables for all modules.
+ */
+function entity_entitycache_uninstalled_modules($modules = NULL) {
+  // If no modules are specified or if entitycache is being uninstalled,
+  // try to remove entitycache tables for supporting entities of all modules.
+  if (!isset($modules) || in_array('entitycache', $modules)) {
+    $modules = module_list();
+  }
+  $tables_created = variable_get('entity_cache_tables_created');
+  foreach ($modules as $module) {
+    if (!empty($tables_created[$module])) {
+      foreach ($tables_created[$module] as $table) {
+        db_drop_table($table);
+      }
+      unset($tables_created[$module]);
+    }
+  }
+  variable_set('entity_cache_tables_created', $tables_created);
+}
+
+/**
+ * Helper to fetch entity info about entity types that use caching.
+ */
+function _entity_entitycache_get_module_info($modules) {
+  // Prepare a keyed array of all modules with their entity types and infos.
+  // Structure: [module][entity][info]
+  $entity_crud_info = entity_crud_get_info();
+  $info = array();
+  foreach ($entity_crud_info as $entity_name => $entity_info) {
+    // Make sure that the entity info specifies a module and supports entitycache.
+    if (!isset($entity_info['module']) || empty($entity_info['entity cache'])) {
+      continue;
+    }
+    $module = $entity_info['module'];
+    // Only treat installed modules.
+    if (!in_array($module, $modules)) {
+      continue;
+    }
+    // Add the entity info to the module key.
+    if (!isset($info[$module])) {
+      $info[$module] = array();
+    }
+    $info[$module][$entity_name] = $entity_info;
+  }
+  return $info;
+}

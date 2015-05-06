@@ -1,0 +1,113 @@
+<h2 id="mail-system"><a href="http://drupal.org/project/mailsystem">Mail System</a></h2>
+<p>Provides an Administrative UI and Developers API for safely updating the <a href="http://api.drupal.org/api/drupal/includes--mail.inc/function/drupal_mail_system/7">mail_system</a> configuration variable.</p>
+<h3 id="administrative-ui">Administrative UI</h3>
+<p>The administrative interface is at <code>admin/config/system/mailsystem</code>. A <a href="http://drupal.org/node/1134044">screenshot</a> is available.</p>
+<h3 id="used-by">Used by:</h3>
+<ul>
+  <li><a href="http://drupal.org/project/htmlmail">HTML Mail</a></li>
+  <li><a href="http://drupal.org/project/mimemail">Mime Mail 7.x-1.x-dev</a></li>
+  <li><a href="http://drupal.org/project/postmark">Postmark 7.x-1.x</a></li>
+</ul>
+<h3 id="developers-api">Developers API</h3>
+<p>A module <code>example</code> with a <a href="http://api.drupal.org/api/drupal/includes--mail.inc/interface/MailSystemInterface/7"><code>MailSystemInterface</code></a> implementation called <code>ExampleMailSystem</code> should add the following in its <code>example.install</code> file:</p>
+<pre>
+<code>/**
+ * Implements hook_enable().
+ */
+function example_enable() {
+  mailsystem_set(array('example' => 'ExampleMailSystem'));
+}
+/**
+ * Implements hook_disable().
+ */
+function example_disable() {
+  mailsystem_clear(array('example' => 'ExampleMailSystem'));
+}
+</code>
+</pre>
+<p>The above settings allow mail sent by <code>example</code> to use <code>ExampleMailSystem</code>. To make <code>ExampleMailSystem</code> the site-wide default for sending mail:</p>
+<pre>
+<code>mailsystem_set(array(mailsystem_default_id() => 'ExampleMailSystem'));
+</code>
+</pre>
+<p>To restore the default mail system:</p>
+<pre>
+<code>mailsystem_set(array(mailsystem_default_id() => mailsystem_default_value()));
+</code>
+</pre>
+<p>Or simply:</p>
+<pre>
+<code>mailsystem_set(mailsystem_defaults());
+</code>
+</pre>
+<p>If module <code>example</code> relies on dependency <code>foo</code> and its <code>FooMailSystem</code> class, then the <code>example.install</code> code should like like this:</p>
+<pre>
+<code>/**
+ * Implements hook_enable().
+ */
+function example_enable() {
+  mailsystem_set(array('example' => 'FooMailSystem'));
+}
+/**
+ * Implements hook_disable().
+ */
+function example_disable() {
+  mailsystem_clear(array('example' => ''));
+}
+</code>
+</pre>
+<p>If module <code>example</code> only wants to use <code>FooMailSystem</code> when sending emails with a key of <code>examail</code>, then the <code>example.install</code> code should look like this:</p>
+<pre>
+<code>/**
+ * Implements hook_enable().
+ */
+function example_enable() {
+  mailsystem_set(array('example_examail' => 'FooMailSystem'));
+}
+/**
+ * Implements hook_disable().
+ */
+function example_disable() {
+  mailsystem_clear(array('example_examail' => ''));
+}
+</code>
+</pre>
+<h4 id="new-in-2.x-branch"><em>(New in 2.x branch)</em></h4>
+<p>To change the site-wide defaults to use the <code>FooMailSystem</code> for formatting messages and the <code>BarMailSystem</code> for sending them:</p>
+<pre>
+<code>mailsystem_set(
+  array(
+    mailsystem_default_id() =&gt; array(
+      'format' =&gt; 'FooMailSystem',
+      'mail' =&gt; 'BarMailSystem',
+    ),
+  )
+);
+</code>
+</pre>
+<p>To change the site-wide defaults to use the <code>FooMailSystem</code> for sending messages, while continuing to use the current system for formatting them:</p>
+<pre>
+<code>mailsystem_set(
+  array(
+    mailsystem_default_id() =&gt; array(
+      'mail' =&gt; 'FooMailsystem',
+    ),
+  )
+);
+</code>
+</pre>
+<h3 id="references">References</h3>
+<dl>
+  <dt><strong><a href="http://api.drupal.org/api/drupal/includes--mail.inc/function/drupal_mail_system/7"><code>drupal_mail_system()</code> API documentation</a></strong>:</dt>
+  <dd>
+    <p><a href="http://api.drupal.org/api/drupal/includes--mail.inc/function/drupal_mail_system/7">api.drupal.org/api/drupal/includes--mail.inc/function/drupal_mail_system/7</a></p>
+  </dd>
+  <dt><strong><a href="http://api.drupal.org/api/drupal/includes--mail.inc/interface/MailSystemInterface/7"><code>MailSystemInterface</code> API documentation</a></strong>:</dt>
+  <dd>
+    <p><a href="http://api.drupal.org/api/drupal/includes--mail.inc/interface/MailSystemInterface/7">api.drupal.org/api/drupal/includes--mail.inc/interface/MailSystemInterface/7</a></p>
+  </dd>
+  <dt><strong><a href="http://drupal.org/node/900794">Creating HTML formatted mails in Drupal 7</a></strong>:</dt>
+  <dd>
+    <p><a href="http://drupal.org/node/900794">drupal.org/node/900794</a></p>
+  </dd>
+</dl>

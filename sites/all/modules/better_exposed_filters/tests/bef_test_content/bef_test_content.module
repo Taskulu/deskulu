@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the BEF Test Content feature.
+ */
+
+include_once 'bef_test_content.features.inc';

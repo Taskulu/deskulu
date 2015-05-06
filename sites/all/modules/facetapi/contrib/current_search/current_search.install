@@ -1,0 +1,110 @@
+<?php
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the Current Search Blocks
+ * module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function current_search_schema() {
+  $schema = array();
+
+  $schema['current_search'] = array(
+    'description' => 'Current search block configurations.',
+    'export' => array(
+      'key' => 'name',
+      'identifier' => 'item',
+      'default hook' => 'current_search_default_items',
+      'delete callback' => 'current_search_export_crud_delete',
+      'api' => array(
+        'owner' => 'current_search',
+        'api' => 'current_search',
+        'minimum_version' => 1,
+        'current_version' => 1,
+      ),
+    ),
+    'fields' => array(
+      'name' => array(
+        'description' => 'The machine readable name of the configuration.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'label' => array(
+        'description' => 'The human readable name of the configuration.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'settings' => array(
+        'description' => 'Serialized storage of general settings.',
+        'type' => 'text',
+        'serialize' => TRUE,
+      ),
+    ),
+    'primary key' => array('name'),
+  );
+
+  $schema['block_current_search'] = array(
+    'description' => 'Sets up display criteria for blocks based on searcher',
+    'fields' => array(
+      'delta' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'description' => "The block's unique delta within module, from {block}.delta.",
+      ),
+      'searcher' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'description' => "The machine-readable name of the searcher.",
+      ),
+    ),
+    'primary key' => array('delta'),
+    'indexes' => array(
+      'searcher' => array('searcher'),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function current_search_uninstall() {
+  // Remove Current Search blocks.
+  // @see http://drupal.org/node/1567928
+  if (db_table_exists('block')) {
+    db_delete('block')->condition('module', 'current_search')->execute();
+  }
+}
+
+/**
+ * Update the structure of saved settings objects.
+ */
+function current_search_update_7101() {
+  // @see http://drupal.org/node/1379166
+  $result = db_query('SELECT name, settings FROM {current_search}');
+  foreach ($result as $record) {
+    $settings = unserialize($record->settings);
+    // Make our best guess as to whether or not we are using the old structure.
+    if (count($settings) != 2 || !isset($settings['items']) || !isset($settings['advanced'])) {
+      $settings = array(
+        'items' => $settings,
+        'advanced' => array(
+          'empty_searches' => 0,
+        ),
+      );
+      db_update('current_search')
+        ->fields(array('settings' => serialize($settings)))
+        ->execute();
+    }
+  }
+}

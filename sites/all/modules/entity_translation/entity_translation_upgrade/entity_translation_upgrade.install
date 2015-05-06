@@ -1,0 +1,81 @@
+<?php
+
+/**
+ * @file
+ * Schema declaration for the entity_translation_upgrade module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function entity_translation_upgrade_schema() {
+  $schema['entity_translation_upgrade_history'] = array(
+    'description' => 'The history table for node translations.',
+    'fields' => array(
+      'nid' => array(
+        'description' => 'The node translation nid.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'tnid' => array(
+        'description' => 'The translation set id for the node translation.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'language' => array(
+        'description' => 'The node translation language.',
+        'type' => 'varchar',
+        'length' => 12,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'complete' => array(
+        'description' => 'Boolean indicating whether the node migration has completed.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'indexes' => array('tnid' => array('tnid'), 'complete' => array('complete')),
+    'primary key' => array('nid'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_enable().
+ */
+function entity_translation_upgrade_enable() {
+  $args = array('!url' => url('admin/config/regional/entity_translation'));
+  drupal_set_message(t('<em>Entity Translation Upgrade</em> enabled: visit the <a href="!url">entity translation settings</a> page to perform the upgrade.', $args));
+}
+
+/**
+ * Implements hook_update_N().
+ *
+ * Adds the 'complete' column to the history table.
+ */
+function entity_translation_upgrade_update_7001() {
+  $table = 'entity_translation_upgrade_history';
+  $name = 'complete';
+
+  // Add the 'complete' field.
+  $spec = array(
+    'description' => 'Boolean indicating whether the node migration has completed.',
+    'type' => 'int',
+    'not null' => TRUE,
+    'default' => 0,
+  );
+  db_add_field($table, $name, $spec);
+
+  // Add the 'complete' index.
+  db_add_index($table, $name, array($name));
+
+  // Existing records are supposed to concern already completed migrations.
+  db_update($table)
+    ->fields(array('complete' => 1))
+    ->execute();
+}

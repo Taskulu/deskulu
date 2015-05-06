@@ -1,0 +1,197 @@
+<?php
+/**
+ * @file
+ * Main module functions for mandrill_activity.
+ */
+
+/**
+ * Implements hook_entity_info().
+ */
+function mandrill_activity_entity_info() {
+  $return = array(
+    'mandrill_activity_entity' => array(
+      'label' => t('Mandrill Activity Entity'),
+      'controller class' => 'EntityAPIControllerExportable',
+      'entity class' => 'MandrillActivityEntity',
+      'base table' => 'mandrill_activity_entity',
+      'uri callback' => 'entity_class_uri',
+      'fieldable' => FALSE,
+      'exportable' => TRUE,
+      'module' => 'mandrill_activity',
+      'entity keys' => array(
+        'id' => 'mandrill_activity_entity_id',
+        'name' => 'name',
+        'label' => 'label',
+      ),
+      // Enable the entity API's admin UI.
+      'admin ui' => array(
+        'path' => 'admin/config/services/mandrill/activity',
+        'file' => 'mandrill_activity.admin.inc',
+        'controller class' => 'MandrillActivityUIController',
+      ),
+      'label callback' => 'entity_class_label',
+      'access callback' => 'mandrill_activity_entity_access',
+    ),
+  );
+
+  return $return;
+}
+
+/**
+ * Access callback for mandrill_activity_entity.
+ */
+function mandrill_activity_entity_access() {
+  return user_access('administer mandrill activity');
+}
+
+/**
+ * Implements hook_menu().
+ */
+function mandrill_activity_menu() {
+  $items = array();
+  $mandrill_activity_entities = mandrill_activity_load();
+  foreach ($mandrill_activity_entities as $mandrill_activity_entity) {
+    $arg = substr_count($mandrill_activity_entity->entity_path, '/');
+    $items[$mandrill_activity_entity->entity_path . '%entity_object/mandrill_activity'] = array(
+      'title' => 'Mandrill Activity',
+      'load arguments' => array($mandrill_activity_entity->entity_type),
+      'page callback' => 'mandrill_activity_page',
+      'page arguments' => array($arg, $mandrill_activity_entity),
+      'access callback' => 'mandrill_activity_access',
+      'access arguments' => array($mandrill_activity_entity),
+      'type' => MENU_LOCAL_TASK,
+    );
+  }
+
+  return $items;
+}
+
+/**
+ * Access callback for activity menu items.
+ */
+function mandrill_activity_access(MandrillActivityEntity $mandrill_activity_entity) {
+  if ($mandrill_activity_entity->enabled && user_access('access mandrill activity')) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+ * Loads a single mandrill_activity_entity or all of them if no name provided.
+ *
+ * @param string $name
+ *   Machine name of Mandrill Activity Entity to load.
+ *
+ * @return MandrillActivityEntity|array
+ *   Array of MandrillActivityEntity's or a single MandrillActivityEntity.
+ */
+function mandrill_activity_load($name = NULL) {
+  $types = entity_load_multiple_by_name('mandrill_activity_entity', isset($name) ? array($name) : FALSE);
+  return isset($name) ? reset($types) : $types;
+}
+
+/**
+ * Content for the Mandrill log tab on entity instance pages.
+ *
+ * @param object $entity
+ *   Entity to load activity for.
+ *
+ * @param MandrillActivityEntity $mandrill_activity_entity
+ *   Loaded MandrillActivityEntity object.
+ *
+ * @return array
+ *   Render array.
+ */
+function mandrill_activity_page($entity, MandrillActivityEntity $mandrill_activity_entity) {
+  $entity_wrapper = entity_metadata_wrapper($mandrill_activity_entity->entity_type, $entity);
+  $email_property = $mandrill_activity_entity->email_property;
+  $email_property_array = explode(':', $email_property);
+  $parent = $entity_wrapper;
+  foreach ($email_property_array as $drupal_field) {
+    if ($parent instanceof EntityListWrapper) {
+      $child_wrapper = $parent->get(0)->{$drupal_field};
+    }
+    else {
+      $child_wrapper = $parent->{$drupal_field};
+    }
+    $parent = $child_wrapper;
+  }
+  $email = $parent->value();
+  // Validate email address.
+  if (!valid_email_address($email)) {
+    return array(
+      'error_notice' => array(
+        '#markup' => t('%email does not contain a valid email address. Unable to lookup Mandrill activity history without a valid email.',
+          array('%email' => $email_property)
+        ),
+      ),
+    );
+  }
+
+  $header = array(
+    t('Subject'),
+    t('Timestamp'),
+    t('State'),
+    t('Opens'),
+    t('Clicks'),
+    t('Tags'),
+  );
+  $rows = array();
+
+  // Loop through all activities, creating rows for each.
+  $activity = mandrill_activity_get_activity($email);
+  foreach ($activity as $sent_email) {
+    $rows[] = array(
+      $sent_email['subject'],
+      format_date($sent_email['ts'], 'short'),
+      $sent_email['state'],
+      $sent_email['opens'],
+      $sent_email['clicks'],
+      implode(', ', $sent_email['tags']),
+    );
+  }
+
+  $display['mandrill_activity'] = array(
+    'message' => array(
+      '#markup' => t('The 100 most recent Emails sent to %email via Mandrill.', array('%email' => $email)),
+    ),
+    'activity' => array(
+      '#theme' => 'table',
+      '#header' => $header,
+      '#rows' => $rows,
+    ),
+  );
+
+  return $display;
+}
+
+/**
+ * Return all activity on all lists for a given email address.
+ *
+ * @param string $email
+ *   Email to load Mandrill activity for.
+ *
+ * @return array
+ *   Array of activity.
+ */
+function mandrill_activity_get_activity($email) {
+  $mandrill = mandrill_get_api_object();
+  return $mandrill->messages->search("email:{$email}");
+}
+
+/**
+ * Implements hook_permission().
+ */
+function mandrill_activity_permission() {
+  $return = array();
+
+  $return['access mandrill activity'] = array(
+    'title' => t('Access Mandrill Activity'),
+    'description' => t('View own Mandrill activity history.'),
+  );
+  $return['administer mandrill activity'] = array(
+    'title' => t('Administer Mandrill activity entities'),
+    'description' => t('Add, Delete, and Configure Mandrill Activity entity settings.'),
+  );
+  return $return;
+}

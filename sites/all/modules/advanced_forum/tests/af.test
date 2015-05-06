@@ -1,0 +1,116 @@
+<?php
+
+/**
+ * @file
+ * Unit tests for advanced_forum.module.
+ */
+
+/**
+ * Class AfSimpleAPITest
+ */
+class AfSimpleAPITest extends DrupalUnitTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Advanced Forum API sanity checks',
+      'description' => 'Test the simple API functions in the public Advanced Forum API.',
+      'group' => 'Advanced Forum',
+    );
+  }
+
+  public function setUp() {
+    drupal_load('module', 'advanced_forum');
+    parent::setUp();
+  }
+
+  /**
+   * Implements unit tests.
+   */
+  public function testAfFunctions() {
+
+  }
+}
+
+/**
+ * Class testAfFormsTestCase
+ */
+class testAfFormsTestCase extends DrupalWebTestCase {
+  protected $privileged_user;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Advanced Forum Forms',
+      'description' => 'Advanced Forum Forms WebTesting.',
+      'group' => 'Advanced Forum',
+    );
+  }
+
+  /**
+   * Implement setUp() method.
+   */
+  public function setUp() {
+    // Enable any modules required for the test.
+    parent::setUp('advanced_forum');
+    // Create and log in our user. The user has the arbitrary privilege
+    // 'extra special edit any simpletest_example' which the code uses
+    // to grant access.
+    $this->privileged_user = $this->drupalCreateUser(
+      array('administer site configuration')
+    );
+    $this->drupalLogin($this->privileged_user);
+  }
+
+  /**
+   * Implements admin form save.
+   */
+  public function testAfSaveConfig() {
+
+    $edit = array();
+    $this->privileged_user = $this->drupalCreateUser(
+      array(
+        'administer advanced forum',
+        'view forum statistics',
+        'view last edited notice'
+      )
+    );
+    $this->drupalLogin($this->privileged_user);
+
+    // Let's test all admin forms.
+    $this->drupalPost(
+      'admin/config/content/advanced-forum',
+      $edit,
+      t('Save configuration')
+    );
+
+    $this->assertText(t('The configuration options have been saved.'));
+    
+    $this->drupalGet('forum', $edit);
+    $this->drupalGet('forum/active', $edit);
+    $this->drupalGet('forum/unanswered', $edit);
+    $this->drupalPost('forum/new', $edit, t('Apply'));
+    $this->drupalPost('forum/unanswered', $edit, t('Apply'));
+    $this->drupalPost('forum/active', $edit, t('Apply'));
+    $edit1 = array('forum' => 1);
+    $this->drupalPost('forum/new', $edit1, t('Apply'));
+    $this->drupalPost('forum/unanswered', $edit1, t('Apply'));
+    $this->drupalPost('forum/active', $edit1, t('Apply'));
+    $this->drupalGet('forum/markasread', $edit);
+    $edit2 = array('forum' => 'All');
+    $this->drupalPost('forum/new', $edit2, t('Apply'));
+    $this->drupalPost('forum/unanswered', $edit2, t('Apply'));
+    $this->drupalPost('forum/active', $edit2, t('Apply'));
+  }
+
+
+  /**
+   * Detect if we're running on PIFR testbot; skip intentional failure in that
+   * case. It happens that on the testbot the site under test is in a directory
+   * named 'checkout' or 'site_under_test'.
+   *
+   * @return boolean
+   *   TRUE if running on testbot.
+   */
+  public function runningOnTestbot() {
+    return (file_exists("../checkout") || file_exists("../site_under_test"));
+  }
+}

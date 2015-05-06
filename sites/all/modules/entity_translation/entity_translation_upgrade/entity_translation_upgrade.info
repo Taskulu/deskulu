@@ -1,0 +1,12 @@
+name = Entity Translation Upgrade
+description = Provides an upgrade path from node-based translation to field-based translation.
+package = Multilingual - Entity Translation
+core = 7.x
+dependencies[] = entity_translation
+
+; Information added by Drupal.org packaging script on 2015-01-22
+version = "7.x-1.0-beta4"
+core = "7.x"
+project = "entity_translation"
+datestamp = "1421971088"
+

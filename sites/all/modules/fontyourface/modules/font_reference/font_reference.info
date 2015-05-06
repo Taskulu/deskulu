@@ -1,0 +1,14 @@
+name = Font Reference
+description = Defines a field type for referencing a font from a node.
+package = Fields
+core = 7.x
+dependencies[] = fontyourface
+dependencies[] = field
+dependencies[] = options
+
+; Information added by drupal.org packaging script on 2013-04-29
+version = "7.x-2.8"
+core = "7.x"
+project = "fontyourface"
+datestamp = "1367195415"
+

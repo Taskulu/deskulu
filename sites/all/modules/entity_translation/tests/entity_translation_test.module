@@ -1,0 +1,69 @@
+<?php
+
+/**
+ * @file
+ * Testing functionality for Entity Translation module.
+ */
+
+/**
+ * Implements hook_entity_translation_insert().
+ */
+function entity_translation_test_entity_translation_insert($entity_type, $entity, $translation, $values = array()) {
+  entity_translation_test_check_save($entity_type, $entity, $translation, 'insert');
+}
+
+/**
+ * Implements hook_entity_translation_insert().
+ */
+function entity_translation_test_entity_translation_update($entity_type, $entity, $translation, $values = array()) {
+  entity_translation_test_check_save($entity_type, $entity, $translation, 'update');
+}
+
+/**
+ * Test implementation for save hooks.
+ */
+function entity_translation_test_check_save($entity_type, $entity, $translation, $hook) {
+  list($id, ,) = entity_extract_ids($entity_type, $entity);
+  $match = FALSE;
+
+  $row = db_select('entity_translation', 'et')
+    ->fields('et')
+    ->condition('entity_type', $entity_type)
+    ->condition('entity_id', $id)
+    ->condition('language', $translation['language'])
+    ->orderBy('created')
+    ->execute()
+    ->fetch(PDO::FETCH_ASSOC);
+
+  if ($row) {
+    $match = TRUE;
+    foreach ($translation as $key => $value) {
+      if ($row[$key] != $value) {
+        $match = FALSE;
+        break;
+      }
+    }
+  }
+
+  variable_set('entity_translation_test_save', array($hook => $match));
+}
+
+/**
+ * Implements hook_entity_translation_delete().
+ */
+function entity_translation_test_entity_translation_delete($entity_type, $entity, $langcode) {
+  list($id, ,) = entity_extract_ids($entity_type, $entity);
+
+  $row = db_select('entity_translation', 'et')
+    ->fields('et')
+    ->condition('entity_type', $entity_type)
+    ->condition('entity_id', $id)
+    ->condition('language', $langcode)
+    ->orderBy('created')
+    ->execute()
+    ->fetch(PDO::FETCH_ASSOC);
+
+  $info = variable_get('entity_translation_test_delete', array());
+  $info[$langcode] = empty($row);
+  variable_set('entity_translation_test_delete', $info);
+}

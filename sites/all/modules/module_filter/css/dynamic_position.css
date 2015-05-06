@@ -1,0 +1,23 @@
+html.js #module-filter-submit {
+  background-color: #F6F6F6;
+  width: 239px;
+  border: 1px solid #ccc;
+  border-top: 0;
+}
+html.js #module-filter-submit .form-actions {
+  text-align: center;
+  margin: 0;
+}
+html.js #module-filter-submit input {
+  margin: 2em 0 1em;
+}
+html.js #module-filter-submit.fixed {
+  position: fixed;
+  border-top: 1px solid #ccc;
+}
+html.js #module-filter-submit.fixed-top {
+  top: 0;
+}
+html.js #module-filter-submit.fixed-bottom {
+  bottom: 0;
+}

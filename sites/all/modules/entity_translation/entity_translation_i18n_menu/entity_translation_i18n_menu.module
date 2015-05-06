@@ -1,0 +1,408 @@
+<?php
+
+/**
+ * @file
+ * The menu specific translation functions and hook implementations.
+ */
+
+/**
+ * Implements hook_node_prepare().
+ *
+ * Translates the menu item shown on node edit forms if the node language does
+ * not equal the language of the menu item. This means either loading the
+ * respective menu item from the translation set or localizing the item.
+ */
+function entity_translation_i18n_menu_node_prepare($node) {
+  $langcode = entity_language('node', $node);
+  if (!empty($langcode) && !empty($node->menu['language']) && $node->menu['language'] != $langcode && entity_translation_i18n_menu_item($node->menu)) {
+    $handler = entity_translation_get_handler('node', $node);
+    $source_langcode = $handler->getSourceLanguage();
+    // If we are creating a translation we need to use the source language.
+    entity_translation_i18n_menu_node_menu_item_translate($node, $source_langcode ? $source_langcode : $langcode);
+  }
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function entity_translation_i18n_menu_module_implements_alter(&$implementations, $hook) {
+  switch ($hook) {
+    case 'node_prepare':
+    case 'node_presave':
+      // Move some of our hook implementations to end of list. Required so that
+      // the 'menu' key is populated when our implementation gets called. This
+      // also prevents our changes from being overridden.
+      $group = $implementations['entity_translation_i18n_menu'];
+      unset($implementations['entity_translation_i18n_menu']);
+      $implementations['entity_translation_i18n_menu'] = $group;
+      break;
+  }
+}
+
+/**
+ * Implements hook_node_presave().
+ */
+function entity_translation_i18n_menu_node_presave($node) {
+  if (!entity_translation_enabled('node')) {
+    return;
+  }
+  $handler = entity_translation_get_handler('node', $node);
+  $translations = $handler->getTranslations();
+  $source_langcode = $handler->getSourceLanguage();
+  $tset = !empty($node->menu['tset']);
+
+  // If no translation is available the menu data is always supposed to be
+  // entered in the source string language. This way we avoid having unneeded
+  // string translations hanging around.
+  if (empty($source_langcode) && count($translations->data) < 2 && !$tset) {
+    return;
+  }
+
+  // When creating a new translation, leave the source menu item intact and
+  // create a new one.
+  $langcode = entity_language('node', $node);
+  if (!empty($node->menu) && $tset && !empty($source_langcode)) {
+    $node->source_menu = menu_link_load($node->menu['mlid']);
+    unset($node->menu['mlid']);
+  }
+
+  // Store the entity language for later reference when saving a translation.
+  // If we are editing a translation in the string source language, we can skip
+  // item processing since the proper values are already in place. Instead when
+  // creating the translation we need to process the link item before saving it.
+  if (!empty($node->menu) && !empty($langcode) && ($source_langcode || $langcode != i18n_string_source_language())) {
+    $node->menu['entity_language'] = $langcode;
+    $node->menu['entity_translation_handler'] = $handler;
+  }
+
+  // If we have a translation set here we should prepare it for storage,
+  // otherwise we need to ensure the menu item has no language so it can be
+  // localized.
+  if ($tset) {
+    entity_translation_i18n_menu_item_tset_prepare($node, $langcode);
+  }
+  else {
+    $node->menu['language'] = LANGUAGE_NONE;
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function entity_translation_i18n_menu_form_menu_edit_item_alter(&$form, &$form_state) {
+  $form['#validate'][] = 'entity_translation_i18n_menu_form_menu_edit_item_validate';
+}
+
+/**
+ * Implements hook_menu_link_alter().
+ */
+function entity_translation_i18n_menu_menu_link_alter(&$link) {
+  if (!empty($link['mlid']) && !empty($link['entity_language']) && $link['language'] == LANGUAGE_NONE && entity_translation_i18n_menu_item($link)) {
+    $sources = array();
+    foreach (array('title' => 'link_title', 'description' => 'description') as $key => $link_field) {
+      $name = array('menu', 'item', $link['mlid'], $key);
+      $source = i18n_string_get_source($name);
+      // The source might not exist yet.
+      $sources[$key] = is_object($source) ? $source->get_string() : $link[$link_field];
+    }
+
+    // If the link values to be saved are translated, we need to revert the
+    // localized menu link back to the original. This way they can be saved
+    // without accidentially storing a translation string as a source string.
+    // The translated values are put in a separate key for later reference.
+    if ($link['entity_language'] != i18n_string_source_language()) {
+      $link['entity_translation_strings'] = array(
+        'title' => $link['link_title'],
+        'description' => $link['description'],
+      );
+      $link['link_title'] = $sources['title'];
+      $link['options']['attributes']['title'] = $sources['description'];
+    }
+    // If the link values are in the string source language, we need to save
+    // the previous source values as translations. As a matter of fact this can
+    // happen only when initially creating a menu item in a language different
+    // from the source string one.
+    else {
+      $link['entity_translation_strings'] = array(
+        'title' => $sources['title'],
+        'description' => $sources['description'],
+      );
+      $link['entity_language'] = $link['entity_translation_handler']->getLanguage();
+    }
+  }
+}
+
+/**
+ * Implements hook_menu_link_update().
+ */
+function entity_translation_i18n_menu_menu_link_update($link) {
+  // Make sure localizations are saved properly.
+  if (entity_translation_i18n_menu_item($link) && !empty($link['entity_translation_strings'])) {
+    $string_langcode = isset($link['entity_language']) ? $link['entity_language'] : i18n_string_source_language();
+    $name = implode(':', array('menu', 'item', $link['mlid']));
+    foreach ($link['entity_translation_strings'] as $key => $translation) {
+      i18n_string_translation_update($name . ':' . $key, $translation, $string_langcode);
+    }
+  }
+}
+
+/**
+ * Menu specific alterations for the entity form.
+ *
+ * Adds to the regular menu item widget a checkbox to choose whether the current
+ * menu item should be localized or part of a translation set.
+ */
+function entity_translation_i18n_menu_form(&$form, &$form_state) {
+  $info = entity_translation_edit_form_info($form, $form_state);
+
+  if ($info && $info['entity type'] == 'node') {
+    $node = $info['entity'];
+    $source_menu = isset($node->source_menu) ? $node->source_menu : $node->menu;
+
+    // Check that the menu item of the source node is translatable.
+    if (isset($form['menu']) && !empty($source_menu) && i18n_menu_mode($source_menu['menu_name'], I18N_MODE_MULTIPLE)) {
+      $default = isset($source_menu['language']) && $source_menu['language'] != LANGUAGE_NONE;
+      $languages = language_list();
+      $handler = entity_translation_entity_form_get_handler($form, $form_state);
+      $langcode = $handler->getFormLanguage();
+      $language_name = isset($languages[$langcode]) ? t($languages[$langcode]->name) : t('current');
+
+      $form['menu']['#multilingual'] = TRUE;
+
+      $form['menu']['link']['tset'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Menu link enabled only for the %language language', array('%language' => $language_name)),
+        '#prefix' => '<label>' . t('Menu translation') . '</label>',
+        '#default_value' => $default,
+        '#description' => t('Create a different menu link for each translation. Every link will have its own parent and weight, otherwise only title and description will be translated.'),
+        '#weight' => 10,
+      );
+
+      if (!empty($default)) {
+        $translation_set = i18n_menu_translation_load($source_menu['i18n_tsid']);
+        $translations = $translation_set ? $translation_set->get_translations() : FALSE;
+        if (!empty($translations) && (count($translations) > 1 || !isset($translations[$langcode]))) {
+          $form['menu']['link']['tset']['#disabled'] = TRUE;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Validation handler for the menu item edit form.
+ */
+function entity_translation_i18n_menu_form_menu_edit_item_validate($form, &$form_state) {
+  $item = $form_state['values'];
+
+  // Localizable menu items should not be created when a translation set for the
+  // same path already exists.
+  if ($item['language'] == LANGUAGE_NONE) {
+    $count = db_select('menu_links', 'ml')
+      ->condition('ml.link_path', $item['link_path'])
+      ->condition('ml.i18n_tsid', 0, '<>')
+      ->countQuery()
+      ->execute()
+      ->fetchField();
+
+    if (!empty($count)) {
+      form_set_error('language', t('There are already one or more items with a language assigned for the given path. Remove them or assign a language to this item too.'));
+    }
+  }
+}
+
+/**
+ * Checks whether a given menu item is translatable through entity translation.
+ *
+ * @param array $item
+ *   A menu item.
+ *
+ * @todo
+ *   Find more generic way of determining whether ET is enabled for a link; add
+ *   support for other entities, e.g. taxonomy_term (?).
+ */
+function entity_translation_i18n_menu_item($item) {
+  $cache = &drupal_static(__FUNCTION__, array());
+
+  if (!isset($cache[$item['link_path']])) {
+    // First check that the item belongs to a menu which has translation
+    // enabled.
+    if (!i18n_menu_mode($item['menu_name'], I18N_MODE_MULTIPLE)) {
+      $cache[$item['link_path']] = FALSE;
+    }
+
+    // Check if the respective node type has entity translation enabled.
+    if (preg_match('!^node/(\d+)(/.+|)$!', $item['link_path'], $matches)) {
+      if (!entity_translation_enabled('node')) {
+        $cache[$item['link_path']] = FALSE;
+      }
+      else {
+        $type = db_select('node', 'n')
+          ->condition('nid', $matches[1])
+          ->fields('n', array('type'))
+          ->execute()->fetchField();
+        $cache[$item['link_path']] = entity_translation_node_supported_type($type);
+      }
+    }
+    else {
+      $cache[$item['link_path']] = FALSE;
+    }
+  }
+
+  return $cache[$item['link_path']];
+}
+
+/**
+ * Replace the menu item on the given node with a localized version.
+ *
+ * If the menu item is replaced by a different menu item from the translation
+ * set, the original item is stored in $node->source_menu.
+ *
+ * @param $node
+ *   A node object, with a menu item ($node->menu).
+ * @param $langcode
+ *   The language into which the menu item should be translated.
+ */
+function entity_translation_i18n_menu_node_menu_item_translate($node, $langcode) {
+  // Localization.
+  if ($node->menu['language'] == LANGUAGE_NONE) {
+    _i18n_menu_link_localize($node->menu, $langcode);
+    // Update properties 'link_title' and 'options.attributes.title' which are
+    // used for the node menu form; i18n_menu_link_localize only localizes
+    // rendered properties 'title' and 'localized_options.attributes.title'.
+    $node->menu['link_title'] = $node->menu['title'];
+    $node->menu['options']['attributes']['title'] = isset($node->menu['localized_options']['attributes']['title']) ? $node->menu['localized_options']['attributes']['title'] : '';
+  }
+  // Translation sets.
+  else {
+    $menu = NULL;
+    if (!empty($node->menu['i18n_tsid']) && $translation_set = i18n_menu_translation_load($node->menu['i18n_tsid'])) {
+      // Load menu item from translation set.
+      $menu = $translation_set->get_item($langcode);
+
+      // Set parent_depth_limit (required on node forms).
+      if (!empty($menu) && !isset($menu['parent_depth_limit'])) {
+        $menu['parent_depth_limit'] = _menu_parent_depth_limit($menu);
+      }
+
+      // Make sure the menu item is not set to hidden; i18n_menu automatically
+      // hides any menu items not matching the current interface language.
+      if (!empty($menu)) {
+        $menu['hidden'] = FALSE;
+      }
+    }
+
+    // Replace the menu item with the translated version, or null if there is
+    // no translated item. Store the original one in $node->source_menu.
+    $node->source_menu = $node->menu;
+    $node->menu = $menu;
+  }
+}
+
+/**
+ * Prepares the menu item attached to given entity for saving.
+ *
+ * - Ensures that different menu items attached to the entity and its
+ *   translations are stored within the same translation set.
+ * - Sets missing default values, and cleans out null values.
+ * - Sets the language of the menu item to given target language.
+ *
+ * @param $entity
+ *   Node object.
+ * @param $langcode
+ *   Target language.
+ */
+function entity_translation_i18n_menu_item_tset_prepare($entity, $langcode) {
+  // Load or create a translation set.
+  if (!empty($entity->source_menu)) {
+    if (!empty($entity->source_menu['i18n_tsid'])) {
+      $translation_set = i18n_translation_set_load($entity->source_menu['i18n_tsid']);
+    }
+    else {
+      // Make sure that the source menu item does have a language assigned.
+      if ($entity->source_menu['language'] == LANGUAGE_NONE) {
+        $entity->source_menu['language'] = $entity->menu['entity_translation_handler']->getSourceLanguage();
+        menu_link_save($entity->source_menu);
+      }
+
+      // Create new translation set.
+      $translation_set = i18n_translation_set_build('menu_link')
+        ->add_item($entity->source_menu);
+    }
+    $entity->menu['translation_set'] = $translation_set;
+  }
+
+  // Extract menu_name and pid from parent property.
+  if (!empty($entity->menu['parent'])) {
+    list($entity->menu['menu_name'], $entity->menu['plid']) = explode(':', $entity->menu['parent']);
+  }
+
+  // Remove null values.
+  $entity->menu = array_filter($entity->menu);
+
+  $entity->menu['language'] = $langcode;
+
+  $entity->menu += array(
+    'description' => '',
+    'customized' => 1,
+  );
+}
+
+/**
+ * Implements hook_entity_translation_upgrade().
+ */
+function entity_translation_i18n_menu_entity_translation_upgrade($node, $translation) {
+  menu_node_prepare($node);
+  menu_node_prepare($translation);
+
+  if (!empty($node->menu['mlid']) && !empty($translation->menu['mlid'])) {
+    $link = $node->menu;
+    $link['link_title'] = $translation->menu['link_title'];
+    $link['description'] = $translation->menu['description'];
+    $link['entity_language'] = $translation->language;
+    $link['language'] = LANGUAGE_NONE;
+    menu_link_save($link, $node->menu);
+  }
+}
+
+/**
+ * Implements hook_entity_translation_delete().
+ */
+function entity_translation_i18n_menu_entity_translation_delete($entity_type, $entity, $langcode) {
+  // Make sure that we are working with an entity of type node.
+  if ($entity_type != 'node') {
+    return;
+  }
+
+  list($entity_id, , ) = entity_extract_ids($entity_type, $entity);
+
+  // Clean-up all menu module links that point to this node.
+  $result = db_select('menu_links', 'ml')
+    ->fields('ml', array('mlid', 'language'))
+    ->condition('link_path', 'node/' . $entity_id)
+    ->condition('module', 'menu')
+    ->execute()
+    ->fetchAllAssoc('mlid');
+
+  foreach ($result as $link) {
+    // Delete all menu links matching the deleted language.
+    if ($link->language == $langcode) {
+      menu_link_delete($link->mlid);
+    }
+
+    // Delete string translations for all language-neutral menu items.
+    if ($link->language == LANGUAGE_NONE) {
+      $name = array('menu', 'item', $link->mlid);
+      foreach (array('title', 'description') as $key) {
+        $name[] = $key;
+        $source = i18n_string_get_source($name);
+        if(!empty($source->lid)) {
+          db_delete('locales_target')
+            ->condition('lid', $source->lid)
+            ->condition('language', $langcode)
+            ->execute();
+        }
+      }
+    }
+  }
+}

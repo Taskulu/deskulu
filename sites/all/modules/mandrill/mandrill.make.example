@@ -1,0 +1,9 @@
+api = 2
+core = 7.x
+projects[libraries] = 2
+
+; mandrill
+libraries[mandrill][download][type] = "get"
+libraries[mandrill][download][url] = "https://bitbucket.org/mailchimp/mandrill-api-php/get/1.0.52.tar.gz"
+libraries[mandrill][directory_name] = "mandrill"
+libraries[mandrill][destination] = "libraries"

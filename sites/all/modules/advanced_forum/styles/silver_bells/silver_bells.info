@@ -1,0 +1,12 @@
+
+name = Silver Bells
+description = Shades of grey and white.
+version = 2.x
+base style = naked
+
+; Information added by Drupal.org packaging script on 2015-02-10
+version = "7.x-2.5"
+core = "7.x"
+project = "advanced_forum"
+datestamp = "1423590792"
+

@@ -1,0 +1,255 @@
+<?php
+/**
+ * @file
+ * Tests for Entity translation module.
+ */
+
+/**
+ * Tests for the translation of menu items on entity forms.
+ */
+class EntityTranslationMenuTranslationTestCase extends EntityTranslationTestCase {
+
+  /**
+   * Return the test information.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Menu translation',
+      'description' => 'Tests for the translation of menu items on entity forms.',
+      'group' => 'Entity translation',
+      'dependencies' => array('i18n_menu'),
+    );
+  }
+
+  function setUp() {
+    parent::setUp('locale', 'entity_translation', 'i18n_menu', 'entity_translation_i18n_menu');
+    $this->login($this->getAdminUser(array('administer menu')));
+    $this->addLanguage('en');
+    $this->addLanguage('es');
+    $this->addLanguage('it');
+    $this->configureContentType();
+    $this->configureMenu();
+    $this->enableUrlLanguageDetection();
+    $this->login($this->getTranslatorUser(array('administer menu')));
+  }
+
+  /**
+   * Configure the "Main Menu" for multilingual menu items ("Translate & Localize").
+   */
+  function configureMenu() {
+    $edit = array();
+    $edit['i18n_mode'] = I18N_MODE_MULTIPLE; // Translate & Localize.
+    $this->drupalPost('admin/structure/menu/manage/main-menu/edit', $edit, t('Save'));
+    $this->assertRaw(t('Your configuration has been saved.'), t('Menu settings have been saved.'));
+  }
+
+  /**
+   * Create page with menu item.
+   */
+  function createPage($link_title, $description, $langcode) {
+    $edit = array();
+    $edit['title'] = $this->randomName();
+    $edit['language'] = $langcode;
+    $edit['menu[enabled]'] = TRUE;
+    $edit['menu[link_title]'] = $link_title;
+    $edit['menu[description]'] = $description ? $description : 'link language = ' . $langcode;
+    $this->drupalPost('node/add/page', $edit, t('Save'));
+    $this->assertRaw(t('Basic page %title has been created.', array('%title' => $edit['title'])), t('Basic page created.'));
+
+    // Check to make sure the node was created.
+    $node = $this->drupalGetNodeByTitle($edit['title']);
+    $this->assertTrue($node, t('Node found in database.'));
+
+    // Check to make sure menu link was created.
+    $this->get($langcode, '<front>');
+    $this->assertText($link_title, 'New menu link found.');
+
+    return $node;
+  }
+
+  /**
+   * Create a translation with menu item.
+   */
+  function createTranslation($node, $link_title, $description, $langcode, $use_tsets = FALSE) {
+    $this->drupalGet('node/' . $node->nid . '/edit/add/' . $node->language . '/' . $langcode);
+
+    $edit = array();
+    $edit['menu[enabled]'] = TRUE;
+    $edit['menu[link_title]'] = $link_title;
+    $edit['menu[description]'] = $description ? $description : 'link language = ' . $langcode;
+    if ($use_tsets != NULL) {
+      $edit['menu[tset]'] = $use_tsets;
+    }
+
+    $this->drupalPost(NULL, $edit, t('Save'));
+    $this->drupalGet('node/' . $node->nid . '/translate');
+    $this->assertLinkByHref('node/' . $node->nid . '/edit/' . $langcode, 0, t('Translation edit link found. Translation created.'));
+
+    // Check to make sure menu link was created.
+    $this->get($langcode, '<front>');
+    $this->assertText($link_title, 'Translation menu link found.');
+
+    return $node;
+  }
+
+  /**
+   * Remove translation in given langcode from node.
+   */
+  function removeTranslation($node, $langcode) {
+    $this->drupalGet('node/' . $node->nid . '/translate/delete/' . $langcode);
+    $this->drupalPost(NULL, array(), t('Delete'));
+
+    // Check to make sure translation was deleted.
+    $this->drupalGet('node/' . $node->nid . '/edit/add/' . $node->language . '/' . $langcode);
+    $this->assertResponse(200, 'Translation add page found. Old translation deleted.');
+  }
+
+  /**
+   * Edit a page menu item.
+   *
+   * Check that node form contains old menu link title, then replace with given
+   * new title.
+   */
+  function editPage($node, $old_link_title, $link_title, $langcode) {
+    $this->drupalGet('node/' . $node->nid . '/edit/' . $langcode);
+
+    $this->assertFieldByXPath("//input[@name='menu[link_title]']", $old_link_title, 'Old link title value correctly populated: ' . $old_link_title);
+
+    $edit = array();
+    $edit['menu[link_title]'] = $link_title;
+    $this->drupalPost(NULL, $edit, t('Save'));
+
+    // Check to make sure menu link was updated.
+    $this->get($langcode, '<front>');
+    $this->assertNoText($old_link_title, 'Old menu link title not found: ' . $old_link_title);
+    $this->assertText($link_title, 'New menu link title found: ' . $link_title);
+  }
+
+  /**
+   * Test if menu localization works.
+   */
+  function testMenuLocalization() {
+    // Create Basic page in English.
+    $link_title_en = $this->randomName();
+    $node = $this->createPage($link_title_en, NULL, 'en');
+
+    // Submit translation in Spanish.
+    $link_title_es = $this->randomName();
+    $node_translation = $this->createTranslation($node, $link_title_es, NULL, 'es');
+
+    // Check menu links in both languages.
+    $this->get('en', '<front>');
+    $this->assertText($link_title_en);
+    $this->get('es', '<front>');
+    $this->assertText($link_title_es);
+
+    // Edit English menu link.
+    $link_title_en2 = $this->randomName();
+    $this->editPage($node, $link_title_en, $link_title_en2, 'en');
+
+    // Check that Spanish menu link has not changed.
+    $this->get('es', '<front>');
+    $this->assertText($link_title_es);
+
+    // Edit Spanish menu link.
+    $link_title_es2 = $this->randomName();
+    $this->editPage($node, $link_title_es, $link_title_es2, 'es');
+
+    // Check that English menu link has not changed.
+    $this->get('en', '<front>');
+    $this->assertText($link_title_en2);
+
+    // Delete Spanish translation and check that the respective menu item has
+    // been deleted as well.
+    $this->removeTranslation($node, 'es');
+    $this->get('es', '<front>');
+    $this->assertNoText($link_title_es2);
+  }
+
+  /**
+   * Test if menu localization works (source language != default language).
+   */
+  function testMenuLocalizationCustomSourceLanguage() {
+    // Create Basic page in Spanish.
+    $link_title_es = $this->randomName();
+    $node = $this->createPage($link_title_es, NULL, 'es');
+
+    // Submit translation in English.
+    $link_title_en = $this->randomName();
+    $node_translation = $this->createTranslation($node, $link_title_en, NULL, 'en');
+
+    // Check menu links in both languages.
+    $this->get('es', '<front>');
+    $this->assertText($link_title_es);
+    $this->get('en', '<front>');
+    $this->assertText($link_title_en);
+
+    // Edit Spanish menu link.
+    $link_title_es2 = $this->randomName();
+    $this->editPage($node, $link_title_es, $link_title_es2, 'es');
+
+    // Check that English menu link has not changed.
+    $this->get('en', '<front>');
+    $this->assertText($link_title_en);
+
+    // Edit English menu link.
+    $link_title_en2 = $this->randomName();
+    $this->editPage($node, $link_title_en, $link_title_en2, 'en');
+
+    // Check that Spanish menu link has not changed.
+    $this->get('es', '<front>');
+    $this->assertText($link_title_es2);
+  }
+
+  /**
+   * Test if menu translation works with separate menu items.
+   */
+  function testMenuTranslation() {
+    // Create Basic page in English.
+    $link_title_en = $this->randomName();
+    $node = $this->createPage($link_title_en, NULL, 'en');
+
+    // Submit translation in Spanish.
+    $link_title_es = $this->randomName();
+    $node_translation = $this->createTranslation($node, $link_title_es, NULL, 'es', TRUE);
+
+    // Check menu links in both languages.
+    $this->get('en', '<front>');
+    $this->assertText($link_title_en);
+    $this->get('es', '<front>');
+    $this->assertText($link_title_es);
+
+    // Edit English menu link.
+    $link_title_en2 = $this->randomName();
+    $this->editPage($node, $link_title_en, $link_title_en2, 'en');
+
+    // Check that Spanish menu link has not changed.
+    $this->get('es', '<front>');
+    $this->assertText($link_title_es);
+
+    // Edit Spanish menu link.
+    $link_title_es2 = $this->randomName();
+    $this->editPage($node, $link_title_es, $link_title_es2, 'es');
+
+    // Check that English menu link has not changed.
+    $this->get('en', '<front>');
+    $this->assertText($link_title_en2);
+
+    // Add another translation, and check that other menu items are not
+    // affected. See https://drupal.org/node/1982140
+    $link_title_it = $this->randomName();
+    $node_translation = $this->createTranslation($node, $link_title_it, NULL, 'it', NULL);
+
+    // Check that Spanish and English menu links have not changed.
+    $this->get('es', '<front>');
+    $this->assertText($link_title_es2);
+    $this->get('en', '<front>');
+    $this->assertText($link_title_en2);
+
+    // Delete Spanish translation and check that the respective menu item has
+    // been deleted as well.
+    $this->removeTranslation($node, 'es');
+    $this->get('es', '<front>');
+    $this->assertNoText($link_title_es2);
+  }
+}

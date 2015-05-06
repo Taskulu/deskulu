@@ -1,0 +1,15 @@
+<?php
+
+/**
+ * @file
+ * Installation file for User mail translation module.
+ */
+
+
+/**
+ * Implements hook_install().
+ */
+function i18n_user_install() {
+  // Set module weight for it to run before any other module implementing hook_mail_alter().
+  db_query("UPDATE {system} SET weight = -10000 WHERE name = 'i18n_user' AND type = 'module'");
+}

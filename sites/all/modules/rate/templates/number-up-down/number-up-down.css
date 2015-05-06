@@ -1,0 +1,44 @@
+.rate-number-up-down-btn-up {
+  display: block;
+  float: left;
+  background: url(add.png);
+  width: 16px;
+  height: 16px;
+  margin-top: 4px;
+  text-indent: 100px;
+  overflow: hidden;
+}
+
+.rate-number-up-down-btn-down {
+  display: block;
+  float: left;
+  background: url(minus.png);
+  width: 16px;
+  height: 16px;
+  margin-top: 4px;
+  text-indent: 100px;
+  overflow: hidden;
+}
+
+.rate-number-up-down-rating {
+  display: block;
+  float: left;
+  text-align: center;
+  padding: 0 5px;
+}
+
+.rate-number-up-down-rating-up {
+  display: block;
+  float: left;
+  width: 45px;
+  text-align: right;
+  padding-top: 3px;
+}
+
+.rate-number-up-down-rating-down {
+  display: block;
+  float: left;
+  width: 45px;
+  text-align: left;
+  padding-top: 3px;
+}

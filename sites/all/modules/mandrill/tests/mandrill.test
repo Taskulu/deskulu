@@ -1,0 +1,150 @@
+<?php
+/**
+ * @file
+ * Test class and methods for the Mandrill module.
+ */
+
+class MandrillTestCase extends DrupalWebTestCase {
+  /**
+   * Returns info displayed in the test interface.
+   *
+   * @return array
+   *   Formatted as specified by simpletest.
+   */
+  public static function getInfo() {
+    // Note: getInfo() strings are not translated with t().
+    return array(
+      'name' => 'Mandrill Tests',
+      'description' => 'Test core Mandrill functionality.',
+      'group' => 'Mandrill',
+    );
+  }
+
+  /**
+   * Pre-test setup function.
+   *
+   * Enables dependencies.
+   * Sets the mandrill_api_key variable to the test key.
+   */
+  protected function setUp() {
+    // Use a profile that contains required modules:
+    $prof = drupal_get_profile();
+    $this->profile = $prof;
+    // Enable modules required for the test.
+    $enabled_modules = array(
+      'libraries',
+      'mandrill',
+      'entity',
+    );
+    parent::setUp($enabled_modules);
+    variable_set('mandrill_api_classname', 'DrupalMandrillTest');
+    variable_set('mandrill_api_key', 'MANDRILL_TEST_API_KEY');
+    variable_set('mandrill_test_mode', TRUE);
+  }
+
+  /**
+   * Post-test function.
+   *
+   * Sets test mode to FALSE.
+   */
+  protected function tearDown() {
+    parent::tearDown();
+
+    variable_del('mandrill_api_classname');
+    variable_del('mandrill_api_key');
+    variable_del('mandrill_test_mode');
+  }
+
+  /**
+   * Tests sending a message to multiple recipients.
+   */
+  public function testSendMessage() {
+    $mail_system = new MandrillMailSystem();
+
+    $to = 'Recipient One <recipient.one@example.com>,'
+      . 'Recipient Two <recipient.two@example.com>,'
+      . 'Recipient Three <recipient.three@example.com>';
+
+    $message = $this->getMessageTestData();
+    $message['to'] = $to;
+
+    $response = $mail_system->mail($message);
+
+    $this->assertTrue($response, 'Tested sending message to multiple recipients.');
+  }
+
+  /**
+   * Tests sending a message to an invalid recipient.
+   */
+  public function testSendMessageInvalidRecipient() {
+    $mail_system = new MandrillMailSystem();
+
+    $to = 'Recipient One <recipient.one>';
+
+    $message = $this->getMessageTestData();
+    $message['to'] = $to;
+
+    $response = $mail_system->mail($message);
+
+    $this->assertFalse($response, 'Tested sending message to an invalid recipient.');
+  }
+
+  /**
+   * Tests sending a message to no recipients.
+   */
+  public function testSendMessageNoRecipients() {
+    $mail_system = new MandrillMailSystem();
+
+    $message = $this->getMessageTestData();
+    $message['to'] = '';
+
+    $response = $mail_system->mail($message);
+
+    $this->assertFalse($response, 'Tested sending message to no recipients.');
+  }
+
+  /**
+   * Gets getting a list of templates for a given label.
+   */
+  public function testGetTemplates() {
+    $templates = mandrill_get_templates();
+
+    $this->assertTrue(!empty($templates), 'Tested retrieving templates.');
+
+    if (!empty($templates) && is_array($templates)) {
+      foreach ($templates as $template) {
+        $this->assertTrue(!empty($template['name']), 'Tested valid template: ' . $template['name']);
+      }
+    }
+  }
+
+  /**
+   * Tests getting a list of subaccounts.
+   */
+  public function testGetSubaccounts() {
+    $subaccounts = mandrill_get_subaccounts();
+
+    $this->assertTrue(!empty($subaccounts), 'Tested retrieving subaccounts.');
+
+    if (!empty($subaccounts) && is_array($subaccounts)) {
+      foreach ($subaccounts as $subaccount) {
+        $this->assertTrue(!empty($subaccount['name']), 'Tested valid subaccount: ' . $subaccount['name']);
+      }
+    }
+  }
+
+  /**
+   * Gets message data used in tests.
+   */
+  protected function getMessageTestData() {
+    $message = array(
+      'id' => 1,
+      'body' => '<p>Mail content</p>',
+      'subject' => 'Mail Subject',
+      'from_email' => 'sender@example.com',
+      'from_name' => 'Test Sender',
+    );
+
+    return $message;
+  }
+}

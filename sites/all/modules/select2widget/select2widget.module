@@ -1,0 +1,416 @@
+<?php
+/**
+ * @file
+ * Select2Widget module functionality.
+ */
+
+module_load_include("inc", "select2widget", "select2widget.reference");
+module_load_include("inc", "select2widget", "select2widget.entityreference");
+module_load_include("inc", "select2widget", "select2widget.taxonomy");
+
+/**
+ * Implements hook_help().
+ */
+function select2widget_help($path, $arg) {
+  $output = '';
+  switch ($path) {
+    case 'admin/help#select2widget':
+      $output = '<p>' . t('Provides a CCK widget for editing fields that allows users to use Select2 jquery plugin.') . '</p>';
+      break;
+  }
+  return $output;
+}
+
+function select2widget_field_widget_settings_form($field, $instance) {
+  $form = array();
+
+  $type = $field['type'];
+  $function = "select2widget_" . $type . "_widget_settings_form";
+
+  if (function_exists($function)) {
+    $form = $function($field, $instance);
+  }
+  return $form;
+}
+
+
+/**
+ * Implements hook_field_widget_info().
+ */
+function select2widget_field_widget_info() {
+  $widgets['select2widget'] = array(
+    'label' => t('Select2Widget'),
+    'field types' => array(
+      'list',
+      'list_text',
+      'list_number',
+      'node_reference',
+      'taxonomy_term_reference',
+      'user_reference',
+      'entityreference',
+    ),
+    'behaviors' => array(
+      'multiple values' => FIELD_BEHAVIOR_CUSTOM,
+      'default value' => FIELD_BEHAVIOR_CUSTOM,
+    ),
+  );
+
+  $widgets['select2widgetajax'] = array(
+    'label' => t('Select2Widget Ajax'),
+    'field types' => array(
+      'taxonomy_term_reference',
+      'entityreference'
+    ),
+    'settings' => array(
+      'select2widgetajax' => array(
+        'separator' => '|',
+        'allow_new' => 0,
+        'set_level' => 0,
+        'min_char' => 1,
+        'match_operator' => 'STARTS_WITH',
+        'view_mode' => 'default',
+        'placeholder' => t('Search'),
+      )
+    ),
+    'behaviors' => array(
+      'multiple values' => FIELD_BEHAVIOR_CUSTOM,
+      'default value' => FIELD_BEHAVIOR_CUSTOM,
+    ),
+  );
+
+  return $widgets;
+}
+
+/**
+ * Implements hook_field_widget_form().
+ */
+function select2widget_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  // Abstract over the actual field columns, to allow different field types to
+  // reuse those widgets.
+  $value_key = key($field['columns']);
+
+  $type = str_replace('options_', '', $instance['widget']['type']);
+  $multiple = $field['cardinality'] > 1 || $field['cardinality'] == FIELD_CARDINALITY_UNLIMITED;
+  $required = $element['#required'];
+  $has_value = isset($items[0][$value_key]);
+
+  $settings = $instance['widget']['settings'];// + field_info_widget_settings($instance['widget']['type']);
+
+  switch ($type) {
+    case 'select2widget':
+      $properties = _select2widget_options_properties($type, $multiple, $required, $has_value);
+      $entity_type = $element['#entity_type'];
+      $entity = $element['#entity'];
+      // Prepare the list of options.
+      $options = _select2widget_options_get_options($field, $instance, $properties, $entity_type, $entity);
+      // Put current field values in shape.
+      $default_value = _options_storage_to_form($items, $options, $value_key, $properties);
+
+      $element += array(
+        '#type' => 'select',
+        '#default_value' => $default_value,
+        // Do not display a 'multiple' select box if there is only one option.
+        '#multiple' => $multiple && count($options) > 1,
+        '#options' => $options,
+        '#process' => array('select2widget_process_callback', 'ajax_process_form'),
+        '#value_key' => $value_key,
+        '#element_validate' => array('select2widget_field_widget_validate'),
+        '#properties' => $properties,
+      );
+      break;
+
+  case  'select2widgetajax':
+
+    $entity = isset($element['#entity']) ? $element['#entity'] : NULL;
+    $entity_type = $instance['entity_type'];
+
+
+    $id = 'NULL';
+    if ($entity) {
+      list($entity_id) = entity_extract_ids($entity_type, $entity);
+      if ($entity_id) {
+        $id = $entity_id;
+      }
+    }
+
+    // Prepare the autocomplete path.
+    $autocomplete_path = 'select2widget/ajax/' . $field['field_name'] . '/' . $instance['entity_type'] . '/' . $instance['bundle'] . '/' . $id;
+
+    switch ($field['type']) {
+      case 'taxonomy_term_reference':
+        $tags = array();
+
+        $separator = $settings['select2widgetajax']['separator'];
+
+        foreach ($items as $item) {
+          $term = taxonomy_term_load($item['tid']);
+          if ($term) {
+            $tags['id' . chr(2) . $term->tid] = $term->name;
+          }
+        }
+
+        $tags = array_filter($tags);
+        $default_tags = array_keys($tags);
+
+        $element += array(
+          '#type' => 'textfield',
+          '#default_value' => implode($separator, $default_tags),
+          '#autocomplete_path' => $autocomplete_path,
+          '#element_validate' => array('select2widget_validate_field'),
+          '#process' => array('select2widget_taxonomy_process_callback', 'ajax_process_form'),
+          '#label' => $instance['label'],
+          '#settings' => $instance['widget']['settings'],
+          '#title' => check_plain($instance['label']),
+          '#maxlength' => 1024,
+          '#init' => $tags
+        );
+
+        break;
+
+      case 'entityreference':
+        $handler = entityreference_get_selection_handler($field, $instance, $entity_type, $entity);
+
+        $entity_ids = array();
+        $entity_labels = array();
+
+        // Build an array of entities ID.
+        foreach ($items as $item) {
+          $entity_ids[] = $item['target_id'];
+        }
+        // Load those entities and loop through them to extract their labels.
+        $entities = entity_load($field['settings']['target_type'], $entity_ids);
+        foreach ($entities as $entity_id => $entity_item) {
+          $label = $handler->getLabel($entity_item);
+          $key = "$label ($entity_id)";
+          // Labels containing commas or quotes must be wrapped in quotes.
+          if (strpos($key, ',') !== FALSE || strpos($key, '"') !== FALSE) {
+            $key = '"' . str_replace('"', '""', $key) . '"';
+          }
+          $entity_labels[$entity_id] = $key;
+        }
+
+        $element += array(
+          '#type' => 'textfield',
+          '#maxlength' => 1024,
+          '#default_value' => implode(',', $entity_labels),
+          '#autocomplete_path' => $autocomplete_path,
+          '#element_validate' => array('select2widget_entity_validate_field'),
+          '#settings' => $instance['widget']['settings'],
+          '#process' => array('select2widget_entity_process_callback', 'ajax_process_form'),
+          '#maxlength' => 1024,
+          '#init' => $entity_labels
+        );
+
+        break;
+    }
+
+    break;
+  }
+
+
+  return $element;
+}
+
+
+/**
+ * Implements hook_field_widget_error().
+ */
+function select2widget_field_widget_error($element, $error, $form, &$form_state) {
+  form_error($element, $error['message']);
+}
+
+
+/**
+ * Implements hook_theme().
+ */
+function select2widget_theme() {
+  return array(
+    'select2widget_options_none' => array(
+      'variables' => array('instance' => NULL, 'option' => NULL),
+    ),
+  );
+}
+
+
+/**
+ * Returns HTML for the label for the empty value that are not required.
+ *
+ * The default theme will display N/A for a radio list and '- None -'
+ *for a select.
+ *
+ * @param array $variables
+ *   An associative array containing:
+ *   - instance: An array representing the widget requesting the options.
+ *
+ * @return string
+ *   "None" string for select
+ */
+function theme_select2widget_options_none($variables) {
+  $instance = $variables['instance'];
+  $option = $variables['option'];
+
+  $output = '';
+  switch ($instance['widget']['type']) {
+    case 'select2widget':
+      $output = ($option == 'option_none' ? t('- None -') : t('- Select a value -'));
+      break;
+  }
+
+  return $output;
+}
+
+
+/**
+ * Implements hook_library().
+ */
+function select2widget_library() {
+  module_load_include('module', 'libraries');
+  $path = libraries_get_path('select2');
+  $module_path = drupal_get_path("module", "select2widget");
+
+  $libraries['select2'] = array(
+    'title' => 'select2',
+    'website' => 'http://ivaynberg.github.io/select2/',
+    'version' => '3.5.2',
+    'js' => array(
+      $path . '/select2.js' => array(),
+      $module_path . '/js/select2widget.js' => array(),
+    ),
+    'css' => array(
+      $path . '/select2.css' => array(),
+      $module_path . '/css/select2widget.css' => array(),
+    ),
+  );
+
+  return $libraries;
+}
+
+
+/**
+ * Implements hook_libraries_info().
+ */
+function select2widget_libraries_info() {
+  return array(
+    'select2' => array(
+      'name' => 'select2',
+      'vendor url' => 'http://ivaynberg.github.io/select2/',
+      'download url' => 'https://github.com/ivaynberg/select2/archive/3.4.1.zip',
+      'versions' => array(
+        '3.4.1' => array(
+          'variants' => array(
+            'minified' => array(
+              'files' => array(
+                'js' => array('select2.min.js'),
+                'css' => array('select2.css'),
+              ),
+            ),
+            'source' => array(
+              'files' => array(
+                'js' => array('select2.js'),
+                'css' => array('select2.css'),
+              ),
+            ),
+          ),
+          'integration files' => array(
+            'select2widget' => array(
+              'js' => array('js/select2widget.js'),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function select2widget_menu() {
+  $items['select2widget/ajax/%/%/%/%'] = array(
+    'title' => 'Ajax callback',
+    'page callback' => 'select2widget_ajax_callback',
+    'page arguments' => array(2, 3, 4, 5),
+    'access callback' => 'select2widget_autocomplete_access',
+    'access arguments' => array(2, 3, 4, 5),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+function select2widget_autocomplete_access($field_name, $entity_type, $bundle_name, $entity_id) {
+  $field = field_info_field($field_name);
+  $entity = NULL;
+  if ($entity_id && $entity_id !== 'NULL') {
+    $entity = entity_load_single($entity_type, $entity_id);
+    if (!$entity || !entity_access('view', $entity_type, $entity)) {
+      return FALSE;
+    }
+  }
+  if (!$field || !field_access('edit', $field, $entity_type, $entity)) {
+    return FALSE;
+  }
+  return TRUE;
+}
+
+/**
+ * Menu callback: autocomplete the label of an entity.
+ *
+ * @param $field_name
+ *   The name of the entity-reference field.
+ * @param $entity_type
+ *   The entity type.
+ * @param $bundle_name
+ *   The bundle name.
+ * @param $entity_id
+ *   Optional; The entity ID the entity-reference field is attached to.
+ *   Defaults to ''.
+ * @param $string
+ *   The label of the entity to query by.
+ */
+function select2widget_ajax_callback($field_name, $entity_type, $bundle_name, $entity_id = '') {
+  $string = '';
+
+  if (isset($_GET['search_string']) && !empty($_GET['search_string'])) {
+    $string = $_GET['search_string'];
+  }
+
+  $field = field_info_field($field_name);
+  $instance = field_info_instance($entity_type, $field_name, $bundle_name);
+
+  $type = $field['type'];
+  $function = "select2widget_" . $type . '_get_matches';
+
+  if (function_exists($function)) {
+    return $function($field, $instance, $entity_type, $string, $entity_id);
+  }
+}
+
+/**
+ * Implements hook_preprocess().
+ */
+function select2widget_preprocess(&$variables, $hook) {
+
+  switch ($hook) {
+    case "node":
+      if (!empty($variables['node']->select2widget)) {
+        $variables['theme_hook_suggestions'][] = "node__select2widget";
+        $variables['theme_hook_suggestions'][] = "node__" . $variables['type'] . "__select2widget";
+        $variables['theme_hook_suggestions'][] = "node__" . $variables['type'] . "__select2widget__" . $variables['view_mode'];
+      }
+      break;
+    case "user_profile":
+      if (!empty($variables['elements']['#account']->select2widget)) {
+        $variables['theme_hook_suggestions'][] = "user_profile__select2widget";
+        if (isset($variables['elements']['#entity_view_mode']['view_mode'])) {
+          $variables['theme_hook_suggestions'][] = "user_profile__select2widget__" . $variables['elements']['#entity_view_mode']['view_mode'];
+        }
+        if (isset($variables['elements']['#account'])) {
+          $variables['account'] = $variables['elements']['#account'];
+        }
+      }
+      break;
+  }
+
+}
+

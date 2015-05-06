@@ -1,0 +1,108 @@
+<?php
+
+/**
+ * Implements hook_requirements().
+ */
+function mailsystem_requirements($phase) {
+  $requirements = array();
+  // Ensure translations don't break at install time
+  $t = get_t();
+
+  if ($phase == 'runtime') {
+    $available_classes = mailsystem_get_classes();
+    $settings = mailsystem_read_settings();
+
+    // Collect missing classes by comparing the classes used in the settings to
+    // the available ones.
+    $missing_classes = array();
+    foreach ($settings as $key => $setting) {
+      foreach ($setting as $classname) {
+        if (!isset($available_classes[$classname])) {
+          $missing_classes[$classname] = $classname;
+        }
+      }
+    }
+
+    if (!empty($missing_classes)) {
+      $requirements['mailsystem_classes'] = array(
+        'title' => $t('Mailsystem'),
+        'value' => $t('Missing mailsystem classes'),
+        'description' => '<p>' . $t('The following classes are configured in your <code>mail_system</code> variable but they seem to be missing from your system. This will prevent sending email from your site and will lead to severe PHP errors. Please install and enable the modules providing the missing classes or fix your configuration by visiting the mailsystem <a href="!mailsystem_settings_link">settings</a> page.', array('!mailsystem_settings_link' => url('admin/config/system/mailsystem'))) . '</p>' .
+          '<p>Missing classes</p>' .
+          theme('item_list', array('items' => $missing_classes)),
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+  }
+
+  return $requirements;
+}
+
+/**
+ * Remove dynamically generated mailsystem classes and convert configuration.
+ */
+function mailsystem_update_7300() {
+
+  // In previous versions, mailsystem used to dynamically generate helper
+  // classes when two distinct mailsystem classes were used for formatting
+  // and delivery of email. Those generated classes are located under
+  // files/mailsystem and follow a common naming scheme:
+  // class1__class2.mail.inc.
+  //
+  // In order to rebuild the old configuration, we retrieve the names of the
+  // involved classes by parsing the filename of the generated classes. We use
+  // the derived class names for building up the settings for the newly
+  // introduced delegator class.
+  $class_dir = drupal_realpath(file_build_uri('mailsystem')) . '/';
+  $class_dir = substr($class_dir, strlen(DRUPAL_ROOT) + 1);
+  $genclasses = db_select('registry', 'r')
+      ->fields('r', array('name', 'filename'))
+      ->condition('filename', db_like($class_dir) . '%', 'LIKE')
+      ->execute()
+      ->fetchAllKeyed();
+
+  $delegate_settings = array();
+  $fallback_classes = array();
+  foreach ($genclasses as $classname => $filename) {
+    $classes = explode('__', $classname);
+    if (count($classes) == 2) {
+      $delegate_settings[$classname] = array(
+        'format' => $classes[0],
+        'mail' => $classes[1],
+      );
+    }
+    else {
+      $fallback_classes[$classname] = $classname;
+      watchdog('Mail System', 'Cannot update generated mail system class %class. Custom mail system settings using this class are set to the default mail system.', array('%class' => $classname), WATCHDOG_WARNING);
+    }
+  }
+
+  // Now each generated class in the mail_system variable is replaced by
+  // MailsystemDelegateMailSystem class and the settings for it are written
+  // into the appropriate variable.
+  $mail_system = mailsystem_get();
+  foreach ($mail_system as $id => $class) {
+    if (isset($delegate_settings[$class])) {
+      $mail_system[$id] = $delegate_settings[$class];
+    }
+    elseif (isset($fallback_classes[$class])) {
+      watchdog('Mail System', 'Setting mail system for key %key to the default mail system.', array('%key' => $id), WATCHDOG_WARNING);
+      $mail_system[$id] = mailsystem_default_value();
+    }
+  }
+  mailsystem_set($mail_system);
+
+  if (!empty($genclasses)) {
+    // Remove the generated classes from the registry.
+    db_delete('registry')
+      ->condition('name', array_keys($genclasses))
+      ->execute();
+    // Finally remove all the generated class files from the files directory.
+    foreach ($genclasses as $classname => $filename) {
+      file_unmanaged_delete($filename);
+    }
+  }
+
+  return t('Converted !count dynamically generated mailsystem classes',
+    array('!count' => count($delegate_settings)));
+}

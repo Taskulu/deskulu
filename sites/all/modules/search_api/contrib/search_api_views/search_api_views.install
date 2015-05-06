@@ -1,0 +1,105 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the search_api_views module.
+ */
+
+/**
+ * Updates all Search API views to use the new, specification-compliant identifiers.
+ */
+function search_api_views_update_7101() {
+  $tables = views_fetch_data();
+  // Contains arrays with real fields mapped to field IDs for each table.
+  $table_fields = array();
+  foreach ($tables as $key => $table) {
+    if (substr($key, 0, 17) != 'search_api_index_') {
+      continue;
+    }
+    foreach ($table as $field => $info) {
+      if (isset($info['real field']) && $field != $info['real field']) {
+        $table_fields[$key][$info['real field']] = $field;
+      }
+    }
+  }
+  if (!$table_fields) {
+    return;
+  }
+  foreach (views_get_all_views() as $view) {
+    if (empty($view->base_table) || empty($table_fields[$view->base_table])) {
+      continue;
+    }
+    $change = FALSE;
+    $fields = $table_fields[$view->base_table];
+    $change |= _search_api_views_update_7101_helper($view->base_field, $fields);
+    if (!empty($view->display)) {
+      foreach ($view->display as &$display) {
+        $options = &$display->display_options;
+        if (isset($options['style_options']['grouping'])) {
+          $change |= _search_api_views_update_7101_helper($options['style_options']['grouping'], $fields);
+        }
+        if (isset($options['style_options']['columns'])) {
+          $change |= _search_api_views_update_7101_helper($options['style_options']['columns'], $fields);
+        }
+        if (isset($options['style_options']['info'])) {
+          $change |= _search_api_views_update_7101_helper($options['style_options']['info'], $fields);
+        }
+        if (isset($options['arguments'])) {
+          $change |= _search_api_views_update_7101_helper($options['arguments'], $fields);
+        }
+        if (isset($options['fields'])) {
+          $change |= _search_api_views_update_7101_helper($options['fields'], $fields);
+        }
+        if (isset($options['filters'])) {
+          $change |= _search_api_views_update_7101_helper($options['filters'], $fields);
+        }
+        if (isset($options['sorts'])) {
+          $change |= _search_api_views_update_7101_helper($options['sorts'], $fields);
+        }
+      }
+    }
+    if ($change) {
+      $view->save();
+    }
+  }
+}
+
+/**
+ * Helper function for replacing field identifiers.
+ *
+ * @param $field
+ *   Some data to be searched for field names that should be altered. Passed by
+ *   reference.
+ * @param array $fields
+ *   An array mapping Search API field identifiers (as previously used by Views)
+ *   to the new, sanitized Views field identifiers.
+ *
+ * @return bool
+ *   TRUE if any data was changed, FALSE otherwise.
+ */
+function _search_api_views_update_7101_helper(&$field, array $fields) {
+  if (is_array($field)) {
+    $change = FALSE;
+    $new_field = array();
+    foreach ($field as $k => $v) {
+      $new_k = $k;
+      $change |= _search_api_views_update_7101_helper($new_k, $fields);
+      $change |= _search_api_views_update_7101_helper($v, $fields);
+      $new_field[$new_k] = $v;
+    }
+    $field = $new_field;
+    return $change;
+  }
+  if (isset($fields[$field])) {
+    $field = $fields[$field];
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+ * Delete the now unnecessary "search_api_views_max_fields_depth" variable.
+ */
+function search_api_views_update_7102() {
+  variable_del('search_api_views_max_fields_depth');
+}

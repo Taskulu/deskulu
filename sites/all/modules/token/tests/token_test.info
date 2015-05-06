@@ -1,0 +1,13 @@
+name = Token Test
+description = Testing module for token functionality.
+package = Testing
+core = 7.x
+files[] = token_test.module
+hidden = TRUE
+
+; Information added by Drupal.org packaging script on 2015-02-28
+version = "7.x-1.6"
+core = "7.x"
+project = "token"
+datestamp = "1425149060"
+

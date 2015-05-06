@@ -1,0 +1,639 @@
+<?php
+/**
+ * @file
+ * Variable API module - Realms
+ *
+ * Each variable realm can be in one of four states.
+ * - Undefined, The realm controller has not been created yet.
+ * - Defined, The realm controller has been created.
+ * - Enabled, A value has been set for the realm key, though it may be disabled (FALSE)
+ * - Active, The realm key has been set and is not FALSE.
+ */
+
+// Prefix for realm keys on query string.
+define('VARIABLE_REALM_QUERY_STRING', 'variable_realm_key_');
+// Prefix for realm switcher element in forms.
+define('VARIABLE_REALM_FORM_SWITCHER', 'variable_realm_selector_');
+
+/**
+ * Implements hook_boot()
+ *
+ * We set current variable realms as early as possible in the page request.
+ */
+function variable_realm_boot() {
+  variable_realm_status('global', 'default');
+  variable_realm_rebuild();
+}
+
+/**
+ * Implements hook_init()
+ *
+ * Let realms be overriden by query string parameters, but only for:
+ * - Admin paths (not variable realm admin pages)
+ */
+function variable_realm_init() {
+  if (arg(0) == 'admin' && (arg(3) != 'variable' || arg(4) != 'realm') && ($params = variable_realm_params()) && user_access('administer site configuration')) {
+    foreach ($params as $realm_name => $realm_key) {
+      variable_realm_switch($realm_name, $realm_key, FALSE);
+    }
+    variable_realm_rebuild();
+  }
+}
+
+/**
+ * Initialize realm and set key depending on request.
+ *
+ * @param $realm_name
+ *   Variable realm name.
+ * @param $realm_key
+ *   Optional key to be set when we don't have other key.
+ */
+function variable_realm_initialize($realm_name, $realm_key = NULL) {
+  $realm_controller = variable_realm_controller($realm_name);
+  if ($realm_controller && !$realm_controller->isEnabled()) {
+    $new_key = $realm_controller->enable($realm_key);
+    _variable_realm_invoke_all('variable_realm_enable', $realm_name, $new_key);
+    _variable_realm_hook('variableRealmEnable', $realm_name, $new_key);
+    // If we have already built the configuration, rebuild it.
+    if ($new_key && drupal_static('variable_realm_rebuild')) {
+      variable_realm_rebuild();
+    }
+  }
+}
+
+/**
+ * Get list of all available realm names ordered by default weight.
+ */
+function variable_realm_list() {
+  return _variable_realm_invoke(variable_realm_list_all(), 'getTitle');
+}
+
+/**
+ * Get all available realm controllers ordered by default weight.
+ */
+function variable_realm_list_all() {
+  $list = array();
+  foreach (array_keys(variable_realm_info()) as $name) {
+    if ($controller = variable_realm_controller($name)) {
+      $list[$name] = $controller;
+    }
+    uasort($list, '_variable_realm_sort_default');
+  }
+  return $list;
+}
+
+/**
+ * Get realm parameters from query string.
+ */
+function variable_realm_params($realm_name = NULL) {
+  $realm_params = &drupal_static(__FUNCTION__);
+  if (!isset($realm_params)) {
+    $realm_params = array();
+    foreach (variable_realm_info() as $realm => $realm_info) {
+      if (!empty($realm_info['form switcher'])) {
+        $param = VARIABLE_REALM_QUERY_STRING . $realm;
+        if (!empty($_GET[$param]) && array_key_exists($_GET[$param], variable_realm_keys($realm))) {
+          $realm_params[$realm] = $_GET[$param];
+        }
+      }
+    }
+  }
+  if ($realm_name) {
+    return isset($realm_params[$realm_name]) ? $realm_params[$realm_name] : FALSE;
+  }
+  else {
+    return $realm_params;
+  }
+}
+
+
+/**
+ * Get information about variable realms.
+ */
+function variable_realm_info($realm_name = NULL) {
+  $realm_info_tmp = $realm_info = &drupal_static(__FUNCTION__);
+
+  if (!isset($realm_info_tmp)) {
+    $realm_info_tmp = _variable_realm_invoke_all('variable_realm_info');
+
+    // If first param is NULL, module_load_all() only returns a boolean
+    // indicating whether all modules have been loaded.
+    if (module_load_all(NULL)) {
+      // Due to the fact that variable_realm_info() gets called by some
+      // modules and the menu access callbacks early in the bootstrap,
+      // we could not cache the realm info for later calls until all
+      // modules have been loaded.
+      $realm_info = $realm_info_tmp;
+    }
+  }
+
+  if ($realm_name) {
+    return isset($realm_info_tmp[$realm_name]) ? $realm_info_tmp[$realm_name] : array();
+  }
+  else {
+    return $realm_info_tmp;
+  }
+}
+
+/**
+ * Implements hook_variable_realm_info().
+ */
+function variable_realm_variable_realm_info() {
+  $realm['global'] = array(
+    'title' => t('Global'),
+    'weight' => 0,
+    'controller class' => 'VariableRealmDefaultController',
+    'store class' => 'VariableRealmGlobalStore',
+    'keys' => array(
+      'default' => t('All variables')
+    ),
+  );
+  return $realm;
+}
+
+
+/**
+ * Get keys for realm.
+ */
+function variable_realm_keys($realm_name) {
+  if ($controller = variable_realm_controller($realm_name)) {
+    return $controller->getAllKeys();
+  }
+}
+
+/**
+ * Get variable realm store.
+ *
+ * The first time this function is invoked we initialize the realm system
+ * and store global variables in the global/default realm.
+ *
+ * @param $realm
+ *   Name of the realm to get / create.
+ * @param $key
+ *   Realm key to get / create
+ *
+ * @return VariableRealmControllerInterface
+ */
+function variable_realm($realm, $key) {
+  $controller = variable_realm_controller($realm);
+  return $controller ? $controller->getStore($key) : NULL;
+}
+
+/**
+ * Get variable realm controller or create it if not defined.
+ */
+function variable_realm_controller($realm_name = NULL) {
+  static $drupal_static_fast;
+  if (!isset($drupal_static_fast)) {
+    $drupal_static_fast['realm'] = &drupal_static(__FUNCTION__, array());
+    if ($global = _variable_realm_controller('global')) {
+      $global->addStore('default', $GLOBALS['conf']);
+      $drupal_static_fast['realm']['global'] = $global;
+    }
+  }
+  $variable_realm = &$drupal_static_fast['realm'];
+
+  if ($realm_name) {
+    if (!isset($variable_realm[$realm_name])) {
+      $variable_realm[$realm_name] = _variable_realm_controller($realm_name);
+    }
+    return $variable_realm[$realm_name];
+  }
+  else {
+    // Return only existing realms.
+    return array_filter($variable_realm);
+  }
+}
+
+/**
+ * Get value from realm
+ */
+function variable_realm_get($realm, $key, $name = NULL, $default = NULL) {
+  if ($store = variable_realm($realm, $key)) {
+    return $store->variable_get($name, $default);
+  }
+}
+
+/**
+ * Set values for variable realm
+ *
+ * @param $realm
+ *   Realm name.
+ * @param $key
+ *   Realm key.
+ * @param $values
+ *   Array of runtime variable values to add to the realm.
+ * @param $weight
+ *   Optional explicit weight for this realm.
+ * @param $rebuild
+ *   Whether to rebuild domains immediately
+ */
+function variable_realm_add($realm, $key, $values = array(), $weight = NULL, $rebuild = TRUE) {
+  if ($variable_realm = variable_realm($realm, $key)) {
+    foreach ($values as $name => $value) {
+      $variable_realm->variable_add($name, $value);
+    }
+    if (isset($weight)) {
+      variable_realm_weight($realm, $weight);
+    }
+    // Rebuild only if this is the current realm
+    if ($rebuild && variable_realm_status($realm) === $key) {
+      variable_realm_rebuild();
+    }
+  }
+}
+
+/**
+ * Set value for realm variable.
+ */
+function variable_realm_set($realm, $key, $name, $value, $rebuild = TRUE) {
+  if ($store = variable_realm($realm, $key)) {
+    $old_value = variable_realm_get($realm, $key, $name);
+    $store->variable_set($name, $value);
+    if ($rebuild) {
+      variable_realm_refresh($realm, $key, $name);
+    }
+    $options = array(
+      'realm' => $store->realm,
+      'key' => $store->key,
+    );
+    module_invoke_all('variable_update', $name, $value, $old_value, $options);
+  }
+}
+
+/**
+ * Delete variable from realm
+ */
+function variable_realm_del($realm, $key, $name, $rebuild = TRUE) {
+  if ($store = variable_realm($realm, $key)) {
+    $store->variable_del($name);
+    if ($rebuild) {
+      variable_realm_refresh($realm, $key, $name);
+    }
+  }
+}
+
+
+/**
+ * Refresh variable value.
+ */
+function variable_realm_refresh($realm_name, $realm_key, $variable_name) {
+  $value = NULL;
+  // Only update value if this is the current realm.
+  if (variable_realm_status($realm_name) === $realm_key) {
+    foreach (variable_realm_current() as $realm_controller) {
+      $value = $realm_controller->getCurrentStore()->variable_get($variable_name, $value);
+    }
+  }
+  if (isset($value)) {
+    $GLOBALS['conf'][$variable_name] = $value;
+  }
+  else {
+    unset($GLOBALS['conf'][$variable_name]);
+  }
+}
+
+
+/**
+ * Get active realm controllers ordered by weight.
+ */
+function variable_realm_current() {
+  $active = array_filter(variable_realm_controller(), '_variable_realm_active');
+  uasort($active, '_variable_realm_sort_current');
+  return $active;
+}
+
+/**
+ * Check whether a realm is defined.
+ */
+function variable_realm_defined($realm_name) {
+  $controllers = variable_realm_controller();
+  return !empty($controllers[$realm_name]);
+}
+
+/**
+ * Get current realm values ordered by weights, only realms that are set.
+ *
+ * @return array
+ *   Ordered array of name => key pairs.
+ */
+function variable_realm_current_keys() {
+  return array_map('_variable_realm_status', variable_realm_current());
+}
+
+/**
+ * Get current realm values ordered by weights.
+ *
+ * @return array
+ *   Ordered array of name => value pairs, only realms that are set.
+ */
+
+/**
+ * Get original global variable
+ */
+function variable_realm_global_get($name, $default = NULL) {
+  return variable_realm_get('global', 'default', $name, $default);
+}
+
+/**
+ * Switch global variable
+ *
+ * @param $name
+ *   Optional global variable name. If not set, it will reset all global variables to its original value.
+ * @param $value
+ *   Optional new value for global variable. If not set, it will reset the variable to its original value.
+ * @param $rebuild
+ *   Whether to rebuild the current global $conf
+ */
+function variable_realm_global_set($name, $value = NULL, $rebuild = TRUE) {
+  variable_realm_set('global', 'default', $name, $value, $rebuild);
+}
+
+/**
+ * Set / get current realm values.
+ *
+ * @param $realm
+ *   Optional realm name
+ * @param $key
+ *   Optional realm value to set a status for this realm.
+ *   FALSE to disable this realm.
+ */
+function variable_realm_status($realm, $key = NULL) {
+  if ($realm_controller = variable_realm_controller($realm)) {
+    if (isset($key)) {
+      $realm_controller->setKey($key);
+    }
+    return $realm_controller->getKey();
+  }
+}
+
+/**
+ * Switch current variable realms.
+ *
+ * @see variable_realm_weight()
+ *
+ * @param $realm
+ *   Realm name. Example 'language'.
+ * @param $key
+ *   Realm key. Example, for language will be a language code, 'en
+ *   FALSE to unset the realm.
+ * @param $rebuild
+ *   Whether we need to rebuild the configuration.
+ */
+function variable_realm_switch($realm, $key, $rebuild = TRUE) {
+  // Check previous status, if not changed no need to rebuild.
+  $current = variable_realm_status($realm);
+  if (!isset($current) || $current !== $key) {
+    variable_realm_status($realm, $key);
+    _variable_realm_invoke_all('variable_realm_switch', $realm, $key);
+    _variable_realm_hook('variableRealmSwitch', $realm, $key);
+    if ($rebuild) {
+      variable_realm_rebuild();
+    }
+  }
+}
+
+/**
+ * Get / set realm weights.
+ *
+ * The default realm will have a weight of 0. Realms with higher weights will override
+ * global variables.
+ *
+ * @param $realm
+ *   Realm name
+ * @param $weight
+ *   Optional numeric value for realm weight.
+ * @return integer
+ *   Current realm weight
+ */
+function variable_realm_weight($realm, $weight = NULL) {
+  if ($realm_controller = variable_realm_controller($realm)) {
+    if (isset($weight)) {
+      $realm_controller->setWeight($weight);
+    }
+    return $realm_controller->getWeight();
+  }
+}
+
+
+/**
+ * Rebuild current variable realm.
+ */
+function variable_realm_rebuild() {
+  $rebuild_keys = &drupal_static(__FUNCTION__);
+  _variable_realm_invoke_all('variable_realm_rebuild');
+  $rebuild_keys = variable_realm_current_keys();
+  $GLOBALS['conf'] = _variable_realm_build();
+}
+
+
+/**
+ * Reset realms, deleting currently set ones
+ *
+ * If no parameters passed, it will reset global variables to original values.
+ *
+ * @param $realm_keys
+ *   Array of realm name => realm key to be set.
+ */
+function variable_realm_reset($realm_keys = array()) {
+  // We need at least some value for the global realm
+  $status = $realm_keys + array('global', 'default');
+  // Disable current active realms not in the list
+  foreach (variable_realm_current() as $realm_name => $realm_controller) {
+    if (!isset($status[$realm_name])) {
+      variable_realm_switch($realm_name, FALSE, FALSE);
+    }
+  }
+  foreach ($status as $realm_name => $realm_key) {
+    variable_realm_switch($realm_name, $realm_key, FALSE);
+  }
+  variable_realm_rebuild();
+}
+
+
+/**
+ * Implements hook_variable_delete().
+ */
+function variable_realm_variable_delete($variable, $options) {
+  // If there's a realm option, we are already deleting variable for a realm only.
+  if (empty($options['realm'])) {
+    // Delete each variable for each current and existing realm/key
+    foreach (variable_children($variable['name']) as $variable_name) {
+      foreach (variable_realm_list_all() as $realm_controller) {
+        $realm_controller->deleteVariable($variable_name);
+      }
+    }
+    variable_realm_rebuild();
+  }
+}
+
+/**
+ * Implements hook_features_api().
+ */
+function variable_realm_features_api() {
+  $components = array(
+    'variable_realm' => array(
+      'name' => t('Realm variables'),
+      'default_hook' => 'variable_realm_default_variables',
+      'default_file' => FEATURES_DEFAULTS_CUSTOM,
+      'default_filename' => 'variable',
+      'features_source' => TRUE,
+      'file' => drupal_get_path('module', 'variable_realm') .'/variable_realm.features.inc',
+    ),
+  );
+  return $components;
+}
+
+/**
+ * Check whether realm is active.
+ */
+function _variable_realm_active($realm_controller) {
+  return $realm_controller && $realm_controller->isActive();
+}
+
+/**
+ * Build current realm.
+ *
+ * Buids an array of variables for the current realm with higher weights overriding
+ * lower weights.
+ */
+function _variable_realm_build() {
+  $variables = array();
+  foreach (variable_realm_current() as $realm_controller) {
+    if ($values = $realm_controller->getCurrentVariables()) {
+      $variables = array_merge($variables, $values);
+    }
+  }
+  return $variables;
+}
+
+/**
+ * Invoke method on a list of objects.
+ */
+function _variable_realm_invoke($list, $method) {
+  $result = array();
+  foreach ($list as $index => $object) {
+    $result[$index] = $object->$method();
+  }
+  return $result;
+}
+
+/**
+ * Invokes all realm controllers that implement a method.
+ *
+ * @param $method
+ *   Method name
+ * @param $arg1, $arg2...
+ *   Variable number of arguments to pass to the method.
+ */
+function _variable_realm_hook() {
+  $args = func_get_args();
+  $method = array_shift($args);
+  $result = array();
+  foreach (variable_realm_controller() as $realm_name => $realm_controller) {
+    if (method_exists($realm_controller, $method)) {
+      $result[$realm_name] = call_user_func_array(array($realm_controller, $method), $args);
+    }
+  }
+  return $result;
+}
+
+/**
+ * Create realm controller object.
+ *
+ * This may be invoked really early in the bootstrap so it needs to be safe enough
+ * for module updates and check whether the class really exists. It returns FALSE if not.
+ */
+function _variable_realm_controller($realm_name) {
+  $info = variable_realm_info($realm_name);
+  $class = !empty($info['controller class']) ? $info['controller class'] : 'VariableRealmDefaultController';
+  return class_exists($class) ? new $class($realm_name) : FALSE;
+}
+
+/**
+ * Get current weight for realm controller.
+ */
+function _variable_realm_weight($realm_controller) {
+  return $realm_controller->getWeight();
+}
+
+/**
+ * Order realms by default weight.
+ */
+function _variable_realm_sort_default($a, $b) {
+  return $a->getDefaultWeight() - $b->getDefaultWeight();
+}
+
+/**
+ * Order realms by current weight.
+ */
+function _variable_realm_sort_current($a, $b) {
+  return $a->getWeight() - $b->getWeight();
+}
+
+/**
+ * Get status (current key) for realm controller.
+ */
+function _variable_realm_status($realm_controller) {
+  return $realm_controller->getKey();
+}
+
+/**
+ * Invoke variable realm hook on all currently loaded modules.
+ *
+ * Variable realm usually starts from bootstrap, on hook_boot() and from here it is not
+ * safe to user regular hook invokation so we use our own function, similar to
+ * bootstrap_invoke_all() but returning the values (with deep merge).
+ *
+ * @see boostrap_invoke_all()
+ * @see module_invoke()
+ *
+ * @pram $hook
+ *   Hook to invoke in all loaded modules
+ * @param $arg1, $arg2...
+ *   A variable number of arguments.
+ */
+function _variable_realm_invoke_all() {
+  $args = func_get_args();
+  $hook = array_shift($args);
+  $result = array();
+  foreach (module_list() as $module) {
+    if (module_hook($module, $hook) && $merge = call_user_func_array($module . '_' . $hook, $args)) {
+      $result = drupal_array_merge_deep($result, $merge);
+      // Add module name to each of the realms provided by the module.
+      foreach (array_keys($merge) as $key) {
+        $result[$key] += array('module' => $module);
+      };
+      unset($merge);
+    }
+  }
+  return $result;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter()
+ */
+function variable_realm_form_system_theme_settings_alter(&$form, &$form_state, $form_id) {
+  form_load_include($form_state, 'form.inc', 'variable_realm');
+  $theme_variable = $form['var']['#value'];
+  foreach (_variable_realm_variable_settings_form_list() as $realm_name => $variables) {
+    if (in_array($theme_variable, variable_children($variables))) {
+      // Mark theme settings and include other variables in the form.
+      _variable_realm_variable_settings_form_mark($realm_name, $form['theme_settings']);
+      $realm_variables = element_children($form);
+      $realm_variables = array_merge($realm_variables, array('default_logo', 'logo_path', 'default_favicon', 'favicon_path'));
+      _variable_realm_variable_settings_form_alter($form, $realm_name, $realm_variables);
+      // Replace variable (theme) name so we use a temporary storage variable
+      $form['#realm_variables'][$realm_name] = $realm_variables;
+      // This is a single variable so there can be one realm only.
+      $form['#realm_theme'] = $realm_name;
+      break;
+    }
+  }
+  if (!empty($form['#realm_theme'])) {
+    // Replace callback and user our own realm function.
+    $form['#submit'] = str_replace('system_theme_settings_submit', 'variable_realm_variable_theme_form_submit', $form['#submit']);
+    // Add realm switcher/s.
+    _variable_realm_variable_settings_form_switcher($form);
+  }
+}

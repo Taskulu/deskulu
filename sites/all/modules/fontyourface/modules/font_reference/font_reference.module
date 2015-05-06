@@ -1,0 +1,242 @@
+<?php
+
+/**
+ * @file
+ * Defines a field type for referencing a font from a node.
+ */
+
+/**
+ * Implements hook_field_info().
+ */
+function font_reference_field_info() {
+
+  return array(
+    'font_reference' => array(
+      'label' => t('Font reference'),
+      'description' => t('This field stores the ID of a related font as an integer value.'),
+      'settings' => array('css_selector' => ''),
+      'default_widget' => 'options_select',
+      'default_formatter' => 'font_reference_default',
+    ),
+  );
+
+} // font_reference_field_info
+
+/**
+ * Implements hook_field_schema();
+ */
+function font_reference_field_schema($field) {
+
+  return array(
+    'columns' => array(
+      'fid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+      ),
+    ),
+    'indexes' => array('fid' => array('fid')),
+    'foreign keys' => array(
+      'fid' => array(
+        'table' => 'fontyourface_font',
+        'columns' => array('fid' => 'fid'),
+      ),
+    ),
+  );
+
+} // font_reference_field_schema
+
+/**
+ * Implements hook_field_settings_form().
+ */
+function font_reference_field_settings_form($field, $instance, $has_data) {
+
+  $settings = $field['settings'];
+
+  $form = array();
+  $form['css_selector'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Applied CSS selector'),
+    '#default_value' => $settings['css_selector'],
+  );
+  return $form;
+
+} // font_reference_field_settings_form
+
+/**
+ * Implements hook_field_validate().
+ */
+function font_reference_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors) {
+
+  $ids = array();
+
+  foreach ($items as $delta => $item) {
+
+    if (is_array($item) && !empty($item['fid'])) {
+
+      if (is_numeric($item['fid'])) {
+        $ids[] = $item['fid'];
+      } // if
+      else {
+        $errors[$field['field_name']][$langcode][$delta][] = array(
+          'error' => 'invalid_fid',
+          'message' => t('%name: invalid input.',
+            array('%name' => $instance['label'])),
+        );
+      } // else
+
+    } // if
+
+  } // foreach
+
+  if ($ids) {
+
+    foreach ($items as $delta => $item) {
+
+      if (
+        (is_array($item)) &&
+        (!empty($item['fid']))
+      ) {
+
+        $font_exists = db_query_range("SELECT fid FROM {fontyourface_font} WHERE fid = :fid", 0, 1, array(':fid' => $item['fid']))->fetchObject();
+
+        if (!$font_exists) {
+
+          $errors[$field['field_name']][$langcode][$delta][] = array(
+            'error' => 'invalid_fid',
+            'message' => t("%name: this font can't be referenced.",
+              array('%name' => $instance['label'])),
+          );
+
+        } // if
+
+      } // if
+
+    } // foreach
+
+  } // if
+
+} // font_reference_field_validate
+
+/**
+ * Implements hook_field_is_empty().
+ */
+function font_reference_field_is_empty($item, $field) {
+
+  return empty($item['fid']);
+
+} // font_reference_field_is_empty
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function font_reference_field_formatter_info() {
+
+  return array(
+    'font_reference_default' => array(
+      'label' => t('Default'),
+      'description' => t("Apply the font in CSS, display nothing."),
+      'field types' => array('font_reference'),
+    ),
+    'font_reference_name' => array(
+      'label' => t('Name'),
+      'description' => t("Display the name of the referenced font."),
+      'field types' => array('font_reference'),
+    ),
+  );
+
+} // font_reference_field_formatter_info
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function font_reference_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+
+  $result = array();
+
+  switch ($display['type']) {
+
+    case 'font_reference_default':
+
+      foreach ($items as $delta => $item) {
+
+        if ($field['settings']['css_selector'] != '') {
+
+          $font = fontyourface_get_font($item['fid']);
+
+          $css = $field['settings']['css_selector'] . ' { ' . fontyourface_font_css($font) . ' }';
+
+          drupal_add_css($css, array('type' => 'inline'));
+          fontyourface_font_registry($font);          
+
+        } // if
+
+      } // foreach
+
+      break;
+      
+    case 'font_reference_name':
+      
+      foreach ($items as $delta => $item) {
+
+        $font = fontyourface_get_font($item['fid']);
+
+        $result[$delta] = array(
+          '#markup' => check_plain($font->name),
+        );
+
+        if ($field['settings']['css_selector'] != '') {
+
+          $css = $field['settings']['css_selector'] . ' { ' . fontyourface_font_css($font) . ' }';
+
+          drupal_add_css($css, array('type' => 'inline'));
+          fontyourface_font_registry($font);
+
+        } // if
+
+      } // foreach
+
+      break;
+
+  } // switch
+
+  return $result;
+
+} // font_reference_field_formatter_view
+
+/**
+ * Implements hook_field_widget_info_alter().
+ */
+function font_reference_field_widget_info_alter(&$info) {
+
+  $info['options_select']['field types'][] = 'font_reference';
+
+} // font_reference_field_widget_info_alter
+
+/**
+ * Implements hook_options_list().
+ */
+function font_reference_options_list($field) {
+
+  $function = !empty($field['settings']['options_list_callback']) ? $field['settings']['options_list_callback'] : 'font_reference_allowed_values';
+
+  return $function($field);
+
+} // font_reference_options_list
+
+/**
+ * Returns list of enabled fonts.
+ */
+function font_reference_allowed_values($field) {
+
+  $fonts = fontyourface_get_fonts('enabled = 1');
+  
+  $options = array();
+  
+  foreach ($fonts as $font) {
+    $options[$font->fid] = check_plain($font->name);
+  } // foreach
+
+  return $options;
+
+} // font_reference_allowed_values

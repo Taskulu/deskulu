@@ -1,0 +1,14 @@
+name = Variable example
+description = An example module showing how to use the Variable API and providing some variables.
+dependencies[] = variable
+dependencies[] = variable_store
+package = Example modules
+core = 7.x
+files[] = variable_example.variable.inc
+
+; Information added by Drupal.org packaging script on 2014-04-23
+version = "7.x-2.5"
+core = "7.x"
+project = "variable"
+datestamp = "1398250128"
+

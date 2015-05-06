@@ -1,0 +1,272 @@
+<?php
+
+/**
+ * @file
+ * Installation file for i18n_string module.
+ */
+
+/**
+ * Implements hook_enable().
+ */
+function i18n_string_enable() {
+  // Refresh locales for enabled modules
+  $modules = module_implements('i18n_string_refresh');
+  i18n_string_modules_enabled($modules);
+}
+
+/**
+ * Implements hook_install().
+ */
+function i18n_string_install() {
+  // Add a field to track whether a translation needs updating.
+  module_load_install('i18n');
+  i18n_install_create_fields('locales_target', array('i18n_status'));
+  // Set module weight for it to run after core modules.
+  db_query("UPDATE {system} SET weight = 10 WHERE name = 'i18n_string' AND type = 'module'");
+  // If updating from D6, module changed name
+  if (variable_get('i18n_drupal6_update')) {
+    i18n_string_update_7000();
+    i18n_string_update_7001();
+  }
+  // Create new index in {locales_source}, performance improvement in sites with i18n.
+  db_add_index('locales_source', 'textgroup_context', array('textgroup', 'context'));
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function i18n_string_uninstall() {
+  // Drop custom field.
+  db_drop_field('locales_target', 'i18n_status');
+  // Drop custom index in locales_source table
+  db_drop_index('locales_source', 'textgroup_context');
+}
+
+/**
+ * Implements hook_schema().
+ */
+function i18n_string_schema() {
+  $schema['i18n_string'] = array(
+    'description' => 'Metadata for source strings.',
+    'fields' => array(
+      'lid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Source string ID. References {locales_source}.lid.',
+      ),
+      'textgroup' => array(
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => TRUE,
+        'default' => 'default',
+        'description' => 'A module defined group of translations, see hook_locale().',
+      ),
+      'context' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Full string ID for quick search: type:objectid:property.',
+      ),
+      'objectid' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Object ID.',
+      ),
+      'type' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Object type for this string.',
+      ),
+      'property' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Object property for this string.',
+      ),
+      'objectindex' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Integer value of Object ID.',
+      ),
+      'format' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'description' => 'The {filter_format}.format of the string.',
+      ),
+
+    ),
+    'primary key' => array('lid'),
+    'indexes' => array(
+      'group_context' => array('textgroup', 'context'),
+    ),
+  );
+  return $schema;
+}
+
+/**
+ * Implements hook_schema_alter().
+ */
+function i18n_string_schema_alter(&$schema) {
+  // Add field for tracking whether translations need updating.
+  $schema['locales_target']['fields']['i18n_status'] = array(
+    'description' => 'A boolean indicating whether this translation needs to be updated.',
+    'type' => 'int',
+    'not null' => TRUE,
+    'default' => 0,
+  );
+}
+
+/**
+ * Helper function to upate strings
+ */
+function i18n_string_install_update_string($string) {
+  $string->context = $string->type . ':' . $string->objectid . ':' . $string->property;
+  $string->location = $string->textgroup . ':' . $string->context;
+  $string->objectindex = (int)$string->objectid;
+  drupal_write_record('i18n_string', $string, 'lid');
+  drupal_write_record('locales_source', $string, 'lid');
+}
+
+/**
+ * Update context for strings.
+ *
+ * As some string locations depend on configurable values, the field needs sometimes to be updated
+ * without losing existing translations. I.e:
+ * - profile fields indexed by field name.
+ * - content types indexted by low level content type name.
+ *
+ * Example:
+ *  'profile:field:oldfield:*' -> 'profile:field:newfield:*'
+ */
+function i18n_string_install_update_context($oldname, $newname) {
+  // Get context replacing '*' with empty string.
+  $oldcontext = explode(':', $oldname);
+  $newcontext = explode(':', $newname);
+  /*
+  i18n_string_context(str_replace('*', '', $oldname));
+  $newcontext = i18n_string_context(str_replace('*', '', $newname));
+  */
+  // Get location with placeholders.
+  foreach (array('textgroup', 'type', 'objectid', 'property') as $index => $field) {
+    if ($oldcontext[$index] != $newcontext[$index]) {
+      $replace[$field] = $newcontext[$index];
+    }
+  }
+
+  // Query and replace if there are any fields. It is possible that under some circumstances fields are the same
+  if (!empty($replace)) {
+    $textgroup = array_shift($oldcontext);
+    $context = str_replace('*', '%', implode(':', $oldcontext));
+    $count = 0;
+    $query = db_select('i18n_string', 's')
+      ->fields('s')
+      ->condition('s.textgroup', $textgroup)
+      ->condition('s.context', $context, 'LIKE');
+
+    foreach ($query->execute()->fetchAll() as $source) {
+      foreach ($replace as $field => $value) {
+        $source->$field = $value;
+      }
+      // Recalculate location, context, objectindex
+      $source->context = $source->type . ':' . $source->objectid . ':' . $source->property;
+      $source->location = $source->textgroup . ':' . $source->context;
+      $source->objectindex = (int)$source->objectid;
+      // Update source string.
+      $update = array(
+        'textgroup' => $source->textgroup,
+        'context' => $source->context,
+      );
+      db_update('locales_source')
+        ->fields($update + array('location' => $source->location))
+        ->condition('lid', $source->lid)
+        ->execute();
+
+      // Update object data.
+      db_update('i18n_string')
+      ->fields($update + array(
+        'type' => $source->type,
+        'objectid' => $source->objectid,
+        'property' => $source->property,
+        'objectindex' => $source->objectindex,
+      ))
+      ->condition('lid', $source->lid)
+      ->execute();
+      $count++;
+    }
+    drupal_set_message(t('Updated @count string names from %oldname to %newname.', array('@count' => $count, '%oldname' => $oldname, '%newname' => $newname)));
+  }
+}
+
+/**
+ * Populate fields from old locale table (textgroup, location) and drop indexes from locales_source
+ */
+function i18n_string_update_7000() {
+  // @todo Update from d6
+  variable_del('i18nstrings_allowed_textgroups');
+  // If we've got old table from D6, move data to new one
+  if (db_table_exists('i18n_strings')) {
+    // First of all clean up strings that don't have a locale source, see http://drupal.org/node/1186692
+    db_query("DELETE FROM {i18n_strings} WHERE lid NOT IN (SELECT lid FROM {locales_source})");
+    db_query("INSERT INTO {i18n_string}(lid, objectid, type, property, objectindex, format) SELECT lid, objectid, type, property, objectindex, format FROM {i18n_strings}");
+    // Update and populate textgroup field
+    db_query("UPDATE {i18n_string} s SET s.textgroup = (SELECT l.textgroup FROM {locales_source} l WHERE l.lid = s.lid)");
+    // Populate context field. We could use CONCAT_WS but I guess this is more standard.
+    db_query("UPDATE {i18n_string} SET context = CONCAT(type, ':', objectid, ':', property)");
+    db_query("UPDATE {locales_source} s INNER JOIN {i18n_string} i ON s.lid = i.lid SET s.context = i.context");
+  }
+}
+
+/**
+ * Drop obsoleted i18n_strings table if exists
+ */
+function i18n_string_update_7001() {
+  if (db_table_exists('i18n_strings')) {
+    db_drop_table('i18n_strings');
+  }
+}
+
+/**
+ *  Create new index in {locales_source}, performance improvement in sites with i18n.
+ */
+function i18n_string_update_7002() {
+  db_add_index('locales_source', 'textgroup_context', array('textgroup', 'context'));
+}
+
+
+/**
+ * Notes for update script
+ */
+// Added fields: context, textgroup
+//
+// Drop all indexes from locales_source
+// Update format field
+// Update string names: profile, cck => field
+// Update string names:
+
+/**
+ * Old strings to update. All these will be handled by i18n_field module
+ *
+ * 'cck:field:'. $content_type .'-'. $field_name .':widget_label'
+ *  --> 'field:$field_name:$bundle:label' (though not used atm)
+ * 'cck:field:'. $content_type .'-'. $field_name .':widget_description'
+ *  --> 'field:$field_name:$bundle:description'
+ * 'cck:fieldgroup:'. $content_type .'-'. $group_name .':display_description'
+ * 'cck:fieldgroup:'. $content_type .'-'. $group_name .':form_description', $group['settings']['form']['description']);
+ *
+ * Profile:
+ * profile:field:$field_name:title|explanation|options
+ * "profile:category", $field->category
+ *
+ * Node type
+ *  nodetype:type:[type]:[property] -> node:type:[type]:[property]
+ *  Property names: title -> title_label
+ */

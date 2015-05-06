@@ -1,0 +1,78 @@
+<?php
+
+/**
+ * @file
+ * Tests for variable.module.
+ */
+
+/**
+ * Helper class for module test cases.
+ */
+class VariableStoreTestCase extends DrupalWebTestCase {
+  protected $admin_user;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Test Variable store and realms',
+      'description' => 'Exercise the Variable API, default values, save and delete variables, etc.',
+      'group' => 'Variable',
+    );
+  }
+
+  function setUp() {
+    parent::setUp('variable', 'variable_realm', 'variable_store', 'variable_example');
+
+    $this->admin_user = $this->drupalCreateUser(array('access administration pages', 'administer site configuration'));
+    $this->drupalLogin($this->admin_user);
+  }
+
+  /**
+   * Test that all core modules can be enabled, disabled and uninstalled.
+   */
+  function testVariableStoreAPI() {
+    // Store two values for the 'example' realm.
+    $realm = 'example';
+    $store = array(
+      'first' => 'My first test site',
+      'second' => 'My second test site',
+    );
+    $values = array(
+      'default' => 'Drupal',
+    ) + $store;
+    foreach ($store as $key => $value) {
+      variable_store_set($realm, $key, 'site_name', $value);
+    }
+    // Check we've got stored the right value for each realm.
+    foreach ($store as $key => $value) {
+      $this->assertEqual(variable_store_get($realm, $key, 'site_name'), $value, 'Variable has been saved to the store.');
+      // Check the value is displayed with example page.
+      $this->drupalGet('variable/realm/' . $realm . '/' . $key);
+      $this->assertText($value, "The right site name is displayed for realm $realm:$key");
+    }
+    // Load realms from store and set them as different realm.
+    foreach ($store as $key => $value) {
+      $variables = variable_store($realm, $key);
+      variable_realm_add($realm, $key, $variables);
+    }
+    // Switch realms and get the right values.
+    foreach ($values as $key => $value) {
+      // Check value before setting realm
+      $this->assertEqual(variable_realm_get($realm, $key, 'site_name', 'Drupal'), $value, "We get the right value for realm $realm:$key");
+      variable_realm_switch($realm, $key);
+      $this->assertEqual(variable_get_value('site_name'), $value, "We get the right value with Variable API after switching to realm $realm:$key");
+      $this->assertEqual(variable_get('site_name', 'Drupal'), $value, "We get the right value with Drupal API after switching to realm $realm:$key");
+    }
+    // Delete variable and check it has been deleted, first from realms and then from store.
+    variable_delete('site_name');
+     // Check we've got stored the right value for each realm.
+    foreach ($store as $key => $value) {
+      $this->assertFalse(variable_store_get($realm, $key, 'site_name'), "Variable has been deleted from the realm for $realm:$key.");
+      $this->assertFalse(variable_store_get($realm, $key, 'site_name'), "Variable has been deleted from the store for $realm:$key.");
+    }
+    // Finally check variable has returned to default value. Use any of the realms.
+    variable_realm_switch($realm, 'first');
+    $this->assertEqual($value = variable_get_value('site_name'), 'Drupal', "We get the right value with Variable API after deleting the variable: $value");
+    $this->assertFalse($value = variable_get('site_name'), "We get the right value with Drupal API after deleting the variable: $value");
+
+  }
+}

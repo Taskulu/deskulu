@@ -1,0 +1,35 @@
+<?php
+
+/**
+ * @file
+ * Install/uninstall tasks for the Edge Fonts module.
+ */
+
+/**
+ * Implements hook_enable().
+ */
+function edge_fonts_enable() {
+  // Set weight to 1 to ensure edge_fonts_preprocess_html() is executed after
+  // fontyourface_preprocess_html(), which has weight of 0.
+  db_update('system')
+    ->fields(array('weight' => 1))
+    ->condition('name', 'edge_fonts')
+    ->execute();
+  // Import/update fonts.
+  fontyourface_import_fonts('edge_fonts');
+}
+
+/**
+ * Implements hook_disable().
+ */
+function edge_fonts_disable() {
+  fontyourface_provider_disable('edge_fonts');
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function edge_fonts_uninstall() {
+  variable_del('edge_fonts_base');
+  variable_del('edge_fonts_subsets');
+}

@@ -1,0 +1,45 @@
+<?php
+
+/**
+ * @file
+ * Removes fonts on disable.
+ */
+
+/**
+ * Implements hook_enable().
+ */
+function google_fonts_api_enable() {
+
+  // Set weight to 1 to ensure google_fonts_api_preprocess_html() is executed after
+  // fontyourface_preprocess_html(), which has weight of 0.
+  db_update('system')
+    ->fields(array('weight' => 1))
+    ->condition('name', 'google_fonts_api')
+    ->execute();
+
+  // Import/update fonts
+  fontyourface_import_fonts('google_fonts_api');
+
+} // google_fonts_api_enable
+
+/**
+ * Implements hook_disable().
+ */
+function google_fonts_api_disable() {
+
+  fontyourface_provider_disable('google_fonts_api');
+
+} // google_fonts_api_disable
+
+/**
+ * Implements hook_update_N().
+ */
+function google_fonts_api_update_7100() {
+
+  // Fonts need to be re-imported after change in issue #1123340.
+
+  drupal_load('module', 'google_fonts_api');
+
+  google_fonts_api_fontyourface_import();
+
+} // google_fonts_api_update_7100

@@ -1,0 +1,366 @@
+
+Admin Menu 7.x-3.x, xxxx-xx-xx
+------------------------------
+#1177202 by das-peter, dereine, sun: Fixed copying and re-injection of child
+  router items breaks badly. Change them by reference instead.
+  Requires latest Views 3.x code.
+#1212064 by sun: Updated admin_views default views for VBO 3.x.
+#1196590 by sun: Fixed errors and notices for admin_views with Views 3.
+#1144768 by idlewilder, sun: Fixed devel modules to skip are not displayed.
+#1079374 by WillHall: Fixed JS Error: unrecognized expression: [href=/].
+#1114132 by joelstein, sun: Added Field UI to list of developer modules.
+#1008380 by bdragon, sun: Updated admin_views for D7.
+#1146644 by sun: Fixed PHP 5.3 compability in tests.
+#442560 by sun: Fixed 'defer' script attribute breaks Drupal.behaviors in FF3.6.
+#1022902 by matglas86, sun: Updated for changed core Toolbar styles.
+
+
+Admin Menu 7.x-3.0-RC1, 2010-01-07
+----------------------------------
+#990774 by sun: Updated for $closure renamed to $page_bottom.
+#991906 by johnv, sun: Added configure to .info file.
+#947198 by sun: Added hint about disabling Toolbar.
+by sun: Updated administrative settings form for D7 UX guidelines.
+by sun: Disabled "Rebuild system links" button on settings form.
+#420816 by sun, smk-ka: Improved on-demand loading of dynamic paths.
+#420816 by tim.plunkett: Fixed dynamic Field UI paths for vocabularies.
+#871774 by swentel: Fixed developer modules toggle still uses referer_uri().
+#671760 by sun: Updated for new preprocess defaults.
+#731462 by sun: Updated for system_rebuild_theme_data().
+by sun: Re-added a "Rebuild system links" button to settings form.
+#420816 by tim.plunkett: Updated taxonomy path map for machine names.
+#857688 by sun: Updated for reverted system_settings_form().
+#420816 by smk-ka, sun: Added merging of menu trees containing dynamic paths.
+by sun: Fixed tests and minor admin_menu_toolbar styling issues.
+by sun: Fixed various styling issues for admin_menu and admin_menu_toolbar.
+by sun: Updated for Schema API, DBTNG, coding standards.
+by sun: Updated for new admin/modules path.
+#701424 by hutch: Updated for new admin/people/people path.
+by sun: Removed orphan menu rewrite function.
+#667858 by sun: Don't remove the current user from the switch user list.
+#631550 by sun: Updated for fixed MENU_VISIBLE_IN_BREADCRUMB behavior.
+#658344 by dereine, sun: Updated for removed drupal_session_count().
+by sun: Added separate permission to flush cashes.
+by sun: Updated for changed Devel settings form.
+by sun: Updated for new {system}.info module data.
+#614730 by azriprajwala, sun: Updated for hook_theme() key changes.
+by sun: Updated for all theme functions should take a single argument.
+by sun: Reverted removal of registry cache flushing option.
+#578520 by sun: Fixed destination query parameter is processed wrongly.
+#578520 by sun: Updated for $query in url() should always be an array.
+by Dave Reid: Updated for PHP 5 date constants.
+by sun: Updated for new database API.
+by smk-ka: Removed remnants of the registry. Fixed flush admin menu cache
+  command.
+#567618 by smk-ka: Revised test cases. Abstracted out base web test class.
+by sun: Updated for removed registry, new admin paths.
+#326539 by sun: Updated for class attribute array.
+#519782 by sun: Updated for hook_footer() replaced by hook_page_alter().
+#525638 by Razorraser: Updated for admin/build renamed to admin/structure.
+by Dave Reid: Updated for hook_permission().
+#482314 by Dave Reid: Updated for node_type_get_types().
+#437506 by yched, Dave Reid: Updated for menu_router_build().
+#376816 by sun: Updated for compatibility for other JavaScript libraries.
+#337820 by Dave Reid: Updated for new user/logout path.
+#340546 by Dave Reid: Updated for drupal_add_js().
+#340531 by Dave Reid: Updated for module_list().
+#266358 by sun: Updated for drupal_add_css().
+#320526 by yettyn, sun: Updated to UNSTABLE-2 (DBTNG queries, permissions, etc).
+by sun: Changed admin_menu_wipe() to admin_menu_flush_caches().
+by sun: Updated content-type edit menu item locations.
+by sun: Fixed sess_count() changed to drupal_session_count().
+
+
+Admin Menu 6.x-3.x, xxxx-xx-xx
+------------------------------
+#588936 by fenstrat: Fixed Toolbar shortcuts not visible.
+#860390 by Kevin Rogers: Fixed .info file parsing error on uncertain platform.
+#551484 by sun: Fixed stale hook_admin_menu_output_alter() docs.
+
+
+Admin Menu 6.x-3.0-ALPHA4, 2010-03-11
+-------------------------------------
+#730156 by sun: Fixed Administration views.
+by sun: Fixed missing .element-hidden style in D6 for permissions tweak.
+#645526 by TravisCarden: Fixed stale local tasks markup after moving them.
+#366442 by sun: Added tweak to collapse modules on permissions page.
+#655926 by donquixote, sun: Improved performance of delayed mouseout.
+#557062 by sun: Fixed admin_menu_toolbar JS/CSS loaded before admin_menu's.
+#599462 by sun, koyama: Added background-color to avoid unintentional override.
+#601918 by BWPanda: Fixed admin_menu.css overrides admin_menu_toolbar.css.
+#586228 by Island Usurper: Fixed for PHP 5.3.
+#554124 by Dave Reid: Added missing toolbar.png.
+#557062 by Dave Reid: Fixed undefined Drupal.admin error when including
+  admin_menu_toolbar.js before admin_menu.js.
+#511744 by smk-ka, sun: Fixed /admin page links are broken.
+by smk-ka: Added missing variables to hook_uninstall().
+#571038 by smk-ka: Removed call to admin_menu_wipe() and cleaned install file.
+#552190 by Bartezz: Fixed missing t() for user logout link.
+
+
+Admin Menu 6.x-3.0-ALPHA3, 2009-08-16
+-------------------------------------
+#502500 by sun: Added "Create content" menu.
+#538714 by sun: Fixed wrong re-parenting in Drupal's menu system.
+#550132 by sun: Fixed (temporarily) admin_views menu items.
+by sun: Added Administration views sub-module, converting all administrative
+  listing pages in Drupal core into real, ajaxified, and alterable views.
+#547206 by sun: Fixed menu link descriptions lead to mouseover clashes.
+#540954 by Rob Loach: Added String Overrides to list of developer modules.
+#540762 by Deslack: Added Malay translation.
+
+
+Admin Menu 6.x-3.0-ALPHA2, 2009-08-02
+-------------------------------------
+#527908 by sun: Changed theme_admin_menu_links() to use $element['#children'].
+#527908 by markus_petrux, sun: Changed admin menu into a renderable array.
+#420812 by sun, smk-ka: Added support for hook_js().
+by sun: Fixed destination query string of current page not applied to links.
+by sun: Changed Drupal.admin.attachBehaviors() to accept local JS settings.
+#276751 by sun: Revamped rendering of menu additions/widgets.
+#500866 by sun: Updated for removed t() from getInfo() in tests.
+#402058 by sun: Added Administration menu toolbar module.
+by markus_petrux, sun: Added API documentation.
+#461264 by sun: Added site/domain as CSS class.
+#451270 by smk-ka, sun: Changed visual indication for uid1.
+by sun: Minor code clean-up.
+#490670 by sun: Fixed missing menu after installation/upgrade.
+#515718 by joelstein, sun: Added rules_admin module to developer modules list.
+#352065 by sun: Added setting to select developer modules to keep enabled.
+#511854 by psynaptic: Fixed logout link.
+#424960 by markus_petrux, sun: Fixed gzip compression for cached output.
+by sun: Fixed opacity of links in sub-menus.
+#479922 by sun: Fixed fieldsets not collapsed on admin/build/modules/list*.
+#495148 by sun: Fixed MENU_NORMAL_ITEMs do not appear in administration menu.
+by sun: Fixed tests for new content-type locations.
+#345984 by markus_petrux, sun: Fixed old menu links not removed on upgrade.
+#276751 by sun: Major rewrite. Fixed menu items cannot be moved, altered, or
+  added as well as various performance issues.
+by sun: Added variable to allow to disable caching (rewrite).
+
+
+Admin Menu 6.x-3.0-ALPHA1, 2009-06-10
+-------------------------------------
+#236657 by sun: Updated for corrected arguments of system_clear_cache_submit().
+#483870 by sun: Fixed compatibility with new Admin module.
+#483152 by sun: Fixed admin_menu caches not flushed when clean URLs are toggled.
+#479922 by danep: Fixed fieldsets not collapsed on admin/build/modules/list.
+#469716 by sun: Fixed wrong AJAX callback URL under various conditions.
+#471504 by wulff: Updated Danish translation.
+by sun: Fixed admin_menu_suppress() does not suppress margin-top.
+#451270 by sun: Added visual indication when working as uid 1.
+by Dave Reid: Updated for getInfo() in tests.
+#420828 by sun: Added dynamic replacements for cached administration menu.
+#420840 by sun: Fixed Drupal.behaviors.adminMenu must be only executed once.
+#345984 by markus_petrux, sun: Added client-side caching of administration menu.
+  Attention: A new era of Drupal user experience starts here.  This is the very
+  first issue of a series of improvements targeting plain awesomeness.
+#349169 by sun: Fixed Devel switch user links contain multiple path prefixes.
+#345984 by sun: Code clean-up in preparation for client-side caching.
+#415196 by psynaptic: Updated for CSS coding standards.
+#406672 by mr.j, sun: Fixed "Move local tasks" option leaves stale UL.
+by sun: Major code clean-up and sync across 3.x branches.
+#349505 by smk-ka, sun: Performance: Added caching of entire menu output.
+#315342 by wulff: Added "My account" link (by splitting the "Log out" item).
+#384100 by kepol, sun: Fixed content-type items displayed in wrong place.
+#373339 by sun: Fixed double-escaped 'Edit <content-type>' link titles.
+#373372 by sun: Turned procedural JavaScript into admin menu behaviors.
+by sun: Fixed admin menu tests (and updated to 6.x for SimpleTest 2.x).
+#359158 by nitrospectide, sun: Fixed Devel Themer breaks admin menu.
+#365335 by sun: Fixed not all variables removed after uninstall.
+
+
+Admin Menu 6.x-1.3, 2009-01-24
+------------------------------
+#362454 by sun: Fixed Drupal.settings.admin_menu is undefined JS error in some
+  browsers.
+
+
+Admin Menu 6.x-1.2, 2009-01-20
+------------------------------
+#358697 by sun: Added docs about admin_menu_suppress() to README.txt.
+#342684 by darumaki, sun: Added notice about Opera configuration to README.txt.
+#350932 by sun: Fixed "Run updates" link repeated per language/site.
+#342298 by gustz: Updated Spanish translation.
+#346106 by sun: Fixed XHTML-Strict validation for admin menu icon.
+#287448 by sun: Fixed unnecessary menu rebuild for users without permission to
+  use admin menu.
+#342002 by AltaVida: Fixed improper test for node/add paths.
+#272920 by keith.smith: Changed all text strings throughout the module.
+#322731 by sun: Fixed improper use of t() in module install file.
+#282030 by sun: Fixed "Run updates" item visible for unprivileged users.
+#322877 by sun: Added tweak to move page tabs into administration menu.
+#287468 by sun: Fixed module paths directly below "admin" get the wrong parent.
+#310423 by sun: Added optional position: fixed configuration setting.
+#292657 by smk-ka: Improved rendering performance.
+#234149 by yhager, sun: Fixed RTL support for IE.
+#323726 by danez1972: Added Spanish translation.
+#325057 by sun: Updated README.txt.
+#234149 by yhager, levavie, sun: Added RTL support.
+#325057 by sun: Added links to flush specific caches.
+#324334 by AltaVida: Fixed usernames with spaces not in Devel user switch links.
+#319382 by betz: Added Dutch translation.
+
+
+Admin Menu 6.x-1.1, 2008-09-12
+------------------------------
+#295476 by pwolanin, use <front> for icon path to fix front-page path-change
+  bug and pathauto conflict, add wipe button to admin form.
+#301370 by sun: Disabled module fieldset collapsing behavior by default.
+#288672 by sun: Fixed JS hover behavior not working in IE.
+#290803 by sun: Fixed missing devel_themer in devel modules; added some others.
+#286636 by sun: Fixed menus do not drop down in IE6.
+#249537 by pwolanin, sun: Added admin_menu_suppress() to allow other modules to
+  disable the display of admin_menu on certain pages (f.e. popups).
+#268211 by sun: Fixed invalid issue queue links for custom modules and
+  sub-modules of projects.
+#261461 by sun: Added FAQ entry for displaying other menus like admin_menu.
+#264067 by sun: Added FAQ entry for huge amount of anonymous users displayed.
+#280002 by pwolanin: Clean up .test setUp function.
+#242377 by sun: Fixed sub-level menu items exceed total document height.
+
+
+Admin Menu 6.x-1.0, 2008-06-26
+------------------------------
+#266308 by sun: Fixed jQuery 1.0.x incompatible selector for collapsing modules.
+#268373 by sun: Added hook_update to cleanup for alpha/beta testers.
+#268373 by sun: Added menu callback to disable/enable developer modules.
+#132524 by pwolanin: Fixed admin_menu links are re-inserted each time menu links
+  are rebuilt.
+by smk-ka: Performance: Use 'defer' attribute for JavaScript to delay execution.
+#266099 by sun: Fixed description of "Apply margin-top" configuration setting.
+#266308 by sun: Usability: Added Utility module features to collapse module
+  fieldsets on Modules page.
+#251341 by sun: Added docs about display drupal links permission.
+
+
+Admin Menu 6.x-1.0-BETA, 2008-06-08
+-----------------------------------
+#132524 by sun: Fixed support for sub-content-types below node/add.
+#132524 by pwolanin: Added support for localizable menu links.
+#132524 by pwolanin, sun: Fixed menu links adjustments.
+#132524 by pwolanin: Added simpletest.
+#132524 by pwolanin: Major rewrite to better use Drupal 6 menu system.
+#132524 by sun: Moved gettext translation files into translations.
+#132524 by sun: Committing pre-alpha code for D6 due to public demand.
+
+
+Admin Menu 5.x-2.x, xxxx-xx-xx
+------------------------------
+#246221 by sun: Fixed user counter displays different values than Who's online
+  block.
+#239022 by mikl: Added Danish translation.
+#234444 by smk-ka: Fixed admin_menu icon does not respect theme settings.
+#198240 by sun: Fixed admin_menu displayed in print output.
+
+
+Admin Menu 5.x-2.4, 2008-02-24
+------------------------------
+#214740 by sun: Regression: Fixed directly applied marginTop not supported by IE.
+#214725 by sun: Fixed wrong CSS id in admin_menu.js (missed in 5.x-2.3).
+
+
+Admin Menu 5.x-2.3, 2008-02-24
+------------------------------
+#214725 by sun: Fixed CSS id and classes should not contain underscores.
+#209390 by sun: Added note about interaction with user role permissions.
+#214740 by jjeff, sun: Added module settings to configure margin-top CSS.
+#200737 by sun: Changed admin_menu (fav)icon to use theme setting, if defined.
+#203116 by smk-ka: Improved performance of non-cached admin_menu by storing
+  already processed URLs in the cache.
+#224605 by sun: 'Add <content_type>' items do not appear without 'administer
+  nodes' permission.
+#210615 by robertgarrigos: Fixed Mozilla Mac: Collapsible fieldsets display
+  error.
+
+
+Admin Menu 5.x-2.2, 2007-01-08
+------------------------------
+#204884 by jjeff: Usability: Override theme font family declaration.
+#204935 by jjeff: Added mouseout delay for hovered menus (yay!).
+#193941 by downgang: Fixed margin in IE6 using Garland theme.
+#197306 by sun: Fixed 'Run updates' leads to wrong url with clean URLs disabled.
+Moved images into sub-folder.
+by smk-ka: Fixed icon title for user counter not displayed & coding style.
+Fixed user count not displayed without 'administer users' permission.
+
+
+Admin Menu 5.x-2.1, 2007-12-02
+------------------------------
+Fixed adding menu items with negative weight not always working.
+Fixed admin_menu_copy_items() is overwriting already existing items.
+Fixed display menu item ids in devel settings does not work.
+
+
+Admin Menu 5.x-2.0, 2007-12-02
+------------------------------
+Added devel_admin_menu() for fast access to clear-cache, variable editor and
+  switch_user.
+Added username to logout button.
+Added hook_admin_menu() to allow other modules to alter admin_menu.
+#194189 by sun: Added counter for current anonymous/authenticated users.
+Added Drupal.org project issue queue links for all enabled contrib modules.
+#189701 by sun: Changed admin_menu icon to be a menu.
+#193925 by sun: Removed obsolete menu slicing code.
+#193669 by smk-ka: Moved admin_menu builder functions into include file.
+
+
+Admin Menu 5.x-1.2, 2007-11-18
+------------------------------
+#176969 by smk-ka: Fixed performance issues with path(auto) module by
+  introducing a menu cache for admin_menu.
+#179648 by sun: Inject admin_menu into theme.
+  Fixes several CSS bugs in various themes and also activation of admin_menu
+  immediately after installation.
+#191213 by Standard: Fixed block info shouldn't contain the word "block".
+#187816 by sun: Fixed "Add" not translatable.
+#186218 by sun: Fixed admin menu icon too big in Safari.
+#182563 by sun: Fixed wrong datatype for array_search in _admin_menu_get_children().
+#183496 by sun: Fixed invalid argument supplied for foreach in admin_menu_copy_items().
+
+
+Admin Menu 5.x-1.1, 2007-10-10
+------------------------------
+#178876 by sun: Fixed 3rd-level submenus expand without hover over.
+#153455 by sun: Fixed add product node sub-elements are empty.
+Fixed path_to_theme() call breaking blocks page.
+#177582 by sun: Fixed bluebreeze theme compatibility.
+
+
+Admin Menu 5.x-1.0, 2007-09-06
+------------------------------
+#156952 by sun: Fixed admin menu inaccessible due to margins.
+#149229 by sun: Fixed admin menu not expanding in IE7.
+#172545 by sun: Use opacity instead of -moz-opacity.
+#132867 Fixed z-index too low.
+- Fixed admin menu block selectors to override any other theme styles.
+#155589 by sun: Added permission to access administration menu.
+- Fixed a PHP warning when there are no content types defined in the system, as
+  node/add then has no child menu items.
+#155312 by sun: Fixed menu item tooltip clashes.
+Added support for custom stylesheets per theme.
+Removed 4.7.x compatibility.
+
+
+Admin Menu 4.7-1.3, 2007-03-30
+------------------------------
+#126601 Fixed Users can see inaccessible items.
+#121027 Fixed Page not found entries for menu-collapsed.png.
+
+
+Admin Menu 4.7-1.2, 2007-03-04
+------------------------------
+- Fixed menu item adjustments
+- Fixed IE / Safari support
+- Fixed base_path for IE support
+- Added create content options to content management menu
+
+
+Admin Menu 4.7-1.1, 2007-01-24
+------------------------------
+First stable release, compatible to Drupal 4.7.x and 5.x.
+
+
+Admin Menu 4.7-1.0, 2007-01-16
+------------------------------
+Initial release of admin_menu module. Already supporting Drupal 5.0.

@@ -1,0 +1,123 @@
+
+Title 7.x-1.x, xxxx-xx-xx
+-------------------------
+
+
+Title 7.x-1.0-alpha7, 2013-03-18
+--------------------------------
+#1919640 by peximo: Fixed Empty tag shown when the title field is displayed.
+#1869438 by jsacksick: Fixed hook_field_attach_create_bundle() implementation
+  isn't correct.
+#1280962 by mvc: Fixed Better description of field replacement dialogue.
+#1900282: Fixed wrong files[] directive in the title_test module.
+#1898618 by muka: Fixed Handle case when title property is not set (avoiding
+  error).
+#1885356 by peximo: Fixed Empty HTML class in Linked and wrapped format.
+#1865604 by GaëlG, plach: Fixed Title module overrides label callback (prevents
+  term label localization).
+
+
+Title 7.x-1.0-alpha5, 2012-12-18
+--------------------------------
+#1869228 by plach: Updated system dependencies.
+#1062814 by Andreas Radloff, jucallme | Scott J: Added Formatters.
+#1849344 by peximo: Fixed Duplicate description element in taxonomy display
+  form.
+#1482052 by peximo | joel rotelli, epieddy: Fixed Undefined property:
+  stdClass::$type dans title_tokens_alter().
+#1761142 by joel_osc, plach | no2e: Fixed Replaced taxonomy description:
+  can't delete content (but editing works).
+#1736476 by guillaumev: Made sure entity is accurate in title_entity_language().
+#1748008 by vasike: Replaced fields should inherit the legacy field access.
+#1808454 by plach: Fixed help and permissions for the admin settings.
+#1835486 by plach: Fixed Automated tests are failing.
+#1808454 by peximo: Overhauled the admin settings form.
+#1773514 by peximo: Added Module's configuration page.
+#1396450 by logaritmisk, plach | mgifford: Fixed Notice: Undefined index:
+  fieldable in title_entity_info_alter() (line 28 of title/title.module).
+
+
+Title 7.x-1.0-alpha4, 2012-08-11
+--------------------------------
+#1708046 by plach | steinmb: Fixed Term description is overwritten.
+#1709938 by Amitaibu: Prevented notice in title_field_attach_create_bundle().
+#1541414 by peximo, plach | int_ua: Added No 'Link this field to the original
+  piece of content' option in Views UI for fields replaced with Title module.
+#1704536 by RoySegall, Amitaibu, plach: Attach title field automatically when a
+  new entity bundle is created.
+#1699092 by plach: Fixed Notices when submitting an empty taxonomy term
+  description.
+#1665006 by mikey_p: Fixed Doesn't work when legacy title field is NULL.
+#1613514 by steven.wichers, Amitaibu: Fixed Importing nodes in bulk fail to
+  create titles for all nodes after the first one.
+#1644736 by plach: Fixed When initializing replaced fields all bundles are
+  processed.
+#1631958 by plach | Goekmen: Fixed Undefined index: base path in
+  EntityTranslationDefaultHandler.
+#1635006 by nikosnikos: Fixed Description summary desappear in taxonomy term.
+#1528590 by torrance123, JonMcL: Fixed Reference to $form_state['values'] is
+  altering Views Bulk Operations modify action form submit.
+#1445848 by danielnolde: Added Retain the original legacy field value to entity
+  in sync.
+#1620986 by plach: Perform reverse synchronization more reliably.
+#1519930 by plach, steinmb: Use the upcoming entity_language() function to
+  determine the entity language.
+#1586002 by plach, Pisco: (follow-up) Fixed notices when changing node language.
+
+
+Title 7.x-1.0-alpha3, 2012-06-05
+--------------------------------
+#1586002 by plach, Pisco | liquidcms: Fixed Entity language handling broken.
+#1608980 by helior: Fixed Possible undefined indexes in
+  title_field_replacement_info().
+#1362790 by colan, amateescu: Fixed Undefined property: stdClass::$title in
+  title_entity_update().
+#1433060 by plach: Added Allow to use entity label fields in the entity content
+  area.
+#1367118 by plach | BrightBold: Fixed Wrong menu item declaration for the field
+  replacement callback.
+#1357220 by colan: Fixed Module should be listed in the Fields package.
+#1323288 by das-peter: Fixed entitycache integration.
+
+
+Title 7.x-1.0-alpha2, 2011-09-09
+--------------------------------
+#1229892 by plach | chrisdolby: Fixed Strict warning: Only variables should be
+  assigned by reference in title_field_attach_submit() - line 482 of
+  title.module.
+#1219860 by plach, claudiu.cristea: Fixed Undefined index 'format'.
+#1210670 by claudiu.cristea, das-peter | vasike: Fixed Entity translation errors
+  for Taxonomies entities.
+
+
+Title 7.x-1.0-alpha1, 2011-09-07
+--------------------------------
+#1200320 by das-peter: Fixed Call field_attach_presave() before
+  field_attach_update() in field replacement batch.
+#1155128 by das-peter | Dave Reid, plach: Enhanced support for tokens.
+#1169394 by plach: Synchronized code after core fixes.
+#1146724 by plach | das-peter, joostvdl: Fixed Replacing field values are not
+  initialized.
+#1157438 by das-peter: Fixed Reset sync cache on entitycache reset.
+#1116586 by plach | tte: Fixed Exception when a node's title is not converted
+  immediately.
+#1138646 by plach | joostvdl, sun: Fixed Notice: Undefined index: label in
+  entity_get_info().
+#1141674 by plach | manveru: Fixed Notices about missing $description.
+#924968 by plach: Updated the change log.
+#924968 by plach: Improved comments/PHP docs.
+#924968 by plach: Introduced tests for field replacement UI.
+#924968 by plach: Fixed field replacement checkbox broken.
+#924968 by plach: Polished API as title_field_replacement_toggle does not belong
+  to title.admin.inc.
+#924968 by plach: Fixed comments/PHP docs.
+#924968 by plach: Disabled entity_label() support until #1096446 is fixed.
+#924968 by plach: Introduced tests for field replacement workflow.
+#924968 by plach: Moved administration code into title.admin.inc.
+#924968 by plach: Added entity_label() support.
+#924968 by plach: Fixed resave needed if field values altered before save.
+#924968 by plach: Fixed entity forms to support nested subforms.
+#924968 by plach: Added PHP docs.
+#924968 by plach, das-peter, sun, fago, klonos: Introduced field replacement API
+  and UI.
+by sun: Initial baseline of module files.

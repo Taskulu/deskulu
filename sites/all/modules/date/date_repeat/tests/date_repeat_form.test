@@ -1,0 +1,521 @@
+<?php
+
+/**
+ * @file
+ * Test Date Repeat form.
+ */
+
+class DateRepeatFormTestCase extends DrupalWebTestCase {
+  protected $privileged_user;
+
+  public static function getInfo() {
+    return array(
+      'name' => t('Date Repeat Form'),
+      'description' => t('Test Date Repeat form.') ,
+      'group' => t('Date'),
+    );
+  }
+
+  /**
+   * Implements setUp().
+   */
+  public function setUp() {
+    // Load the date_repeat module.
+    parent::setUp('field', 'field_ui', 'date_api', 'date_repeat', 'date', 'date_popup', 'date_repeat_field');
+
+    // Create and log in our privileged user.
+    $this->privileged_user = $this->drupalCreateUser(array(
+      'administer content types', 'administer nodes', 'bypass node access', 'view date repeats'
+    ));
+    $this->drupalLogin($this->privileged_user);
+
+    variable_set('date_format_short', 'Y-m-d H:i');
+  }
+
+  public function testDateRepeatForm() {
+    $edit = array();
+    $edit['name'] = 'Date';
+    $edit['type'] = 'date';
+    $this->drupalPost('admin/structure/types/add', $edit, t('Save content type'));
+    $this->assertText('The content type Date has been added.', 'Content type added.');
+    $display_all_day = FALSE;
+
+    // Testing options.
+    $widget_options = array(
+      'date_select' => 'select',
+      'date_text' => 'text',
+      'date_popup' => 'popup');
+
+    foreach ($widget_options as $widget => $options) {
+      // Daily tests
+      // Creates date field stored as a datetime.
+      $this->createDateField($type = 'datetime', $widget, $display_all_day);
+
+      $form_edit = $this->dateForm($options, 'daily_1');
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'daily_2');
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'daily_3');
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'daily_4');
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'daily_1', TRUE);
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'daily_2', TRUE);
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'daily_3', TRUE);
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'daily_4', TRUE);
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'daily_1', FALSE, 'exclude');
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'daily_1', FALSE, 'include');
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'daily_1', FALSE, 'exclude_include');
+      $this->verifyDateForm($form_edit);
+
+      // Weekly tests
+
+      $form_edit = $this->dateForm($options, 'weekly_1');
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'weekly_2');
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'weekly_3');
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'weekly_4');
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'weekly_1', TRUE);
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'weekly_2', TRUE);
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'weekly_3', TRUE);
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'weekly_4', TRUE);
+      $this->verifyDateForm($form_edit);
+
+      // Monthly tests
+
+      $form_edit = $this->dateForm($options, 'monthly_1');
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'monthly_2');
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'monthly_3');
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'monthly_4');
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'monthly_5');
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'monthly_6');
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'monthly_1', TRUE);
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'monthly_2', TRUE);
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'monthly_3', TRUE);
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'monthly_4', TRUE);
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'monthly_5', TRUE);
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'monthly_6', TRUE);
+      $this->verifyDateForm($form_edit);
+
+      // Yearly tests
+
+      $form_edit = $this->dateForm($options, 'yearly_1');
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'yearly_2');
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'yearly_3');
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'yearly_4');
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'yearly_5');
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'yearly_6');
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'yearly_1', TRUE);
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'yearly_2', TRUE);
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'yearly_3', TRUE);
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'yearly_4', TRUE);
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'yearly_5', TRUE);
+      $this->verifyDateForm($form_edit);
+
+      $form_edit = $this->dateForm($options, 'yearly_6', TRUE);
+      $this->verifyDateForm($form_edit);
+
+      $this->deleteDateField();
+    }
+  }
+
+  function dateForm($options, $test_id = NULL, $is_count = FALSE, $exclude_include = NULL) {
+    // Tests that date field functions properly.
+    $edit = array();
+    $edit['title'] = $this->randomName(8);
+    $edit['body[und][0][value]'] = $this->randomName(16);
+    $current_year = date('Y');
+
+
+    switch ($options) {
+      case 'select':
+        $edit['field_test[und][0][value][year]'] = $current_year;
+        $edit['field_test[und][0][value][month]'] = '10';
+        $edit['field_test[und][0][value][day]'] = '7';
+        $edit['field_test[und][0][value][hour]'] = '10';
+        $edit['field_test[und][0][value][minute]'] = '30';
+        break;
+      case 'text':
+        $edit['field_test[und][0][value][date]'] = format_string('!year-10-07 10:30', array('!year' => $current_year));
+        break;
+      case 'popup':
+        $edit['field_test[und][0][value][date]'] = format_string('!year-10-07', array('!year' => $current_year));
+        $edit['field_test[und][0][value][time]'] = '10:30';
+        break;
+    }
+
+    // Tests that Date repeat settings function properly
+    if ($test_id !== NULL) {
+      $edit['field_test[und][0][show_repeat_settings]'] = TRUE;
+      $count = 5;
+
+      switch ($test_id) {
+        // Daily test cases
+        case 'daily_1':
+          $edit['field_test[und][0][rrule][FREQ]'] = 'DAILY';
+          $edit['field_test[und][0][rrule][daily][byday_radios]'] = 'INTERVAL';
+          $edit['field_test[und][0][rrule][daily][INTERVAL_child]'] = 2;
+          break;
+        case 'daily_2':
+          $edit['field_test[und][0][rrule][FREQ]'] = 'DAILY';
+          $edit['field_test[und][0][rrule][daily][byday_radios]'] = 'every_weekday';
+          break;
+        case 'daily_3':
+          $edit['field_test[und][0][rrule][FREQ]'] = 'DAILY';
+          $edit['field_test[und][0][rrule][daily][byday_radios]'] = 'every_mo_we_fr';
+          break;
+        case 'daily_4':
+          $edit['field_test[und][0][rrule][FREQ]'] = 'DAILY';
+          $edit['field_test[und][0][rrule][daily][byday_radios]'] = 'every_tu_th';
+          break;
+
+        // Weekly test cases
+        case 'weekly_1':
+          $edit['field_test[und][0][rrule][FREQ]'] = 'WEEKLY';
+          $edit['field_test[und][0][rrule][weekly][BYDAY][MO]'] = TRUE;
+          $edit['field_test[und][0][rrule][weekly][BYDAY][WE]'] = TRUE;
+          $edit['field_test[und][0][rrule][weekly][BYDAY][TH]'] = TRUE;
+          break;
+        case 'weekly_2':
+          $edit['field_test[und][0][rrule][FREQ]'] = 'WEEKLY';
+          $edit['field_test[und][0][rrule][weekly][INTERVAL]'] = 1;
+          $edit['field_test[und][0][rrule][weekly][BYDAY][MO]'] = TRUE;
+          $edit['field_test[und][0][rrule][weekly][BYDAY][FR]'] = TRUE;
+          break;
+        case 'weekly_3':
+          $edit['field_test[und][0][rrule][FREQ]'] = 'WEEKLY';
+          $edit['field_test[und][0][rrule][weekly][INTERVAL]'] = 2;
+          $edit['field_test[und][0][rrule][weekly][BYDAY][TU]'] = TRUE;
+          $edit['field_test[und][0][rrule][weekly][BYDAY][TH]'] = TRUE;
+          break;
+        case 'weekly_4':
+          $edit['field_test[und][0][rrule][FREQ]'] = 'WEEKLY';
+          $edit['field_test[und][0][rrule][weekly][INTERVAL]'] = 10;
+          $edit['field_test[und][0][rrule][weekly][BYDAY][MO]'] = TRUE;
+          $edit['field_test[und][0][rrule][weekly][BYDAY][TU]'] = TRUE;
+          $edit['field_test[und][0][rrule][weekly][BYDAY][WE]'] = TRUE;
+          $edit['field_test[und][0][rrule][weekly][BYDAY][TH]'] = TRUE;
+          $edit['field_test[und][0][rrule][weekly][BYDAY][FR]'] = TRUE;
+          break;
+
+        // Monthly test cases
+        case 'monthly_1':
+          $edit['field_test[und][0][rrule][FREQ]'] = 'MONTHLY';
+          $edit['field_test[und][0][rrule][monthly][day_month]'] = 'BYDAY_BYMONTH';
+          $edit['field_test[und][0][rrule][monthly][BYDAY_BYMONTH_child][BYDAY_COUNT]'] = '+1';
+          $edit['field_test[und][0][rrule][monthly][BYDAY_BYMONTH_child][BYDAY_DAY]'] = 'FR';
+          break;
+        case 'monthly_2':
+          $edit['field_test[und][0][rrule][FREQ]'] = 'MONTHLY';
+          $edit['field_test[und][0][rrule][monthly][day_month]'] = 'BYDAY_BYMONTH';
+          $edit['field_test[und][0][rrule][monthly][BYDAY_BYMONTH_child][BYDAY_COUNT]'] = '+1';
+          $edit['field_test[und][0][rrule][monthly][BYDAY_BYMONTH_child][BYDAY_DAY]'] = 'SU';
+          $edit['field_test[und][0][rrule][monthly][BYDAY_BYMONTH_child][BYMONTH][1]'] = TRUE;
+          $edit['field_test[und][0][rrule][monthly][BYDAY_BYMONTH_child][BYMONTH][3]'] = TRUE;
+          $edit['field_test[und][0][rrule][monthly][BYDAY_BYMONTH_child][BYMONTH][5]'] = TRUE;
+          $edit['field_test[und][0][rrule][monthly][BYDAY_BYMONTH_child][BYMONTH][7]'] = TRUE;
+          $edit['field_test[und][0][rrule][monthly][BYDAY_BYMONTH_child][BYMONTH][9]'] = TRUE;
+          $edit['field_test[und][0][rrule][monthly][BYDAY_BYMONTH_child][BYMONTH][11]'] = TRUE;
+          break;
+        case 'monthly_3':
+          $edit['field_test[und][0][rrule][FREQ]'] = 'MONTHLY';
+          $edit['field_test[und][0][rrule][monthly][day_month]'] = 'BYDAY_BYMONTH';
+          $edit['field_test[und][0][rrule][monthly][BYDAY_BYMONTH_child][BYDAY_COUNT]'] = '-2';
+          $edit['field_test[und][0][rrule][monthly][BYDAY_BYMONTH_child][BYDAY_DAY]'] = 'MO';
+          $edit['field_test[und][0][rrule][monthly][BYDAY_BYMONTH_child][BYMONTH][6]'] = TRUE;
+          $edit['field_test[und][0][rrule][monthly][BYDAY_BYMONTH_child][BYMONTH][12]'] = TRUE;
+          break;
+        case 'monthly_4':
+          $edit['field_test[und][0][rrule][FREQ]'] = 'MONTHLY';
+          $edit['field_test[und][0][rrule][monthly][day_month]'] = 'BYMONTHDAY_BYMONTH';
+          $edit['field_test[und][0][rrule][monthly][BYMONTHDAY_BYMONTH_child][BYMONTHDAY]'] = '10';
+          break;
+        case 'monthly_5':
+          $edit['field_test[und][0][rrule][FREQ]'] = 'MONTHLY';
+          $edit['field_test[und][0][rrule][monthly][day_month]'] = 'BYMONTHDAY_BYMONTH';
+          $edit['field_test[und][0][rrule][monthly][BYMONTHDAY_BYMONTH_child][BYMONTHDAY]'] = '10';
+          $edit['field_test[und][0][rrule][monthly][BYMONTHDAY_BYMONTH_child][BYMONTH][1]'] = TRUE;
+          $edit['field_test[und][0][rrule][monthly][BYMONTHDAY_BYMONTH_child][BYMONTH][2]'] = TRUE;
+          $edit['field_test[und][0][rrule][monthly][BYMONTHDAY_BYMONTH_child][BYMONTH][3]'] = TRUE;
+          break;
+        case 'monthly_6':
+          $edit['field_test[und][0][rrule][FREQ]'] = 'MONTHLY';
+          $edit['field_test[und][0][rrule][monthly][day_month]'] = 'BYMONTHDAY_BYMONTH';
+          $edit['field_test[und][0][rrule][monthly][BYMONTHDAY_BYMONTH_child][BYMONTHDAY]'] = '-5';
+          $edit['field_test[und][0][rrule][monthly][BYMONTHDAY_BYMONTH_child][BYMONTH][2]'] = TRUE;
+          $edit['field_test[und][0][rrule][monthly][BYMONTHDAY_BYMONTH_child][BYMONTH][4]'] = TRUE;
+          $edit['field_test[und][0][rrule][monthly][BYMONTHDAY_BYMONTH_child][BYMONTH][6]'] = TRUE;
+          break;
+
+        // Yearly test cases
+        case 'yearly_1':
+          $edit['field_test[und][0][rrule][FREQ]'] = 'YEARLY';
+          $edit['field_test[und][0][rrule][yearly][day_month]'] = 'BYDAY_BYMONTH';
+          $edit['field_test[und][0][rrule][yearly][BYDAY_BYMONTH_child][BYDAY_COUNT]'] = '+1';
+          $edit['field_test[und][0][rrule][yearly][BYDAY_BYMONTH_child][BYDAY_DAY]'] = 'FR';
+          break;
+        case 'yearly_2':
+          $edit['field_test[und][0][rrule][FREQ]'] = 'YEARLY';
+          $edit['field_test[und][0][rrule][yearly][INTERVAL]'] = 2;
+          $edit['field_test[und][0][rrule][yearly][day_month]'] = 'BYDAY_BYMONTH';
+          $edit['field_test[und][0][rrule][yearly][BYDAY_BYMONTH_child][BYDAY_COUNT]'] = '+1';
+          $edit['field_test[und][0][rrule][yearly][BYDAY_BYMONTH_child][BYDAY_DAY]'] = 'SU';
+          $edit['field_test[und][0][rrule][yearly][BYDAY_BYMONTH_child][BYMONTH][1]'] = TRUE;
+          $edit['field_test[und][0][rrule][yearly][BYDAY_BYMONTH_child][BYMONTH][3]'] = TRUE;
+          $edit['field_test[und][0][rrule][yearly][BYDAY_BYMONTH_child][BYMONTH][5]'] = TRUE;
+          $edit['field_test[und][0][rrule][yearly][BYDAY_BYMONTH_child][BYMONTH][7]'] = TRUE;
+          $edit['field_test[und][0][rrule][yearly][BYDAY_BYMONTH_child][BYMONTH][9]'] = TRUE;
+          $edit['field_test[und][0][rrule][yearly][BYDAY_BYMONTH_child][BYMONTH][11]'] = TRUE;
+          break;
+        case 'yearly_3':
+          $edit['field_test[und][0][rrule][FREQ]'] = 'YEARLY';
+          $edit['field_test[und][0][rrule][yearly][INTERVAL]'] = 3;
+          $edit['field_test[und][0][rrule][yearly][day_month]'] = 'BYDAY_BYMONTH';
+          $edit['field_test[und][0][rrule][yearly][BYDAY_BYMONTH_child][BYDAY_COUNT]'] = '-2';
+          $edit['field_test[und][0][rrule][yearly][BYDAY_BYMONTH_child][BYDAY_DAY]'] = 'MO';
+          $edit['field_test[und][0][rrule][yearly][BYDAY_BYMONTH_child][BYMONTH][6]'] = TRUE;
+          $edit['field_test[und][0][rrule][yearly][BYDAY_BYMONTH_child][BYMONTH][12]'] = TRUE;
+          break;
+        case 'yearly_4':
+          $edit['field_test[und][0][rrule][FREQ]'] = 'YEARLY';
+          $edit['field_test[und][0][rrule][yearly][day_month]'] = 'BYMONTHDAY_BYMONTH';
+          $edit['field_test[und][0][rrule][yearly][BYMONTHDAY_BYMONTH_child][BYMONTHDAY]'] = '10';
+          break;
+        case 'yearly_5':
+          $edit['field_test[und][0][rrule][FREQ]'] = 'YEARLY';
+          $edit['field_test[und][0][rrule][yearly][INTERVAL]'] = 2;
+          $edit['field_test[und][0][rrule][yearly][day_month]'] = 'BYMONTHDAY_BYMONTH';
+          $edit['field_test[und][0][rrule][yearly][BYMONTHDAY_BYMONTH_child][BYMONTHDAY]'] = '10';
+          $edit['field_test[und][0][rrule][yearly][BYMONTHDAY_BYMONTH_child][BYMONTH][1]'] = TRUE;
+          $edit['field_test[und][0][rrule][yearly][BYMONTHDAY_BYMONTH_child][BYMONTH][2]'] = TRUE;
+          $edit['field_test[und][0][rrule][yearly][BYMONTHDAY_BYMONTH_child][BYMONTH][3]'] = TRUE;
+          break;
+        case 'yearly_6':
+          $edit['field_test[und][0][rrule][FREQ]'] = 'YEARLY';
+          $edit['field_test[und][0][rrule][yearly][INTERVAL]'] = 3;
+          $edit['field_test[und][0][rrule][yearly][day_month]'] = 'BYMONTHDAY_BYMONTH';
+          $edit['field_test[und][0][rrule][yearly][BYMONTHDAY_BYMONTH_child][BYMONTHDAY]'] = '-5';
+          $edit['field_test[und][0][rrule][yearly][BYMONTHDAY_BYMONTH_child][BYMONTH][2]'] = TRUE;
+          $edit['field_test[und][0][rrule][yearly][BYMONTHDAY_BYMONTH_child][BYMONTH][4]'] = TRUE;
+          $edit['field_test[und][0][rrule][yearly][BYMONTHDAY_BYMONTH_child][BYMONTH][6]'] = TRUE;
+          break;
+      }
+
+      // Test COUNT or UNTIL (default)
+      if ($is_count) {
+        $edit['field_test[und][0][rrule][range_of_repeat]'] = 'COUNT';
+        $edit['field_test[und][0][rrule][count_child]'] = $count;
+      }
+      else {
+        $edit['field_test[und][0][rrule][range_of_repeat]'] = 'UNTIL';
+        $date = array(
+          'year' => $current_year + 1,
+          'month' => '10',
+          'day' => '07'
+        );
+        $edit += $this->formatDateForRRULEInputs('field_test[und][0][rrule][until_child]', $options, $date);
+      }
+
+      // Test date exceptions and/or additions
+      if ($exclude_include !== NULL) {
+        $exclude_include_edit = array();
+        switch ($exclude_include) {
+          case 'exclude':
+            $exclude_include_edit['field_test[und][0][rrule][show_exceptions]'] = TRUE;
+            $date = array(
+              'year' => $current_year,
+              'month' => '10',
+              'day' => '07'
+            );
+            $exclude_include_edit += $this->formatDateForRRULEInputs('field_test[und][0][rrule][exceptions][EXDATE][0]', $options, $date);
+            break;
+          case 'include':
+            $exclude_include_edit['field_test[und][0][rrule][show_additions]'] = TRUE;
+            $date = array(
+              'year' => $current_year + 3,
+              'month' => '10',
+              'day' => '07'
+            );
+            $exclude_include_edit += $this->formatDateForRRULEInputs('field_test[und][0][rrule][additions][RDATE][0]', $options, $date);
+            break;
+          case 'exclude_include':
+            $exclude_include_edit['field_test[und][0][rrule][show_exceptions]'] = TRUE;
+            $date = array(
+              'year' => $current_year,
+              'month' => '10',
+              'day' => '07'
+            );
+            $exclude_include_edit += $this->formatDateForRRULEInputs('field_test[und][0][rrule][exceptions][EXDATE][0]', $options, $date);
+
+            $exclude_include_edit['field_test[und][0][rrule][show_additions]'] = TRUE;
+            $date = array(
+              'year' => $current_year + 3,
+              'month' => '10',
+              'day' => '07'
+            );
+            $exclude_include_edit += $this->formatDateForRRULEInputs('field_test[und][0][rrule][additions][RDATE][0]', $options, $date);
+            break;
+        }
+        $edit += $exclude_include_edit;
+      }
+    }
+
+    $this->drupalPost('node/add/date', $edit, t('Save'));
+    $this->assertText($edit['body[und][0][value]'], 'Test node has been created');
+
+    // Return the settings for later use in verification
+    return $edit;
+  }
+
+  function verifyDateForm($edit) {
+    $title = $edit['title'];
+    $node = $this->drupalGetNodeByTitle($title);
+
+    $this->drupalGet("node/{$node->nid}/edit");
+
+    foreach ($edit as $field => $value) {
+      $this->assertFieldByName($field, $value);
+    }
+
+    $this->drupalPost("node/{$node->nid}/delete", NULL, t('Delete'));
+    $this->assertRaw(t('Date %title has been deleted.', array('%title' => $title)), t('Deleted Date content.'));
+  }
+
+  function createDateField($type, $widget, $display_all_day = FALSE) {
+    $edit = array();
+    $edit['fields[_add_new_field][label]'] = 'Test';
+    $edit['fields[_add_new_field][field_name]'] = 'test';
+    $edit['fields[_add_new_field][weight]'] = '-4';
+    $edit['fields[_add_new_field][type]'] = $type;
+    $edit['fields[_add_new_field][widget_type]'] = $widget;
+
+    $label = $edit['fields[_add_new_field][label]'];
+
+    $field_edit = array();
+    $field_edit['field[settings][repeat]'] = 1;
+
+    $instance_edit = array();
+    switch ($widget) {
+      case 'select':
+      case 'popup':
+      $instance_edit['instance[widget][settings][year_range][years_back]'] = '-5';
+      $instance_edit['instance[widget][settings][year_range][years_forward]'] = '+5';
+      break;
+    }
+
+    if ($display_all_day) {
+      $instance_edit['instance[widget][settings][display_all_day]'] = TRUE;
+    }
+
+    // First step : 'Add new field' on the 'Manage fields' page.
+    $this->drupalPost('admin/structure/types/manage/date/fields', $edit, t('Save'));
+    $this->assertRaw(t('These settings apply to the %label field everywhere it is used.', array('%label' => $label)), t('Field settings page was displayed.'));
+
+    // Second step : 'Field settings' form.
+    $this->drupalPost(NULL, $field_edit, t('Save field settings'));
+    $this->assertRaw(t('Updated field %label field settings.', array('%label' => $label)), t('Redirected to instance and widget settings page.'));
+
+    // Third step : 'Instance settings' form.
+    $this->drupalPost(NULL, $instance_edit, t('Save settings'));
+    $this->assertRaw(t('Saved %label configuration.', array('%label' => $label)), t('Redirected to "Manage fields" page.'));
+
+    // Check that the field appears in the overview form.
+    $this->assertFieldByXPath('//table[@id="field-overview"]//td[1]', $label, t('Field was created and appears in the overview page.'));
+  }
+
+  function deleteDateField() {
+    $this->drupalGet('admin/structure/types/manage/date/fields');
+    $this->clickLink('delete');
+    $this->drupalPost(NULL, NULL, t('Delete'));
+    $this->assertText(t('The field Test has been deleted from the Date content type.'), t('Removed date field.'));
+  }
+
+  function formatDateForRRULEInputs($form_field_name, $date_widget_type, $date) {
+    $return = array();
+
+    switch ($date_widget_type) {
+      case 'select':
+        $return["{$form_field_name}[datetime][year]"] = $date['year'];
+        $return["{$form_field_name}[datetime][month]"] = $date['month'];
+        $return["{$form_field_name}[datetime][day]"] = ltrim($date['day'], '0');
+        break;
+      case 'text':
+      case 'popup':
+        $return["{$form_field_name}[datetime][date]"] = "{$date['year']}-{$date['month']}-{$date['day']}";
+        break;
+    }
+
+    return $return;
+  }
+}

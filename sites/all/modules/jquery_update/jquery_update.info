@@ -1,0 +1,15 @@
+name = jQuery Update
+description = Update jQuery and jQuery UI to a more recent version.
+package = User interface
+core = 7.x
+files[] = jquery_update.module
+files[] = jquery_update.install
+
+configure = admin/config/development/jquery_update
+
+; Information added by Drupal.org packaging script on 2015-01-25
+version = "7.x-2.5"
+core = "7.x"
+project = "jquery_update"
+datestamp = "1422221882"
+

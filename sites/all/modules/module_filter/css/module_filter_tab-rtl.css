@@ -1,0 +1,54 @@
+#module-filter-tabs {
+  float: right;
+}
+#module-filter-tabs li.selected a,
+#module-filter-tabs li.selected a:hover,
+#module-filter-tabs li.selected a:focus,
+#module-filter-tabs li.selected a:active {
+  background-color: #fff;
+  margin-left: -1px;
+  margin-right: 0;
+}
+.admin-operations {
+  float: left;
+}
+#module-filter-modules {
+  margin-right: 240px;
+}
+html.js .toggle-enable {
+  background-image: -webkit-gradient(linear, 100% 0%, 0% 0%, color-stop(50%, red), color-stop(50%, orange), color-stop(100%, orange));
+  background-image: -moz-linear-gradient(right, red 50%, orange 50%, orange 100%);
+  background-image: linear-gradient(right, red 50%, orange 50%, orange 100%);
+}
+html.js .toggle-enable.enabled {
+  background-image: -webkit-gradient(linear, 100% 0%, 0% 0%, color-stop(50%, orange), color-stop(50%, green), color-stop(100%, green));
+  background-image: -moz-linear-gradient(right, orange 50%, green 50%, green 100%);
+  background-image: linear-gradient(right, orange 50%, green 50%, green 100%);
+}
+html.js .toggle-enable.disabled {
+  background: #ccc;
+  border-color: #ddd;
+  cursor: auto;
+}
+html.js .toggle-enable.disabled div {
+  background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, color-stop(0%, #FEFEFE), color-stop(100%, #EEEEEE));
+  background-image: -moz-linear-gradient(top, #FEFEFE 0%, #EEEEEE 100%);
+  background-image: linear-gradient(top, #FEFEFE 0%, #EEEEEE 100%);
+}
+html.js .toggle-enable div {
+  -webkit-transition: right 0.2s;
+  -mox-transition: right 0.2s;
+  -o-transition: right 0.2s;
+  transition: right 0.2s;
+}
+html.js .toggle-enable div:before {
+  content: "ON";
+  left: -24px;
+}
+html.js .toggle-enable div:after {
+  content: "OFF";
+  left: -24px;
+}
+html.js .toggle-enable.off div {
+  right: 24px;
+}

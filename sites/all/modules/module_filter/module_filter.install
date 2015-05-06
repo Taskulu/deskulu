@@ -1,0 +1,47 @@
+<?php
+
+/**
+ * @file
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function module_filter_uninstall() {
+  variable_del('module_filter_set_focus');
+  variable_del('module_filter_tabs');
+  variable_del('module_filter_count_enabled');
+  variable_del('module_filter_visual_aid');
+  variable_del('module_filter_hide_empty_tabs');
+  variable_del('module_filter_dynamic_save_position');
+  variable_del('module_filter_use_url_fragment');
+  variable_del('module_filter_use_switch');
+  variable_del('module_filter_track_recent_modules');
+  variable_del('module_filter_remember_active_tab');
+  variable_del('module_filter_remember_update_state');
+}
+
+/**
+ * Remove the 'module_filter_autocomplete' variable.
+ */
+function module_filter_update_7100() {
+  variable_del('module_filter_autocomplete');
+}
+
+/**
+ * Rebuild the menu and theme registry.
+ */
+function module_filter_update_7200() {
+  menu_rebuild();
+  system_rebuild_theme_data();
+  drupal_theme_rebuild();
+}
+
+/**
+ * Old update that use to remove the module_filter_dynamic_save_position variable.
+ */
+function module_filter_update_7201() {
+  // We don't want to remove this update hook but at the same time we no
+  // longer want to lose the variable setting, so we just comment it out.
+  // variable_del('module_filter_dynamic_save_position');
+}

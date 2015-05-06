@@ -1,0 +1,132 @@
+/* Administrative classes */
+
+/* Toolbar Drag & Drop */
+form#ckeditor-admin-profile-form textarea#edit-toolbar {
+    display: none;
+}
+form#ckeditor-admin-profile-form #edit-toolbar + .grippie {
+    display: none;
+}
+div.sortableList {
+    cursor: n-resize;
+}
+div.widthMarker {
+    height: 20px;
+    border-top: 1px dashed #CCC;
+    margin: 10px 0px 0px 1px;
+    padding-left: 1px;
+    text-align: center;
+}
+div.sortableList.group {
+    margin: 20px 0px 0px 0px;
+}
+div.sortableList div.sortableListDiv {
+    height: 34px;
+    margin-bottom: 3px;
+    width: 930px;
+}
+div.sortableList div.sortableListDiv span.sortableListSpan {
+    background-color: #F0F0EE;
+    height: 34px;
+    border-right: 1px dashed #CCC;
+    display: block;
+}
+div.sortableList div.sortableListDiv span.sortableListSpan ul {
+    width: 930px;
+    white-space: nowrap;
+    border: 1px solid #CCC;
+    list-style: none;
+    margin:0px;
+    padding: 0px 0px 0px 1px;
+    height: 34px;
+}
+div.sortableList div.sortableListDiv span.sortableListSpan ul li {
+    list-style: none;
+    cursor: move;
+    height: 18px;
+    min-width: 18px;
+    padding: 4px;
+}
+div.sortableList div.sortableListDiv span.sortableListSpan ul li.group {
+    min-width: 5px;
+    padding-left: 4px;
+}
+div.sortableList div.sortableListDiv span.sortableListSpan ul li.spacer img {
+    margin-bottom: 4px;
+}
+div.sortableList div.sortableListDiv span.sortableListSpan ul li img {
+    border: 0;
+    padding: 0;
+    margin: 0
+}
+fieldset#edit-appearance li.sortableItem img {
+    max-height:24px;
+    width:auto;
+}
+div.sortableList #Format img, div.sortableList #Font img, div.sortableList #Styles img, div.sortableList #FontSize img {
+    max-height:30px !important;
+}
+div.sortableList #Format, div.sortableList #Font, div.sortableList #Styles, div.sortableList #FontSize {
+    padding:0;
+}
+li.sortableItem {
+    position: relative;
+    float: left;
+    margin: 3px 1px 1px 0px;
+    border: 1px solid #CCC;
+    background-color: #F0F0EE;
+    z-index: 99;
+}
+
+#security-filters .filter-text-formats {
+    float: left;
+    clear: both;
+    width: 15%;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 10px 0px;
+}
+
+#security-filters .filter-text-formats .filter-text-format-status {
+    float: left;
+    padding-right: 20px;
+}
+
+#security-filters .filter-text-formats .enabled {
+    background: url(images/tick.png) no-repeat right center;
+}
+
+#security-filters .filter-text-formats .disabled {
+    background: url(images/delete.png) no-repeat right center;
+}
+
+#security-filters .filter-info {
+    float: left;
+    width: 85%;
+}
+
+#security-filters .fieldset-legend {
+    background: none;
+    padding-left: 10px;
+}
+
+#security-filters .fieldset-legend a {
+    font-weight: normal;
+    font-size: 10px;
+    padding-left: 5px;
+}
+
+#security-filters .filter-wrapper {
+    clear: both;
+    float: left;
+    border-bottom: 1px solid #CCCCCC;
+    width: 100%;
+}
+
+/* Fix for fieldset for-edit-apperance in Firefox*/
+fieldset#edit-appearance div#groupLayout, div#allButtons  {
+  border: 0;
+  padding: 0 0 0 0;
+  margin: 1em 0;
+  overflow: auto;
+}

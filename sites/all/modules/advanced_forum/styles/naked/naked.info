@@ -1,0 +1,11 @@
+
+name = Naked
+description = Base style with no CSS except positioning. Meant as a starter style. Images are desaturated for easier recoloring.
+version = 2.x
+
+; Information added by Drupal.org packaging script on 2015-02-10
+version = "7.x-2.5"
+core = "7.x"
+project = "advanced_forum"
+datestamp = "1423590792"
+

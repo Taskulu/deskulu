@@ -1,0 +1,81 @@
+<?php
+
+/**
+ * @file
+ * Contains ViewsHandlerTest.
+ */
+
+/**
+ * Tests generic handler functionality.
+ *
+ * @see view
+ */
+class ViewsHandlerTest extends ViewsSqlTest {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Handlers',
+      'description' => 'Tests generic handler functionality.',
+      'group' => 'Views Handlers',
+    );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function viewsData() {
+    $views_data = parent::viewsData();
+    $views_data['views']['test_access'] = array(
+      'title' => 'test access',
+      'help' => '',
+      'area' => array(
+        'handler' => 'views_test_area_access',
+      ),
+    );
+
+    return $views_data;
+  }
+
+  /**
+   * Tests access for handlers using an area handler.
+   */
+  public function testHandlerAccess() {
+    $view = $this->getBasicView();
+
+    // add a test area
+    $view->display['default']->handler->override_option('header', array(
+      'test_access' => array(
+        'id' => 'test_access',
+        'table' => 'views',
+        'field' => 'test_access',
+        'custom_access' => FALSE,
+      ),
+    ));
+
+    $view->init_display();
+    $view->init_handlers();
+    $handlers = $view->display_handler->get_handlers('header');
+    $this->assertEqual(0, count($handlers));
+
+    $view->destroy();
+
+    $view = $this->getBasicView();
+
+    // add a test area
+    $view->display['default']->handler->override_option('header', array(
+      'test_access' => array(
+        'id' => 'test_access',
+        'table' => 'views',
+        'field' => 'test_access',
+        'custom_access' => TRUE,
+      ),
+    ));
+
+    $view->init_display();
+    $view->init_handlers();
+    $handlers = $view->display_handler->get_handlers('header');
+    $this->assertEqual(1, count($handlers));
+    $this->assertTrue(isset($handlers['test_access']));
+  }
+
+}

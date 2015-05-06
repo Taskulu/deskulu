@@ -1,0 +1,45 @@
+
+/**
+ * @file
+ * Administration menu color override.
+ */
+
+#admin-menu {
+  background-color: #911;
+  background-image: url(images/bkg-red.png);
+}
+#admin-menu li.admin-menu-action a {
+  border-left-color: #a91f1f;
+}
+
+/* All lists */
+#admin-menu ul a {
+  border-right-color: #a91f1f;
+}
+#admin-menu ul li.admin-menu-tab a {
+  border-right-color: #52565E;
+}
+#admin-menu li li a {
+  border-top-color: #801f1f;
+}
+
+/* All list items */
+#admin-menu li li {
+  background-color: #991f1f;
+}
+
+/* Second-and-more-level hovering */
+#admin-menu li li.expandable {
+  background-color: #b93f3f;
+}
+#admin-menu li li:hover {
+  background-color: #690f0f;
+}
+#admin-menu li li.expandable:hover a,
+#admin-menu li li.expandable:hover li.expandable:hover a {
+  border-color: #801f1f;
+}
+#admin-menu li li.expandable:hover li a,
+#admin-menu li li.expandable:hover li.expandable:hover li a {
+  border-color: #801f1f;
+}

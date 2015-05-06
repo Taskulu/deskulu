@@ -1,0 +1,148 @@
+<?php
+/**
+ * @file
+ * Variable API module - Database storage
+ *
+ * This module provides database storage for variable realms
+ */
+
+/**
+ * Get variable store
+ */
+function &variable_store($realm, $key) {
+  $variable_store = &drupal_static('variable_store');
+
+  if (!isset($variable_store[$realm][$key])) {
+    $variable_store[$realm][$key] = _variable_store_load($realm, $key);
+  }
+  return $variable_store[$realm][$key];
+}
+
+/**
+ * Implementation of hook_boot()
+ */
+function variable_store_boot() {
+  // Do nothing, we just want this module to be available for boot.
+}
+
+/**
+ * Delete variable from db
+ */
+function variable_store_del($realm, $key, $name) {
+  $store = &variable_store($realm, $key);
+  db_delete('variable_store')
+    ->condition('realm', $realm)
+    ->condition('realm_key', $key)
+    ->condition('name', $name)
+    ->execute();
+  unset($store[$name]);
+  cache_clear_all('variable:' . $realm . ':' . $key, 'cache_bootstrap');
+}
+
+/**
+ * Get single variable from store
+ */
+function variable_store_get($realm, $key, $name, $default = NULL) {
+  $variables = variable_store($realm, $key);
+  return $variables && isset($variables[$name]) ? $variables[$name] : $default;
+}
+
+/**
+ * Delete realm variable or full realm from store.
+ *
+ * @param $realm
+ *   Realm name to delete. NULL to delete all realms.
+ * @param $key
+ *   Realm key to delete. NULL to delete all realm keys.
+ * @param $name
+ *   Variable name to delete. NULL to delete all variables for that realm, key
+ */
+function variable_store_delete_all($realm, $key, $name = NULL) {
+  _variable_store_reset();
+  $query = db_delete('variable_store');
+  if (isset($realm)) {
+    $query->condition('realm', $realm);
+  }
+  if (isset($key)) {
+    $query->condition('realm_key', $key);
+  }
+  if (isset($name)) {
+    $query->condition('name', $name);
+  }
+  return $query->execute();
+}
+
+/**
+ * List all variable names from a realm.
+ *
+ * @param $realm
+ *   Realm name to list. NULL to list all realms.
+ * @param $key
+ *   Realm key to list. NULL to list all realm keys.
+ *
+ * @return array
+ *   List of variable names.
+ */
+function variable_store_list_all($realm, $key = NULL) {
+  $query = db_select('variable_store', 'vs')
+    ->fields('vs', array('name'))
+    ->distinct();
+  if ($realm) {
+    $query->condition('realm', $realm);
+  }
+  if ($key) {
+    $query->condition('realm_key', $key);
+  }
+  return $query->execute()->fetchCol();
+}
+
+/**
+ * Load realm from db store
+ */
+function _variable_store_load($realm, $key) {
+  $cacheid = 'variable:' . $realm . ':' . $key;
+  if ($cached = cache_get($cacheid, 'cache_bootstrap')) {
+    $variables = $cached->data;
+  }
+  else {
+    $result = db_select('variable_store', 's')
+      ->fields('s', array('name', 'value', 'serialized'))
+      ->condition('realm', $realm)
+      ->condition('realm_key', $key)
+      ->execute();
+    $variables = array();
+    foreach ($result as $variable) {
+      $variables[$variable->name] = $variable->serialized ? unserialize($variable->value) : $variable->value;
+    }
+    cache_set($cacheid, $variables, 'cache_bootstrap');
+  }
+  return $variables;
+}
+
+/**
+ * Reset caches and static variables.
+ */
+function _variable_store_reset() {
+  $store =  &drupal_static('variable_store', array());
+  foreach ($store as $realm => &$realm_store) {
+    foreach (array_keys($realm_store) as $key) {
+      $realm_store[$key] = NULL;
+    }
+  }
+  cache_clear_all('variable:', 'cache_bootstrap', TRUE);
+}
+
+/**
+ * Set variable value
+ */
+function variable_store_set($realm, $key, $name, $value, $rebuild = TRUE) {
+  $store = &variable_store($realm, $key);
+  $serialize = !is_int($value) && !is_string($value);
+  db_merge('variable_store')
+    ->key(array('realm' => $realm, 'realm_key' => $key, 'name' => $name))
+    ->fields(array('value' => $serialize ? serialize($value) : $value, 'serialized' => $serialize ? 1 : 0))
+    ->execute();
+  cache_clear_all('variable:' . $realm . ':' . $key, 'cache_bootstrap');
+  $store[$name] = $value;
+}
+

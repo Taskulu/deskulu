@@ -1,0 +1,91 @@
+<?php
+/**
+ * @file
+ * Test case for multilingual variables
+ */
+
+
+class i18nVariableTestCase extends Drupali18nTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Variable translation',
+      'group' => 'Internationalization',
+      'description' => 'Variable translation functions'
+    );
+  }
+
+  function setUp() {
+    parent::setUp('i18n_variable', 'translation');
+    parent::setUpLanguages(array('administer site configuration'));
+  }
+
+  /**
+   * Set up translation for content type (page)
+   */
+  function setUpContentTranslation($settings = array()) {
+    $this->translator = $this->drupalCreateUser(array('create page content', 'edit own page content', 'translate content'));
+    $this->drupalLogin($this->admin_user);
+    // Set "Basic page" content type to use multilingual support with
+    // translation.
+    $this->drupalGet('admin/structure/types/manage/page');
+    $edit = array();
+    $edit['language_content_type'] = 2;
+    // Mark status and promoted
+    $edit['node_options[status]'] = 1;
+    $this->drupalPost('admin/structure/types/manage/page', $edit, t('Save content type'));
+    $this->assertRaw(t('The content type %type has been updated.', array('%type' => 'Basic page')), t('Basic page content type has been updated.'));
+
+    // Enable the language switcher block.
+    $language_type = LANGUAGE_TYPE_INTERFACE;
+    $edit = array("blocks[locale_$language_type][region]" => 'sidebar_first');
+    $this->drupalPost('admin/structure/block', $edit, t('Save blocks'));
+  }
+
+  function testVariableLocalize() {
+    $this->setUpContentTranslation();
+
+    // Create 2 nodes in different languages.
+    $first_title = $this->randomName(10);
+    $first_body = $this->randomString(50);
+    $first_node = $this->createNode('page', $first_title, $first_body, $this->default_language);
+
+    $secondary_title = $this->randomName(10);
+    $secondary_body = $this->randomString(50);
+    $secondary_node = $this->createNode('page', $secondary_title, $secondary_body, $this->secondary_language);
+
+    $this->drupalGet('<front>', array('language' => i18n_language_object($this->default_language)));
+    $this->assertText(t('No front page content has been created yet.'));
+
+    $this->drupalGet('<front>', array('language' => i18n_language_object($this->secondary_language)));
+    $this->assertText(t('No front page content has been created yet.'));
+
+    $edit = array(
+      'variables[site_name]' => 1,
+      'variables[site_frontpage]' => 1,
+    );
+    $this->drupalPost('admin/config/regional/i18n/variable', $edit, t('Save configuration'));
+
+    $edit_first = array(
+      'site_frontpage' => 'node/' . $first_node->nid,
+      'site_name' => $this->randomName(10),
+    );
+    $this->drupalPost('admin/config/system/site-information', $edit_first, t('Save configuration'), array('language' => i18n_language_object($this->default_language)));
+
+    $edit_secondary = array(
+      'site_frontpage' => 'node/' . $secondary_node->nid,
+      'site_name' => $this->randomName(10),
+    );
+    $this->drupalPost('admin/config/system/site-information', $edit_secondary, t('Save configuration'), array('language' => i18n_language_object($this->secondary_language)));
+
+    $this->drupalGet('<front>', array('language' => i18n_language_object($this->default_language)));
+    $this->assertText($edit_first['site_name']);
+    $this->assertNoText(t('No front page content has been created yet.'));
+    $this->assertText($first_title);
+
+    $this->drupalGet('<front>', array('language' => i18n_language_object($this->secondary_language)));
+    $this->assertText($edit_secondary['site_name']);
+    $this->assertNoText(t('No front page content has been created yet.'));
+    $this->assertText($secondary_title);
+  }
+}

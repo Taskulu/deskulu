@@ -1,0 +1,4 @@
+name = Helpdesk
+core = 7.x
+dependencies[] = 'email_registration'
+dependencies[] = 'elements'

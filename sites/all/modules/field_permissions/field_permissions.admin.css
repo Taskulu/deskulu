@@ -1,0 +1,74 @@
+
+/* Table cells. */
+.field-permissions-cell,
+.field-permissions-header {
+  text-align: center;
+}
+
+/* Status icons. */
+.field-permissions-status-on {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background: url(images/field_permissions.status-on.png) no-repeat 0 0;
+}
+.field-permissions-status-off {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background: url(images/field_permissions.status-off.png) no-repeat 0 0;
+}
+
+/* Quick tooltips behavior. */
+html.js .field-permissions-tooltip {
+  display: none;
+}
+#field-permissions-tooltip {
+  display: none;
+  padding: 1em 2em 1em 1em;
+  color: #444;
+  background-color: #f0f0f0;
+  border: 1px solid #aaa;
+
+  /* CSS3 properties not supported by all browsers. */
+  -webkit-box-shadow: 2px 2px 2px #ccc;
+   -khtml-box-shadow: 2px 2px 2px #ccc;
+    -icab-box-shadow: 2px 2px 2px #ccc;
+     -moz-box-shadow: 2px 2px 2px #ccc;
+       -o-box-shadow: 2px 2px 2px #ccc;
+          box-shadow: 2px 2px 2px #ccc;
+  -webkit-border-radius: 5px;
+   -khtml-border-radius: 5px;
+    -icab-border-radius: 5px;
+     -moz-border-radius: 5px;
+       -o-border-radius: 5px;
+          border-radius: 5px;
+}
+.field-permissions-tooltip .item-list,
+#field-permissions-tooltip .item-list {
+  text-align: left;
+}
+.field-permissions-tooltip h3,
+#field-permissions-tooltip h3 {
+  font-size: 1.2em;
+  font-weight: bold;
+}
+
+/**
+ * Administration on the field settings page.
+ */
+
+/**
+ * Do not display the hide/show descriptions link above the permissions matrix.
+ */
+#field-ui-field-edit-form .compact-link {
+  display: none;
+}
+
+/**
+ * Indent the matrix and make it appear inline with the corresponding radio button.
+ */
+#field-ui-field-edit-form table#permissions {
+  margin-left: 1.5em;
+  width: 98%;
+}

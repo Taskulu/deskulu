@@ -1,0 +1,82 @@
+<?php
+
+/**
+ * Implements hook_rate_templates().
+ */
+function rate_slider_rate_templates() {
+  $templates = array();
+
+  $templates['slider'] = new stdClass();
+  $templates['slider']->value_type = 'percent';
+  $templates['slider']->options = array(
+    array(10, '1'),
+    array(20, '2'),
+    array(30, '3'),
+    array(40, '4'),
+    array(50, '5'),
+    array(60, '6'),
+    array(70, '7'),
+    array(80, '8'),
+    array(90, '9'),
+    array(100, '10'),
+  );
+  $templates['slider']->theme = 'rate_template_slider';
+  $templates['slider']->css = drupal_get_path('module', 'rate_slider') . '/templates/slider/slider.css';
+  $templates['slider']->js = drupal_get_path('module', 'rate_slider') . '/templates/slider/slider.js';
+  $templates['slider']->customizable = FALSE;
+  $templates['slider']->translate = FALSE;
+  $templates['slider']->template_title = t('Slider');
+
+  return $templates;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function rate_slider_theme() {
+  return array(
+    'rate_template_slider' => array(
+      'arguments' => array('links' => NULL, 'results' => NULL, 'mode' => NULL, 'just_voted' => FALSE, 'content_type' => NULL, 'content_id' => NULL, 'display_options' => NULL),
+      'template' => 'slider',
+      'path' => drupal_get_path('module', 'rate_slider') . '/templates/slider',
+    ),
+  );
+}
+
+/**
+ * Preprocess function for the slider template.
+ */
+function rate_slider_preprocess_rate_template_slider(&$variables) {
+  extract($variables);
+
+  drupal_add_library('system', 'ui.slider');
+
+  // Calculate start value for slider.
+  if ($variables['results']['count'] == 0) {
+    $variables['value'] = 50;
+  }
+  else {
+    $variables['value'] = (int) $variables['results']['rating'];
+  }
+
+  $buttons = array();
+  foreach ($links as $link) {
+    $button = theme('rate_button', array('text' => $link['text'], 'href' => $link['href'], 'class' => ''));
+    $buttons[] = $button;
+  }
+  $variables['buttons'] = $buttons;
+
+  $info = array();
+  if ($mode == RATE_CLOSED) {
+    $info[] = t('Voting is closed.');
+  }
+
+  if ($mode != RATE_COMPACT && $mode != RATE_COMPACT_DISABLED) {
+    if (isset($results['user_vote'])) {
+      $vote = $results['user_vote'];
+      $info[] = t('You voted !vote.', array('!vote' => number_format($vote / 10, 2)));
+    }
+    $info[] = t('Total votes: !count', array('!count' => $results['count']));
+  }
+  $variables['info'] = implode(' ', $info);
+}

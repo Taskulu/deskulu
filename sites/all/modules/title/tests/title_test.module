@@ -1,0 +1,130 @@
+<?php
+
+/**
+ * @file
+ * Testing functionality for Title module.
+ */
+
+/**
+ * Implements hook_entity_info().
+ */
+function title_test_entity_info() {
+  $info = array();
+
+  $field = array(
+    'type' => 'text',
+    'cardinality' => 1,
+    'translatable' => TRUE,
+  );
+
+  $instance = array(
+    'required' => TRUE,
+    'settings' => array(
+      'text_processing' => 0,
+    ),
+    'widget' => array(
+      'weight' => -5,
+    ),
+  );
+
+  $info['test_entity'] = array(
+    'entity keys' => array(
+      'label' => 'ftlabel',
+    ),
+    'field replacement' => array(
+      'ftlabel' => array(
+        'field' => $field,
+        'instance' => array(
+          'label' => t('Title'),
+          'description' => t('A field replacing node title.'),
+        ) + $instance,
+      ),
+    ),
+    'controller class' => 'EntityAPIController',
+  );
+
+  return $info;
+}
+
+/**
+ * Save the given test entity.
+ */
+function title_test_entity_save($entity) {
+  // field_test_entity_save does not invoke hook_entity_presave().
+  module_invoke_all('entity_presave', $entity, 'test_entity');
+  field_test_entity_save($entity);
+  // field_test_entity_save does not invoke hook_entity_insert().
+  $hook = $entity->is_new ? 'entity_insert' : 'entity_update';
+  module_invoke_all($hook, $entity, 'test_entity');
+}
+
+/**
+ * Load the given test entity.
+ */
+function title_test_entity_test_load($entity) {
+  $entity = field_test_entity_test_load($entity->ftid);
+  // field_test_entity_load does not invoke hook_entity_load().
+  module_invoke_all('entity_load', array($entity), 'test_entity');
+  return $entity;
+}
+
+/**
+ * Store a value for the given phase.
+ */
+function title_test_phase_store($phase = NULL, $value = NULL) {
+  $store = &drupal_static(__FUNCTION__, array());
+  if (isset($phase)) {
+    $store[$phase] = $value;
+  }
+  return $store;
+}
+
+/**
+ * Check the entity label at a give phase.
+ */
+function title_test_phase_check($phase, $entity) {
+  $info = entity_get_info('test_entity');
+  $label_key = $info['entity keys']['label'];
+  $field_name = $label_key . '_field';
+  $value = $entity->{$label_key} == $entity->{$field_name}[LANGUAGE_NONE][0]['value'];
+  title_test_phase_store($phase, $value);
+  return $value;
+}
+
+/**
+ * Implements hook_entity_presave().
+ */
+function title_test_entity_presave($entity, $type) {
+  if ($type == 'test_entity') {
+    $info = entity_get_info('test_entity');
+    $label_key = $info['entity keys']['label'];
+    $entity->{$label_key} = DrupalWebTestCase::randomName();
+  }
+}
+
+/**
+ * Implements hook_field_attach_load().
+ */
+function title_test_field_attach_load($entity_type, $entities, $age, $options) {
+  if ($entity_type == 'test_entity') {
+    title_test_phase_check('field_attach_load', current($entities));
+  }
+}
+
+/**
+ * Implements hook_entity_load().
+ */
+function title_test_entity_load($entities, $type) {
+  if ($type == 'test_entity') {
+    title_test_phase_check('entity_load', current($entities));
+  }
+}
+
+/**
+ * Implements hook_entity_prepare_view().
+ */
+function title_test_entity_prepare_view($entities, $type, $langcode = NULL) {
+  if ($type == 'test_entity') {
+    title_test_phase_check('entity_prepare_view', current($entities));
+  }
+}

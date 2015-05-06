@@ -1,0 +1,12 @@
+name = Translation redirect
+description = Redirect to translated page when available. SEO for multilingual sites.
+dependencies[] = i18n
+package = Multilingual - Internationalization
+core = 7.x
+
+; Information added by Drupal.org packaging script on 2015-01-26
+version = "7.x-1.12"
+core = "7.x"
+project = "i18n"
+datestamp = "1422286982"
+

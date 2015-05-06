@@ -1,0 +1,15 @@
+name = Date Repeat API
+description = A Date Repeat API to calculate repeating dates and times from iCal rules.
+dependencies[] = date_api
+package = Date/Time
+core = 7.x
+php = 5.2
+files[] = tests/date_repeat.test
+files[] = tests/date_repeat_form.test
+
+; Information added by Drupal.org packaging script on 2014-07-29
+version = "7.x-2.8"
+core = "7.x"
+project = "date"
+datestamp = "1406653438"
+

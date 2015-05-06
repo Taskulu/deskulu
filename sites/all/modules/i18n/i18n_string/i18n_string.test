@@ -1,0 +1,192 @@
+<?php
+
+/**
+ * @file
+ * Test case for multilingual string
+ */
+
+/**
+ * Class for testing i18n_string and modules using these features
+ *
+ * Tests basic API functions
+ */
+
+
+class i18nStringTestCase extends Drupali18nTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'String translation API',
+      'group' => 'Internationalization',
+      'description' => 'User defined strings translation functions'
+    );
+  }
+
+  function setUp() {
+    // We can use any of the modules that define a text group, to use it for testing
+    parent::setUp('i18n_string', 'i18n_menu', 'i18n_test');
+    parent::setUpLanguages();
+    $this->translator = $this->drupalCreateUser(array('translate interface', 'translate user-defined strings'));
+  }
+
+  /**
+   * Test base i18n_string API
+   */
+  function testStringsAPI() {
+    // Create a bunch of strings for all languages
+    $textgroup = 'menu';
+    $strings = $this->stringCreateArray(2);
+    $translations = array();
+    // Save source strings and store translations
+    foreach ($strings as $key => $string) {
+      $name = "$textgroup:item:$key:title";
+      i18n_string_update($name, $string);
+      $translations[$key] = $this->createStringTranslation($textgroup, $string);
+    }
+    // Reset cache for text group
+    i18n_string_textgroup($textgroup)->cache_reset();
+    // Check translations using the API
+    foreach ($this->getOtherLanguages() as $language) {
+      foreach ($strings as $key => $value) {
+        $name = "$textgroup:item:$key:title";
+        $translation = i18n_string_translate($name, 'NOT FOUND', array('langcode' => $language->language));
+        $this->assertEqual($translation, $translations[$key][$language->language], "The right $language->name ($language->language) translation has been retrieved for $name, $translation");
+      }
+    }
+  }
+
+  /**
+   * Test base i18n_string caching.
+   */
+  function testCaching() {
+    // Create a bunch of strings for all languages.
+    $textgroup = 'test_cached';
+    $strings = $this->stringCreateArray(2);
+    $translations = array();
+    $textgroup_object = i18n_string_textgroup($textgroup);
+    // Save source strings and store translations.
+    foreach ($strings as $key => $string) {
+      $name = "$textgroup:item:$key:title";
+      i18n_string_update($name, $string);
+      $translations[$key] = $this->createStringTranslation($textgroup, $string);
+    }
+
+    // Now fetch the strings to fill the cache.
+    foreach ($textgroup_object->strings as $context => $string_object) {
+      $this->drupalGet('tests/i18n/i18n_string_build/' . $textgroup . ':' . $context);
+    }
+    foreach ($strings as $key => $string) {
+      $this->drupalGet('tests/i18n/i18n_string_translation_search/' . $textgroup . ':item:' . $key . ':*/es');
+    }
+
+    // Check the persistent cache for contents.
+    $cache = cache_get('i18n:string:tgroup:' . $textgroup . ':strings');
+    if ($this->assertNotEqual($cache, FALSE, 'Textgroup strings cache found')) {
+      foreach ($textgroup_object->strings as $context => $string_object) {
+        if ($this->assertTrue(isset($cache->data[$context]), format_string('Cached string %context found', array('%context' => $context)))) {
+          $this->assertEqual($cache->data[$context], $context, 'Cached string is a string and not an object');
+        }
+        // Check if the string object cache is also available.
+        $string_cache = cache_get($string_object->get_cid());
+        if ($this->assertNotEqual($string_cache, FALSE, format_string('Cached string object %cid found', array('%cid' => $string_object->get_cid())))) {
+          $this->assertTrue(is_array($string_cache->data), 'Cached string object is an array.');
+        }
+      }
+    }
+    $cache = cache_get('i18n:string:tgroup:' . $textgroup . ':cache_multiple');
+    if ($this->assertNotEqual($cache, FALSE, 'Textgroup cache_multiple cache found')) {
+      foreach ($strings as $key => $string) {
+        $pattern = 'item:' . $key . ':*:es';
+        if ($this->assertTrue(isset($cache->data[$pattern]), format_string('Cached multiple cache for pattern %pattern found', array('%pattern_key' => $pattern)))) {
+          $property_pattern = 'item:' . $key . ':title';
+          if ($this->assertTrue(isset($cache->data[$pattern][$property_pattern]), format_string('Cached multiple property title found', array('%pattern_key' => $pattern)))) {
+            $this->assertEqual($cache->data[$pattern][$property_pattern], $property_pattern);
+          }
+        }
+      }
+    }
+
+    // Test cache injection.
+    foreach ($textgroup_object->strings as $context => $string_object) {
+      // Check if the string object cache is also available.
+      $string_cache = cache_get($string_object->get_cid());
+      if (isset($string_cache->data)) {
+        // Modify cache.
+        $string_cache->data['string'] = "Injected value.";
+        cache_set($string_object->get_cid(), $string_cache->data, 'cache', CACHE_TEMPORARY);
+
+        // Check if modification is reflected on the next page call.
+        $this->drupalGet('tests/i18n/i18n_string_build/' . $textgroup . ':' . $context);
+        $this->assertText($string_cache->data['string']);
+      }
+    }
+
+    // Test that un-translated strings are cached correctly.
+    $textgroup = 'test_cached';
+    $key = 3;
+    $string = self::randomName(100);
+    $name = "$textgroup:item:$key:title";
+    i18n_string_update($name, $string);
+
+    // Generate the cache entry.
+    $string_object = i18n_string_build($name, $string);
+    $langcode = i18n_langcode();
+    $string_object->get_translation($langcode);
+
+    // Destroy the textgroup object to write the cache entry.
+    $textgroup_object = i18n_string_textgroup($textgroup);
+    $textgroup_object->__destruct();
+    $this->assertTrue(cache_get($string_object->get_cid()) !== FALSE, "Cache entry created.");
+    drupal_static_reset('i18n_string_textgroup');
+
+    // Reset the loaded translation variable.
+    variable_del('i18n_loaded_translations');
+    $loaded_translations = variable_get('i18n_loaded_translations', array());
+    $this->verbose(var_export($loaded_translations, TRUE));
+
+    // Rebuild the string.
+    $string_object = i18n_string_build($name, $string);
+    $string_object->get_translation($langcode);
+
+    // Check that the string hasn't been loaded.
+    $loaded_translations = variable_get('i18n_loaded_translations', array());
+    $this->verbose(var_export($loaded_translations, TRUE));
+    $this->assertFalse(isset($loaded_translations['test_cached:item:3:title']), "The untranslated string was correctly cached.");
+  }
+
+
+  /**
+   * Create strings for all languages
+   */
+  public static function stringCreateAll($number = 10, $length = 100) {
+    foreach (language_list() as $lang => $language) {
+      $strings[$lang] = self::stringCreateArray($number, $length);
+    }
+    return $strings;
+  }
+  /**
+   * Create a bunch of random strings to test the API
+   */
+  public static function stringCreateArray($number = 10, $length = 100) {
+    for ($i=1 ; $i <= $number ; $i++) {
+      $strings[$i] = self::randomName($length);
+    }
+    return $strings;
+  }
+  /**
+   * Create and store one translation into the db
+   */
+  public function stringCreateTranslation($name, $lang, $length = 20) {
+    $translation = $this->randomName($length);
+    if (self::stringSaveTranslation($name, $lang, $translation)) {
+      return $translation;
+    }
+  }
+  /**
+   * Translate one string into the db
+   */
+  public static function stringSaveTranslation($name, $lang, $translation) {
+    list($textgroup, $context) = i18n_string_context($name);
+    return i18n_string_textgroup($textgroup)->update_translation($context, $lang, $translation);
+  }
+}

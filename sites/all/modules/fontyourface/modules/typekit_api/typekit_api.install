@@ -1,0 +1,38 @@
+<?php
+
+/**
+ * @file
+ * Removes fonts on disable.
+ */
+
+/**
+ * Implements hook_enable().
+ */
+function typekit_api_enable() {
+
+  // Set weight to 1 to ensure typekit_api_preprocess_html() is executed after
+  // fontyourface_preprocess_html(), which has weight of 0.
+  db_update('system')
+    ->fields(array('weight' => 1))
+    ->condition('name', 'typekit_api')
+    ->execute();
+
+} // typekit_api_enable
+
+/**
+ * Implements hook_disable().
+ */
+function typekit_api_disable() {
+
+  fontyourface_provider_disable('typekit_api');
+
+} // typekit_api_disable
+
+/**
+ * Implements hook_uninstall().
+ */
+function typekit_api_uninstall() {
+
+  variable_del('typekit_api_token');
+
+} // typekit_api_uninstall

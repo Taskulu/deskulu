@@ -1,0 +1,96 @@
+<?php
+
+
+/**
+ * @file
+ * Install, update and uninstall functions for the mandrill module.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function mandrill_uninstall() {
+  // Delete other variables:
+  variable_del('mandrill_analytics_campaign');
+  variable_del('mandrill_analytics_domains');
+  variable_del('mandrill_api_key');
+  variable_del('mandrill_filter_format');
+  variable_del('mandrill_from');
+  variable_del('mandrill_from_name');
+  variable_del('mandrill_mail_key_blacklist');
+  variable_del('mandrill_test_address');
+  variable_del('mandrill_test_body');
+  variable_del('mandrill_track_clicks');
+  variable_del('mandrill_track_opens');
+  variable_del('mandrill_url_strip_qs');
+  variable_del('mandrill_process_async');
+}
+
+/**
+ * Implements hook_enable().
+ */
+function mandrill_enable() {
+  mailsystem_set(array('mandrill_test' => 'MandrillMailSystem'));
+}
+
+/**
+ * Implements hook_disable().
+ */
+function mandrill_disable() {
+  // Tell mailsystem to remove mandrill and restore to defaults:
+  mailsystem_clear(array('mandrill_test' => 'MandrillMailSystem'));
+  watchdog('mandrill', 'Mandrill has been disabled.');
+}
+
+/**
+ * Deletes obsolete variables.
+ */
+function mandrill_update_7001() {
+  variable_del('mandrill_status');
+}
+
+/**
+ * Rebuilds the registry, as we've moved some files around.
+ */
+function mandrill_update_7002() {
+
+  // Rebuild the registry, we've moved some files around.
+  registry_rebuild();
+}
+
+  /**
+   * Implements hook_requirements().
+   */
+function mandrill_requirements($phase) {
+  $requirements = array();
+  // Ensure translations don't break at install time.
+  $t = get_t();
+
+  if ($phase == 'update') {
+    if (!module_exists('mailsystem')) {
+      $requirements['mandrill'] = array(
+        'title' => $t('Mandrill'),
+        'value' => '7.x-1.4',
+        'description' => $t('Mail System module is required for Mandrill 7.x-1.3 or higher.'),
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+  }
+
+  return $requirements;
+}
+
+
+/**
+ * Delete obsolete batch limit variable.
+ */
+function mandrill_update_7003() {
+  variable_del('mandrill_batch_limit');
+}
+
+/**
+ * Clear cache to pick up new class name for DrupalMandrill class.
+ */
+function mandrill_update_7004() {
+  cache_clear_all();
+}

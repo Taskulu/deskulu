@@ -1,0 +1,529 @@
+<?php
+
+/**
+ * Implements hook_field_extra_fields().
+ */
+function helpdesk_field_extra_fields() {
+  $extra = array();
+  $extra['node']['ticket']['display']['files'] = array(
+    'label' => t('Files'),
+    'description' => t('Relative path of attached files.'),
+    'weight' => 10,
+  );
+  return $extra;
+}
+
+/**
+ * Implements hook_comment_load().
+ */
+function helpdesk_comment_load($comments) {
+  foreach ($comments as $comment) {
+    $comment->files = helpdesk_ticket_attachment_files($comment);
+  }
+}
+
+/**
+ * Getter to return the path of attached files on a ticket node.
+ */
+function helpdesk_ticket_attachment_files($entity) {
+  $files = [];
+
+  if (!empty($entity->field_files)) {
+    foreach ($entity->field_files[LANGUAGE_NONE] as $item) {
+      $file = file_load($item['fid']);
+      $files[] = str_replace(DRUPAL_ROOT . '/', '', drupal_realpath($file->uri));
+    }
+  }
+  return implode("\n", $files);
+}
+
+/**
+ * Implements hook_node_load().
+ */
+function helpdesk_node_load($nodes, $types) {
+  if (!in_array('ticket', $types)) {
+    return;
+  }
+
+  foreach ($nodes as $node) {
+    if ($node->type == 'ticket') {
+      $node->files = helpdesk_ticket_attachment_files($node);
+    }
+  }
+}
+
+/**
+ * Implements hook_node_view
+ */
+//function helpdesk_node_view($node, $view_mode, $langcode) {
+//  if ($node->type != 'ticket') {
+//    return;
+//  }
+//
+//  $node->content['files'] = array(
+//    '#type' => 'item',
+//    '#title' => t('files: '),
+//    '#markup' => var_export($node->files, 1),
+//  );
+//}
+
+/**
+ * Implements hook_entity_property_info_alter().
+ */
+function helpdesk_entity_property_info_alter(&$info) {
+  $info['node']['bundles']['ticket']['properties']['files'] = array(
+    'type' => 'text',
+    'label' => t('Files (relative paths)'),
+    'sanitized' => TRUE,
+    'getter callback' => 'helpdesk_ticket_attachment_files',
+  );
+  $info['comment']['bundles']['comment_node_ticket']['properties']['files'] = array(
+    'type' => 'text',
+    'label' => t('Files (relative paths)'),
+    'sanitized' => TRUE,
+    'getter callback' => 'helpdesk_ticket_attachment_files',
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function helpdesk_menu() {
+  $items = array();
+  $items['ticket/new'] = array(
+    'title' => 'How can we help you today?',
+    'access callback' => 1,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('helpdesk_new_ticket_form'),
+  );
+  $items['ticket/track'] = array(
+    'title' => 'Check ticket status',
+    'access callback' => 1,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('helpdesk_track_ticket_form'),
+  );
+  $items['frontpage'] = array(
+    'title' => variable_get('site_name'),
+    'page callback' => 'helpdesk_frontpage',
+    'access callback' => 1,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function helpdesk_menu_alter(&$items) {
+  $items['user/%/tickets']['access callback'] = 'helpdesk_user_tickets_access_callback';
+  $items['user/%/tickets']['access arguments'] = array(1);
+  $items['comment/%']['access callback'] = 'helpdesk_comment_access';
+  $items['comment/%']['access arguments'] = array(1);
+}
+
+/**
+ * Comment view access callback.
+ * Makes sure that ticket comments are only accessible to agents and the ticket owner.
+ */
+function helpdesk_comment_access($cid) {
+  $comment = comment_load($cid);
+  $node = node_load($comment->nid);
+  if ($node->type == 'ticket') {
+    global $user;
+    return ($user->uid == 1 || $user->uid == $node->uid || in_array('agent', $user->roles));
+  }
+  return user_access('access comments');
+}
+
+/**
+ * Access callback for viewing user's tickets (user/%/tickets).
+ */
+function helpdesk_user_tickets_access_callback($uid) {
+  global $user;
+  $account = user_load($uid);
+  return $user->uid == $account->uid || in_array('agent', $user->roles);
+}
+
+/**
+ * New ticket form creation callback.
+ */
+function helpdesk_new_ticket_form($form, &$form_state) {
+  module_load_include('inc', 'node', 'node.pages');
+  global $user;
+  $node = (object) array(
+    'type' => 'ticket',
+    'uid' => $user->uid,
+    'language' => LANGUAGE_NONE,
+    'status' => 1,
+    'promote' => 0,
+    'comment' => COMMENT_NODE_OPEN,
+  );
+  $form = node_form($form, $form_state, $node);
+  $form['#validate'] = array();
+  $form['actions']['submit']['#submit'] = array();
+  if (user_is_anonymous()) {
+    $form['user'] = array(
+      '#type' => 'container',
+      '#tree' => TRUE,
+      '#weight' => -10,
+    );
+    $form['user']['email'] = array(
+      '#type' => 'emailfield',
+      '#title' => t("Your email address"),
+      '#placeholder' => 'email@example.com',
+      '#required' => TRUE,
+    );
+    $form['user']['full_name'] = array(
+      '#type' => 'textfield',
+      '#title' => t("Your name"),
+      '#placeholder' => t('John Doe'),
+      '#required' => TRUE,
+    );
+    $form['actions']['submit']['#submit'][] = 'helpdesk_new_ticket_form_create_user';
+    $form['#validate'][] = 'helpdesk_new_ticket_form_validate_user';
+  }
+  else {
+    $form['author']['name']['#default_value'] = $user->name;
+  }
+  $form['actions']['submit']['#submit'][] = 'helpdesk_new_ticket_form_submit';
+  $form['#validate'][] = 'helpdesk_ticket_form_validate';
+  if (!in_array('administrator', $user->roles)) {
+    $form['revision_information']['#access'] = FALSE;
+    $form['options']['#access'] = FALSE;
+  }
+
+  return $form;
+}
+
+/**
+ * Validate new user information.
+ */
+function helpdesk_new_ticket_form_validate_user($form, &$form_state) {
+  $errors = user_validate_mail($form_state['values']['user']['email']);
+  if (!empty($errors)) {
+    form_set_error('user][email', $errors);
+  }
+}
+
+/**
+ * Create a new user for anonymous users who create a ticket.
+ */
+function helpdesk_new_ticket_form_create_user($form, &$form_state) {
+  $email = $form_state['values']['user']['email'];
+  $name = $form_state['values']['user']['full_name'];
+  $account = user_load_by_mail($email);
+  if (empty($account)) {
+    // New user! create an account.
+    $fields = array(
+      'name' => 'helpdesk_user' . user_password(),
+      'mail' => $email,
+      'pass' => user_password(8),
+      'status' => 1,
+      'init' => 1,
+      'roles' => array(
+        DRUPAL_AUTHENTICATED_RID => 'authenticated user',
+      ),
+      'field_full_name' => array(
+        LANGUAGE_NONE => array(
+          0 => array(
+            'value' => $name,
+          ),
+        ),
+      ),
+    );
+    $account = user_save('', $fields);
+    // Username is not important, generate it from the email address.
+    $name = email_registration_cleanup_username(substr($email, 0, strpos($email, '@')), $account->uid);
+    $new_name = email_registration_unique_username($name, $account->uid);
+    db_update('users')
+      ->fields(array('name' => $new_name))
+      ->condition('uid', $account->uid)
+      ->execute();
+    
+    drupal_mail('user', 'status_activated', $email, NULL, array('account' => $account), variable_get('site_mail', 'support@taskulu.com'));
+  }
+  $form_state['user'] = $account;
+}
+
+
+
+/**
+ * Submit callback for new ticket form.
+ */
+function helpdesk_new_ticket_form_submit($form, &$form_state) {
+  $node = $form_state['node'];
+  $node->uid = $form_state['user']->uid;
+  field_attach_submit('node', $node, $form, $form_state);
+  node_save($node);
+}
+
+/**
+ * Implements hook_node_access().
+ */
+function helpdesk_node_access($node, $op, $account) {
+  if (is_object($node) && $node->type == 'ticket') {
+    switch ($op) {
+      case 'view':
+        if (user_is_logged_in()) {
+          return ($node->uid == $account->uid || in_array('agent', $account->roles)) ? NODE_ACCESS_ALLOW : NODE_ACCESS_DENY;
+        }
+        else {
+          if ((!empty($_GET['uid'])
+            && !empty($_GET['token'])
+            && $node->uid == $_GET['uid']
+            && $node->field_security_token[LANGUAGE_NONE][0]['value'] == $_GET['token'])) {
+            return NODE_ACCESS_ALLOW;
+          }
+          return NODE_ACCESS_DENY;
+        }
+
+      case 'edit':
+        return in_array('agent', $account->roles) ? NODE_ACCESS_ALLOW : NODE_ACCESS_DENY;
+
+      case 'delete':
+        return in_array('agent', $account->roles) ? NODE_ACCESS_ALLOW : NODE_ACCESS_DENY;
+
+      default:
+        break;
+    }
+  }
+}
+
+/**
+ * Implements hook_username_alter().
+ */
+function helpdesk_username_alter(&$name, $account) {
+  $account = user_load($account->uid);
+  $uname = field_get_items('user', $account, 'field_full_name');
+  if (!empty($uname)) {
+    $name = $uname[0]['value'];
+  }
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function helpdesk_block_info() {
+  return array(
+    'helpdesk_ticket_updater' => array(
+      'info' => t('Ticket updater'),
+      'cache' => DRUPAL_NO_CACHE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function helpdesk_block_view($delta = '') {
+  $block = array();
+  if ($delta == 'helpdesk_ticket_updater') {
+    $node = menu_get_object('node');
+    if ($node && $node->type == 'ticket') {
+      $block['subject'] = t('Update ticket');
+      $block['content'] = drupal_get_form('helpdesk_ticket_update_form', $node);
+    }
+  }
+  return $block;
+}
+
+function helpdesk_ticket_update_form($form, &$form_state, $node) {
+  module_load_include('inc', 'node', 'node.pages');
+  $form_wrapper['container'] = array(
+    '#type' => 'container',
+    '#prefix' => '<div id="ticket-updater">',
+    '#suffix' => '',
+  );
+  $form_wrapper['container']['nd'] = node_form($form, $form_state, $node);
+  $keep = array(
+    'field_agent',
+    'field_tags',
+    'field_ticket_status',
+    'field_ticket_type',
+    'field_priority',
+  );
+  foreach (element_children($form_wrapper['container']['nd']) as $child) {
+    if (!in_array($child, $keep)) {
+      $form_wrapper['container']['nd'][$child]['#access'] = FALSE;
+    }
+  }
+
+  $form_wrapper['save'] = array(
+    '#type' => 'submit',
+    '#value' => t('Update'),
+    '#ajax' => array(
+      'callback' => 'helpdesk_ticket_update_form_ajax_callback',
+      'wrapper' => 'ticket-updater',
+    ),
+    '#submit' => array('helpdesk_ticket_update_form_submit'),
+    '#weight' => 100,
+  );
+  $form_wrapper['#validate'] = array('helpdesk_ticket_form_validate');
+  return $form_wrapper;
+}
+
+/**
+ * Validates the values entered in the inline ticket updater block.
+ */
+function helpdesk_ticket_form_validate($form, &$form_state) {
+  module_load_include('inc', 'node', 'node.pages');
+//  dsm($form_state);
+  node_form_validate($form, $form_state);
+}
+
+/**
+ * Submit callback for the inline ticket updater block.
+ */
+function helpdesk_ticket_update_form_submit($form, &$form_state) {
+  $node = $form_state['node'];
+  field_attach_submit('node', $node, $form, $form_state);
+  node_save($node);
+  drupal_set_message(t('Successfully updated'));
+}
+
+/**
+ * Ticket updater block form ajax callback. Just reloads the whole form.
+ */
+function helpdesk_ticket_update_form_ajax_callback($form, &$form_state) {
+  return $form;
+}
+
+/**
+ * Form callback for checking ticket status.
+ */
+function helpdesk_track_ticket_form($form, &$form_state) {
+  if (user_is_logged_in()) {
+    global $user;
+    drupal_goto('user/' . $user->uid . '/tickets');
+  }
+
+  $form['help'] = array(
+    '#type' => 'markup',
+    '#markup' => '<p>' . t('We encourage you to login and see all your tickets under your profile. Alternatively, you can check a single ticket status using the form below.') . '</p>',
+  );
+
+  $form['ticket_number'] = array(
+    '#title' => t('Ticket number'),
+    '#type' => 'textfield',
+    '#required' => TRUE,
+    '#attributes' => array('placeholder' => t('e.g. 1234')),
+  );
+  $form['security_token'] = array(
+    '#title' => t('Tracking code'),
+    '#attributes' => array('placeholder' => t('The tracking code that was sent to your inbox for this ticket')),
+    '#type' => 'textfield',
+    '#required' => TRUE,
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Go'),
+    '#attributes' => array('class' => array('btn', 'btn-primary')),
+  );
+  return $form;
+}
+
+/**
+ * Ticket status checker form validation callback.
+ */
+function helpdesk_track_ticket_form_validate($form, &$form_state) {
+  $node = node_load($form_state['values']['ticket_number']);
+  if ($node && $node->field_security_token[LANGUAGE_NONE][0]['value'] == $form_state['values']['security_token']) {
+    $form_state['node'] = $node;
+    return;
+  }
+  form_set_error('', t("We looked everywhere and couldn't find your ticket! Are you sure the values you entered is correct?"));
+}
+
+/**
+ * Ticket status checker submit callback.
+ */
+function helpdesk_track_ticket_form_submit($form, &$form_state) {
+  $form_state['redirect'] = 'node/' . $form_state['node']->nid . '?uid=' . $form_state['node']->uid . '&token=' . $form_state['values']['security_token'];
+}
+
+/**
+ * Frontpage callback.
+ */
+function helpdesk_frontpage() {
+  $vocab = taxonomy_vocabulary_machine_name_load('solution_category');
+  $tree = [];
+  helpdesk_get_taxonomy_tree($vocab->vid, $tree);
+  return array('#markup' => theme('knowledge_base', ['term_tree' => $tree]));
+}
+
+/**
+ * Adds the solution categories and their nodes to $tree.
+ */
+function helpdesk_get_taxonomy_tree($vid, &$tree) {
+  $terms = taxonomy_get_tree($vid);
+  global $language;
+  foreach($terms as $term) {
+    if ($term->parents[0] == 0) {
+      // top level category
+      $tree[$term->tid] = array(
+        'title' => i18n_taxonomy_term_name($term, $language->language),
+        'children' => [],
+      );
+      $i = 0;
+      foreach (taxonomy_get_children($term->tid, $vid) as $child) {
+        $row = intval($i/2);
+        $content = helpdesk_get_term_nodes($child);
+        if (empty($content)) {
+          continue;
+        }
+        $i++;
+        $tree[$term->tid]['children'][$row][$child->tid] = array(
+          'title' => i18n_taxonomy_term_name($term, $language->language),
+          'content' => $content,
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Returns nodes referencing $child taxonomy term.
+ */
+function helpdesk_get_term_nodes($child) {
+  $q = new EntityFieldQuery();
+  $results = $q->entityCondition('entity_type', 'node')
+    ->entityCondition('bundle', 'article')
+    ->fieldCondition('field_category', 'tid', $child->tid)
+    ->execute();
+  $content = [];
+  if (!empty($results['node'])) {
+    $nodes = node_load_multiple(array_keys($results['node']));
+    foreach ($nodes as $node) {
+      $content[$node->nid] = $node->title;
+    }
+  }
+  return $content;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function helpdesk_theme() {
+  return array(
+    'knowledge_base' => array(
+      'variables' => array(
+        'term_tree' => [],
+      ),
+      'template' => 'helpdesk-knowledge-base',
+      'path' => drupal_get_path('module', 'helpdesk') . '/theme',
+    ),
+  );
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function helpdesk_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'forum_node_form') {
+    dsm($form);
+    $node = $form_state['node'];
+    if ($node->nid && !empty($node->taxonomy_forums[LANGUAGE_NONE][0]['tid'])) {
+      $forum = $node->taxonomy_forums[LANGUAGE_NONE][0]['tid'];
+
+    }
+  }
+}

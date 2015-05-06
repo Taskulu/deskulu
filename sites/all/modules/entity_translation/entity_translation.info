@@ -1,0 +1,30 @@
+name = Entity Translation
+description = Allows entities to be translated into different languages.
+package = Multilingual - Entity Translation
+core = 7.x
+configure = admin/config/regional/entity_translation
+dependencies[] = locale (>7.14)
+
+files[] = includes/translation.handler_factory.inc
+files[] = includes/translation.handler.inc
+files[] = includes/translation.handler.comment.inc
+files[] = includes/translation.handler.node.inc
+files[] = includes/translation.handler.taxonomy_term.inc
+files[] = includes/translation.handler.user.inc
+
+files[] = tests/entity_translation.test
+
+files[] = views/entity_translation_handler_relationship.inc
+files[] = views/entity_translation_handler_field_translate_link.inc
+files[] = views/entity_translation_handler_field_label.inc
+files[] = views/entity_translation_handler_filter_entity_type.inc
+files[] = views/entity_translation_handler_filter_language.inc
+files[] = views/entity_translation_handler_filter_translation_exists.inc
+files[] = views/entity_translation_handler_field_field.inc
+
+; Information added by Drupal.org packaging script on 2015-01-22
+version = "7.x-1.0-beta4"
+core = "7.x"
+project = "entity_translation"
+datestamp = "1421971088"
+

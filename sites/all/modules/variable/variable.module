@@ -1,0 +1,836 @@
+<?php
+/**
+ * @file
+ * Variable API module
+ */
+
+/**
+ * Implementation of hook_boot()
+ *
+ * Though we don't do anything here, we ensure the module is loaded at boot stage
+ * for other modules (like variable_realm) to be able to use the API
+ */
+function variable_boot() {
+}
+
+/**
+* @defgroup variable_api Variable API
+* @{
+* Get meta-information about variables and extended get/set methods
+*
+* Use these functions if you want to take full advantage of Variable API
+*/
+
+/**
+ * Check access to variable
+ *
+ * All variables are restricted for editing so unless we've got some explicit access
+ * variables cannot be edited as default.
+ *
+ * @param $variable
+ *   Variable name or info array
+ */
+function variable_access($variable, $account = NULL) {
+  $account = $account ? $account : $GLOBALS['user'];
+  if (user_access('administer site configuration', $account)) {
+    return TRUE;
+  }
+  elseif ($variable = _variable_variable($variable)) {
+    // Check parent variable if this is a child variable and doesn't have explicit access.
+    if (!isset($variable['access']) && !empty($variable['parent'])) {
+      return variable_access($variable['parent']);
+    }
+    // We need either a variable or group explicit access.
+    $group = isset($variable['group']) ? variable_get_group($variable['group']) : array();
+    if (!isset($group['access']) && !isset($variable['access']) ||
+      isset($group['access']) && !user_access($group['access'], $account) ||
+      isset($variable['access']) && !user_access($variable['access'], $account) )
+    {
+      return FALSE;
+    }
+    else {
+      return TRUE;
+    }
+  }
+  else {
+    // We don't have information for such variable
+    return FALSE;
+  }
+}
+
+
+/**
+ * Get list of variables expanding multiple ones
+ *
+ * @param $names
+ *   List of variable names or full variable arrays
+ *
+ * @return array()
+ *   List variable names with spawned multiple variables
+ */
+function variable_children($names) {
+  $names = is_array($names) ? $names : array($names);
+  $list = array();
+  foreach ($names as $name) {
+    // We need to build the variable, it may be multiple
+    $variable = variable_build($name);
+    if (!empty($variable['children'])) {
+      $list = array_merge($list, array_keys($variable['children']));
+    }
+    else {
+      $list[] = $variable['name'];
+    }
+  }
+  return $list;
+}
+
+/**
+ * Map children variables to parent variables
+ */
+function variable_parent($name) {
+  $map = &drupal_static(__FUNCTION__);
+  if (!isset($map)) {
+    foreach (array_keys(variable_get_info()) as $key) {
+      if ($children = variable_children($key)) {
+        foreach ($children as $child) {
+          $map[$child] = $key;
+        }
+      }
+    }
+  }
+  return isset($map[$name]) ? $map[$name] : NULL;
+}
+
+/**
+ * Format printable value
+ *
+ * @param $variable
+ */
+function variable_format_value($variable, $options = array()) {
+  $variable = variable_build($variable, $options);
+  $variable['value'] = variable_get_value($variable, $options);
+  if (isset($variable['value'])) {
+    return !empty($variable['format callback']) ? variable_callback($variable['format callback'], $variable, $options) : variable_format_unknown($variable, $options);
+  }
+  else {
+    return isset($variable['empty']) ? $variable['empty'] : t('Empty');
+  }
+}
+
+/**
+ * Format unknown variable
+ */
+function variable_format_unknown($variable, $options = array()) {
+  return '<pre>' . check_plain(print_r($variable['value'], TRUE)) . '</pre>';
+}
+
+/**
+ * Get variable child element from multiple variable
+ *
+ * @param $parent
+ *   Parent variable
+ * @param $key
+ *   Key of the children variable (not the full name, just the piece of string that makes the difference)
+ */
+function variable_get_child($parent, $key, $options = array()) {
+  $variable = variable_build($parent, $options);
+  $name = preg_replace('/\[\w+\]/', $key, $variable['name']);
+  $child = $variable['children'][$name];
+  // Replace title and description
+  foreach (array('title', 'description') as $property) {
+    if (isset($variable[$property])) {
+      $child[$property] = $variable[$property];
+    }
+  }
+  return $child;
+}
+
+/**
+ * Get variable information
+ *
+ * Variable information is collected from modules and cached by language
+ *
+ * @param $name
+ *   Optional variable name. Will return all if no name.
+ * @param $options array
+ *   Options for variable values
+ *   - 'langcode', Language code
+ */
+function variable_get_info($name = NULL, $options = array()) {
+  $options = _variable_options($options);
+  if (!$name) {
+    return _variable_info('variable', NULL, $options);
+  }
+  elseif ($info = _variable_info('variable', $name, $options)) {
+    return $info;
+  }
+  elseif ($parent = variable_parent($name)) {
+    $info = variable_build(variable_get_info($parent));
+    $child = $info['children'][$name];
+    // Copy over some values from parent to child to add some context to it.
+    $child['title'] = $info['title'] . ' [' . $child['title'] . ']';
+    if (isset($info['description'])) {
+      $child['description'] = $info['description'];
+    }
+    return $child;
+  }
+  else {
+    return NULL;
+  }
+}
+
+/**
+ * Get variable group information.
+ *
+ * @param $group
+ *   Group name. Will return all if not name.
+ */
+function variable_get_group($group = NULL) {
+  return _variable_info('group', $group);
+}
+
+/**
+ * Get variable type information.
+ *
+ * @param $type
+ *   Type name. Will return all if no name.
+ */
+function variable_get_type($type = NULL) {
+  $info = _variable_info('type', $type);
+  if ($type && !empty($info['type'])) {
+    // Add subtipe properties, recursive
+    $info += variable_get_type($info['type']);
+  }
+  return $info;
+}
+
+/**
+ * Get variable option information.
+ */
+function variable_get_option($type = NULL) {
+  return _variable_info('option', $type);
+}
+
+/**
+ * Get value for simple scalar variable
+ *
+ * @param $variable
+ *   Variable name or array data
+ * @param $options
+ *   Options array, it may have the following elements
+ *   - language => Language object
+ *   - default => Default value if not set
+ *   - realm => Realm object if working inside a variable realm
+ */
+function variable_get_value($variable, $options = array()) {
+  $variable = _variable_variable($variable, $options);
+  if (isset($variable['value'])) {
+    return $variable['value'];
+  }
+  elseif (!empty($variable['value callback'])) {
+    variable_include($variable);
+    return variable_callback($variable['value callback'], $variable, _variable_options($options));
+  }
+  else {
+    if (!empty($options['realm'])) {
+      $value = $options['realm']->variable_get($variable['name'], NULL);
+    }
+    else {
+      $value = variable_get($variable['name'], NULL);
+    }
+    if (isset($value)) {
+      return $value;
+    }
+    else {
+      return isset($options['default']) ? $options['default'] : variable_get_default($variable, $options);
+    }
+  }
+}
+
+/**
+ * Set variable value
+ *
+ * This basically sets the variable but also invokes hook_variable_update
+ */
+function variable_set_value($name, $value, $options = array()) {
+  $old_value = variable_get_value($name, NULL, $options);
+  if (!empty($options['realm'])) {
+    $options['realm']->variable_set($name, $value);
+  }
+  else {
+    variable_set($name, $value);
+  }
+  module_invoke_all('variable_update', $name, $value, $old_value, $options);
+}
+
+/**
+ * Get variable default
+ *
+ * @param $variable
+ *   Variable name or variable information
+ */
+function variable_get_default($variable, $options = array()) {
+  $variable = _variable_variable($variable, $options);
+  if (isset($variable['default callback'])) {
+    variable_include($variable);
+    return call_user_func($variable['default callback'], $variable, _variable_options($options));
+  }
+  elseif (isset($variable['default'])) {
+    return $variable['default'];
+  }
+  else {
+    return NULL;
+  }
+}
+
+
+/**
+ * Delete variable (included children variables)
+ */
+function variable_delete($variable, $options = array()) {
+  $variable = _variable_variable($variable, $options);
+  variable_include();
+  // We need to build the variable, it may be multiple
+  $variable = variable_build($variable, $options);
+  if (!empty($variable['children'])) {
+    $callback = !empty($options['realm']) ? array($options['realm'], 'variable_del') : 'variable_del';
+    array_map($callback, array_keys($variable['children']));
+  }
+  elseif (!empty($options['realm'])) {
+    $options['realm']->variable_del($variable['name']);
+  }
+  else {
+    variable_del($variable['name']);
+  }
+  // Invoke the hook only once even if its multiple
+  module_invoke_all('variable_delete', $variable, $options);
+}
+
+/**
+ * Provide list of variable titles
+ *
+ * @param $names
+ *   List of variable names or full variable arrays
+ * @return array()
+ *   List of name => title
+ */
+function variable_list($names) {
+  $list = array();
+  foreach ($names as $name) {
+    if ($variable = _variable_variable($name)) {
+      $list[$variable['name']] = $variable['title'];
+    }
+  }
+  return $list;
+}
+
+/**
+ * Get human readable name for variable.
+ */
+function variable_name($variable) {
+  $variable = _variable_variable($variable);
+  return $variable['title'];
+}
+
+/**
+ * Get human readable names for variable list.
+ */
+function variable_list_name($list) {
+  $names = array_map('variable_name', $list);
+  return implode(', ', $names);
+}
+
+/**
+* @} End of "defgroup variable_api".
+*/
+
+/**
+ * Build full variable data
+ */
+function variable_build($variable, $options = array()) {
+  variable_include();
+  $variable = _variable_variable($variable, $options);
+  return variable_build_variable($variable, $options);
+}
+
+/**
+ * Clear cache
+ */
+function variable_cache_clear() {
+  cache_clear_all('*', 'cache_variable', TRUE);
+}
+
+/**
+ * Implementation of hook_flush_caches()
+ */
+function variable_flush_caches() {
+  return array('cache_variable');
+}
+
+/**
+ * Implements hook_element_info()
+ */
+function variable_element_info() {
+  // A fieldset with variable list
+  $types['variable_fieldset'] = array(
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,
+    '#value' => NULL,
+    '#process' => array('variable_element_process_fieldset', 'form_process_fieldset', 'ajax_process_form'),
+    '#pre_render' => array('form_pre_render_fieldset'),
+    '#theme_wrappers' => array('fieldset'),
+    '#variable_list' => array(),
+  );
+  return $types;
+}
+
+/**
+ * Process variable fieldset
+ */
+function variable_element_process_fieldset($element) {
+  $element += variable_edit_subform($element['#variable_list']);
+  return $element;
+}
+
+/**
+ * Implements hook_hook_info().
+ */
+function variable_hook_info() {
+  $hooks['variable_info'] = array(
+    'group' => 'variable',
+  );
+  $hooks['variable_group_info'] = array(
+    'group' => 'variable',
+  );
+  $hooks['variable_type_info'] = array(
+    'group' => 'variable',
+  );
+  $hooks['variable_settings_form_alter'] = array(
+    'group' => 'variable',
+  );
+  return $hooks;
+}
+
+/**
+ * Form for variable list
+ *
+ * @param $list
+ *   Variable name or list of variable names.
+ * @param $options
+ *   Optional array with variable options.
+ */
+function variable_edit_form($form, &$form_state, $list, $options = array()) {
+  $list = is_array($list) ? $list : array($list);
+  $form = variable_base_form($form, $form_state, $list, $options);
+  $form += variable_edit_subform($list, $options);
+  return variable_settings_form($form, $options);
+}
+
+/**
+ * Build base form for variable list without fields.
+ *
+ * @param $list
+ *   List of variable names.
+ * @param $options
+ *   Optional array with variable options.
+ */
+function variable_base_form($form, &$form_state, $list, $options = array()) {
+  form_load_include($form_state, 'form.inc', 'variable');
+  // Pass on the values on the form for further reference.
+  $form['#variable_edit_form'] = $list;
+  $form['#variable_options'] = $options;
+  // Run submit callback for variables in form.
+  $form['#submit'][] = 'variable_form_submit_callback';
+  return $form;
+}
+
+/**
+ * Form elements for variable list.
+ *
+ * @param $list
+ *   Variable name or array of variable names..
+ * @param $options
+ *   Regular variable options (language, realm, etc) and optional 'form parents' array.
+ */
+function variable_edit_subform($list, $options = array()) {
+  module_load_include('form.inc', 'variable');
+  $list = is_array($list) ? $list : array($list);
+  $form = array();
+  foreach ($list as $name) {
+    if ($variable = variable_get_info($name, $options)) {
+      $form[$name] = variable_form_element($variable, $options);
+    }
+  }
+  return $form;
+}
+
+/**
+ * Include extended API and files related to specific variable
+ *
+ * @param $variable
+ *   Variable array
+ */
+function variable_include($variable = NULL) {
+  static $included;
+  if (!isset($included)) {
+    // As a first step, include main variable API
+    module_load_include('inc', 'variable');
+    $included = array();
+  }
+  if ($variable && !isset($included[$variable['name']])) {
+    // Include module.variable.inc files related to the variable and the variable type.
+    variable_module_include($variable['module']);
+    variable_type_include($variable['type']);
+    $included[$variable['name']] = TRUE;
+  }
+}
+
+/**
+ * Include variable type files
+ */
+function variable_type_include($type) {
+  variable_include();
+  $info = variable_get_type($type);
+  variable_module_include($info['module']);
+  // Include subtype if any
+  if (!empty($info['type'])) {
+    variable_type_include($info['type']);
+  }
+}
+
+/**
+ * Form for module variables
+ */
+function variable_module_form($form, $form_state, $module) {
+  variable_include();
+  // Pass on the values on the form for further reference.
+  $form['#variable_module_form'] = $module;
+  return variable_edit_form($form, $form_state, array_keys(variable_list_module($module)));
+}
+
+/**
+ * Form for group variables
+ */
+function variable_group_form($form, $form_state, $group) {
+  variable_include();
+  // Pass on the values on the form for further reference.
+  $form['#variable_group_form'] = $group;
+  return variable_edit_form($form, $form_state, array_keys(variable_list_group($group)));
+}
+
+/**
+ * Implements hook_modules_disabled().
+ */
+function variable_modules_disabled($modules) {
+  variable_include();
+  array_map('variable_module_disable', $modules);
+  variable_cache_clear();
+}
+
+/**
+ * Implements hook_modules_enabled().
+ */
+function variable_modules_enabled($modules) {
+  variable_include();
+  array_map('variable_module_enable', $modules);
+  variable_cache_clear();
+}
+
+/**
+ * Implements hook_modules_uninstalled().
+ */
+function variable_modules_uninstalled($modules) {
+  variable_include();
+  array_map('variable_module_uninstall', $modules);
+  variable_cache_clear();
+}
+
+/**
+ * Implements hook_theme()
+ */
+function variable_theme($existing, $type, $theme, $path) {
+  return array(
+    'variable_table_select' => array(
+      'render element' => 'element',
+      'file' => 'variable.form.inc',
+    ),
+  );
+}
+
+/**
+ * Get variable info static data, try the cache, or invoke the hook to collect it.
+ *
+ * @param $type
+ *   Name of the info to collect
+ *   - 'variable', Variable information, hook_variable_info()
+ *   - 'group', Group information, hook_variable_group_info()
+ *   - 'type', Type information, hook_variable_type_info()
+ * @param $options
+ *   Options to retrieve or build the data.
+ *   The only used option to collect the data is 'langcode', though a full array of options may be used for the hooks
+ */
+function &variable_static($type, $options = array()) {
+  static $data;
+  $name = 'variable_' . $type;
+  $langcode = isset($options['langcode']) ? $options['langcode'] : 'default';
+
+  if (!isset($data[$type])) {
+    $data[$type] = &drupal_static($name);
+  }
+  if (!isset($data[$type][$langcode])) {
+    $cache_id = $type . ':' . $langcode;
+    if ($cache = cache_get($cache_id, 'cache_variable')) {
+      $data[$type][$langcode] = $cache->data;
+    }
+    else {
+      variable_include();
+      $data[$type][$langcode] = variable_build_info($type, $options);
+      cache_set($cache_id, $data[$type][$langcode], 'cache_variable');
+    }
+  }
+  // Return a reference inside the big array
+  return $data[$type][$langcode];
+}
+
+
+/**
+ * Get data from a variable module info array.
+ */
+function _variable_info($type, $name = NULL, $options = array()) {
+  $info = &variable_static($type, $options);
+  if ($name) {
+    return isset($info[$name]) ? $info[$name] : array();
+  }
+  else {
+    return $info;
+  }
+}
+
+/**
+ * Get global language object.
+ *
+ * Initialize the language system if needed as we absolutely need a language here
+ */
+function _variable_language() {
+  global $language;
+  if (!isset($language)) {
+    drupal_bootstrap(DRUPAL_BOOTSTRAP_LANGUAGE);
+  }
+  return $language;
+}
+
+/**
+ * Normalize variable options
+ *
+ * Will fill the following values if not present in the parameters
+ * - langcode, Language code
+ * - language, Language object
+ */
+function _variable_options($options = array()) {
+  if (!empty($options['language'])) {
+    $options['langcode'] = $options['language']->language;
+  }
+  elseif (!empty($options['langcode']) && ($list = language_list()) && isset($list[$options['langcode']])) {
+    $options['language'] = $list[$options['langcode']];
+  }
+  else {
+    $language = _variable_language();
+    $options['language'] = $language;
+    $options['langcode'] = $language->language;
+  }
+  return $options;
+}
+
+/**
+ * Normalize variable data
+ *
+ * @param $variable
+ *   Variable name or variable info array
+ * @return array
+ *   Variable information
+ */
+function _variable_variable($variable, $options = array()) {
+  if (is_array($variable)) {
+    return $variable;
+  }
+  elseif ($info = variable_get_info($variable, $options)) {
+    return $info;
+  }
+  else {
+    // We don't have meta-information about this variable.
+    return _variable_unknown($variable);
+  }
+}
+
+/**
+ * Unknown variable
+ */
+function _variable_unknown($name) {
+  return array(
+    'name' => $name,
+    'title' => t('Unknown variable @name', array('@name' => $name)),
+    'type' => 'unknown',
+    'group' => 'default',
+    'module' => 'variable',
+    // Space for public service advertisement :-)
+    'description' => t('We have no meta information for this variable. Please, ask module developers to declare their variables. See <a href="http://drupal.org/project/variable">Variable module</a>.'),
+  );
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Triggers hook_variable_realm_settings_form_alter() giving other modules a chance
+ * to act on settings forms after other contrib modules have added their variables.
+ */
+function variable_form_alter(&$form, &$form_state, $form_id) {
+  if (isset($form['#submit']) && is_array($form['#submit']) && in_array('system_settings_form_submit', $form['#submit'])) {
+    // Replace submit callback and use our own function.
+    $form['#submit'] = str_replace('system_settings_form_submit', 'variable_settings_form_submit', $form['#submit']);
+    $alter = TRUE;
+  }
+  elseif (isset($form['#variable_edit_form'])) {
+    // This is a variable form, just invoke the hook but don't change submit callback.
+    $alter = TRUE;
+  }
+  if (!empty($alter)) {
+    foreach (module_implements('variable_settings_form_alter') as $module) {
+      $function = $module . '_variable_settings_form_alter';
+      $function($form, $form_state, $form_id);
+    }
+  }
+}
+
+/**
+ * Implement validate callback.
+ *
+ * This needs to be in the module as it may be needed by form ajax callbacks.
+ */
+function variable_form_element_validate($element, &$form_state, $form) {
+  $options = isset($form['#variable_options']) ? $form['#variable_options'] : array();
+  $variable = $element['#variable'];
+  variable_include($variable);
+  $variable['value'] = isset($element['#value']) ? $element['#value'] : NULL;
+
+  $error = $variable['validate callback']($variable, $options, $element, $form, $form_state);
+
+  if ($error) {
+    form_error($element, $error);
+  }
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ *
+ * Move variable_form_alter() to the end of the list to give modules manipulating
+ * variables/realms a chance to act on settings forms.
+ *
+ * @param $implementations
+ *   All implementations of the given hook.
+ * @param $hook
+ *   Name of the hook.
+ */
+function variable_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'form_alter') {
+    $group = $implementations['variable'];
+    unset($implementations['variable']);
+    $implementations['variable'] = $group;
+  }
+}
+
+/**
+ * Group variable list by variable info property.
+ *
+ * @param $list
+ *   Array of variable names or full built variables.
+ * @param $field
+ *   Field to group by. If empty, they will be added to the '<none>' array.
+ *
+ * @result
+ *   Array of arrays indexed by that field value.
+ */
+function variable_group_variables($list, $field = 'group') {
+  $groups = array();
+  foreach ($list as $variable) {
+    $build = _variable_variable($variable);
+    $value = isset($build[$field]) ? $build[$field] : '<none>';
+    $groups[$value][$build['name']] = $variable;
+  }
+  return $groups;
+}
+
+/**
+ * Add default buttons to a form and set its prefix.
+ *
+ * @param $form
+ *   An associative array containing the structure of the form.
+ * @param $options
+ *   Aditional options to pass on, like variable realm.
+ *
+ * @return
+ *   The form structure.
+ *
+ * @see system_settings_form_submit()
+ * @ingroup forms
+ */
+function variable_settings_form($form, $options = array()) {
+  $form['#variable_options'] = $options;
+  $form['actions']['#type'] = 'actions';
+  $form['actions']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration'));
+
+  if (!empty($_POST) && form_get_errors()) {
+    drupal_set_message(t('The settings have not been saved because of the errors.'), 'error');
+  }
+  $form['#submit'][] = 'variable_settings_form_submit';
+  // By default, render the form using theme_system_settings_form().
+  if (!isset($form['#theme'])) {
+    $form['#theme'] = 'system_settings_form';
+  }
+  return $form;
+}
+
+/**
+ * Execute the system_settings_form.
+ *
+ * If you want node type configure style handling of your checkboxes,
+ * add an array_filter value to your form.
+ */
+function variable_settings_form_submit($form, &$form_state) {
+  // Exclude unnecessary elements.
+  form_state_values_clean($form_state);
+  // This may contain some realm options.
+  $options = isset($form['#variable_options']) ? $form['#variable_options'] : array();
+
+  // Now run regular settings submission but using variable_set_value()
+  foreach ($form_state['values'] as $key => $value) {
+    if (is_array($value) && isset($form_state['values']['array_filter'])) {
+      $value = array_keys(array_filter($value));
+    }
+    // Using this function will invoke variable_update hook.
+    variable_set_value($key, $value, $options);
+  }
+
+  drupal_set_message(t('The configuration options have been saved.'));
+}
+
+/**
+ * Invoke hook on all modules, adding 'module' property
+ */
+function variable_invoke_all() {
+  $args = func_get_args();
+  $hook = $args[0];
+  unset($args[0]);
+  $return = array();
+  foreach (module_implements($hook) as $module) {
+    $function = $module . '_' . $hook;
+    if (function_exists($function)) {
+      $result = call_user_func_array($function, $args);
+      if (isset($result) && is_array($result)) {
+        foreach ($result as $key => $value) {
+          $return[$key] = $value + array('module' => $module);
+        }
+      }
+    }
+  }
+  return $return;
+}

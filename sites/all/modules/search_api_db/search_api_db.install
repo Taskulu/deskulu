@@ -1,0 +1,358 @@
+<?php
+
+/**
+ * Implements hook_uninstall().
+ */
+function search_api_db_uninstall() {
+  variable_del('search_api_db_autocomplete_max_occurrences');
+}
+
+/**
+ * Implements hook_update_dependencies().
+ */
+function search_api_db_update_dependencies() {
+  // This update should run after primary IDs have been changed to machine names in the framework.
+  $dependencies['search_api_db'][7101] = array(
+    'search_api' => 7102,
+  );
+  return $dependencies;
+}
+
+/**
+ * Re-arranges the $server->options['indexes'] array to be keyed by machine_name
+ * instead of by id.
+ */
+function search_api_db_update_7101() {
+  $query = db_select('search_api_server', 's');
+  $query->addField('s', 'machine_name');
+  $query->condition('class', 'search_api_db_service');
+  $index_names = db_select('search_api_index', 'i')
+    ->fields('i', array('id', 'machine_name'))
+    ->condition('server', clone $query, 'IN')
+    ->execute()
+    ->fetchAllKeyed();
+  $query->addField('s', 'options');
+  $servers = $query->execute();
+  foreach ($servers->fetchAllKeyed() as $name => $options) {
+    $options = unserialize($options);
+    if (empty($options['indexes'])) {
+      continue;
+    }
+    $indexes = array();
+    foreach ($options['indexes'] as $id => $info) {
+      if (isset($index_names[$id])) {
+        $indexes[$index_names[$id]] = $info;
+      }
+    }
+    $options['indexes'] = $indexes;
+    $options = serialize($options);
+    db_update('search_api_server')
+      ->fields(array(
+        'options' => $options,
+      ))
+      ->condition('machine_name', $name)
+      ->execute();
+  }
+}
+
+/**
+ * Solves index problems with umlauts, accented characters, etc. on MySQL servers.
+ */
+function search_api_db_update_7102() {
+  global $databases;
+
+  $server_options = db_select('search_api_server', 's')
+    ->fields('s', array('options'))
+    ->condition('class', 'search_api_db_service')
+    ->execute()
+    ->fetchCol();
+  foreach ($server_options as $options) {
+    $options = unserialize($options);
+    list($key, $target) = explode(':', $options['database'], 2);
+    $db_driver = $databases[$key][$target]['driver'];
+    if ($db_driver === 'mysql' && !empty($options['indexes'])) {
+      $prev_db = db_set_active($key);
+      foreach ($options['indexes'] as $fields) {
+        foreach ($fields as $field) {
+          db_query("ALTER TABLE {{$field['table']}} CONVERT TO CHARACTER SET 'utf8' COLLATE 'utf8_bin'", array(), array('target' => $target));
+        }
+      }
+      db_set_active($prev_db);
+    }
+  }
+}
+
+/**
+ * Changes date fields from int to big int.
+ *
+ * The purpose is give support to historical dates.
+ */
+function search_api_db_update_7103() {
+  $server_options = db_select('search_api_server', 's')
+    ->fields('s', array('options'))
+    ->condition('class', 'search_api_db_service')
+    ->execute()
+    ->fetchCol();
+  $spec = array('type' => 'int', 'size' => 'big');
+  foreach ($server_options as $options) {
+    $options = unserialize($options);
+    if (!empty($options['indexes'])) {
+      list($key, $target) = explode(':', $options['database'], 2);
+      $connection = Database::getConnection($target, $key);
+      foreach ($options['indexes'] as $fields) {
+        foreach ($fields as $field) {
+          if ($field['type'] == 'date') {
+            $column = !empty($field['column']) ? $field['column'] : 'value';
+            $connection->schema()->changeField($field['table'], $column, $column, $spec);
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Use a single full text table per index.
+ */
+function search_api_db_update_7104() {
+  $servers_query = db_select('search_api_server', 's')
+    ->condition('s.class', 'search_api_db_service');
+  $servers_query->innerJoin('search_api_index', 'i', 'i.server = s.machine_name');
+  $servers_query->fields('s', array('options'));
+  $servers_query->fields('i', array('server', 'machine_name', 'item_type'));
+  $servers = $servers_query->execute();
+  $server_options = array();
+  foreach ($servers as $server) {
+    if (!isset($server_options[$server->server])) {
+      $server_options[$server->server] = unserialize($server->options);
+    }
+    $options = $server_options[$server->server];
+    list($key, $target) = explode(':', $options['database'], 2);
+    if (!empty($options['indexes'][$server->machine_name])) {
+      $connection = Database::getConnection($target, $key);
+      // Find name for table.
+      $text_table = _search_api_db_update_find_free_table('search_api_db_' . $server->machine_name . '_text', $connection);
+
+      // Add new table.
+      $table = array(
+        'name' => $text_table,
+        'module' => 'search_api_db',
+        'fields' => array(
+          'item_id' => array(
+            'description' => 'The primary identifier of the item.',
+            'not null' => TRUE,
+          ),
+          'field_name' => array(
+            'description' => "The name of the field in which the token appears, or an MD5 hash of the field.",
+            'not null' => TRUE,
+            'type' => 'varchar',
+            'length' => 255,
+          ),
+          'word' => array(
+            'description' => 'The text of the indexed token.',
+            'type' => 'varchar',
+            'length' => 50,
+            'not null' => TRUE,
+          ),
+          'score' => array(
+            'description' => 'The score associated with this token.',
+            'type' => 'float',
+            'not null' => TRUE,
+          ),
+        ),
+      );
+      // The type of the item_id field depends on the ID field's type.
+      $id_field = search_api_get_datasource_controller($server->item_type)->getIdFieldInfo();
+      switch ($id_field['type']) {
+        case 'text':
+        case 'string':
+        case 'uri':
+          $table['fields']['item_id'] += array('type' => 'varchar', 'length' => 50);
+          break;
+
+        case 'integer':
+        case 'duration':
+        case 'date':
+          // 'datetime' sucks. Therefore, we just store the timestamp.
+          $table['fields']['item_id'] += array('type' => 'int', 'size' => 'big');
+          break;
+
+        case 'decimal':
+          $table['fields']['item_id'] += array('type' => 'float');
+          break;
+
+        case 'boolean':
+          $table['fields']['item_id'] += array('type' => 'int', 'size' => 'tiny');
+          break;
+
+        default:
+          throw new DrupalUpdateException(t('Unknown field type @type. Database search module might be out of sync with Search API.', array('@type' => $id_field['type'])));
+      }
+      $connection->schema()->createTable($text_table, $table);
+      global $databases;
+      if ($databases[$key][$target]['driver'] === 'mysql') {
+        $connection->query("ALTER TABLE {{$text_table}} CONVERT TO CHARACTER SET 'utf8' COLLATE 'utf8_bin'");
+      }
+      // Migrate data.
+      foreach ($options['indexes'][$server->machine_name] as $name => $field) {
+        if (search_api_is_text_type($field['type'])) {
+          $query = $connection->select($field['table'], 't')
+            ->fields('t', array('item_id', 'word', 'score'));
+          $query->addExpression(':field_name', 'field_name', array(':field_name' => strlen($name) > 255 ? md5($name) : $name));
+          $connection->insert($text_table)->from($query)->execute();
+
+          $connection->schema()->dropTable($field['table']);
+          $server_options[$server->server]['indexes'][$server->machine_name][$name]['table'] = $text_table;
+        }
+      }
+
+      // Add keys.
+      $connection->schema()->addIndex($text_table, 'word_field', array(array('word', 20), 'field_name'));
+      $connection->schema()->addPrimaryKey($text_table, array('item_id', 'field_name', 'word'));
+    }
+  }
+  // Save changes to fields.
+  foreach ($server_options as $server => $options) {
+    db_update('search_api_server')
+      ->condition('machine_name', $server)
+      ->fields(array(
+        'options' => serialize($options),
+      ))
+      ->execute();
+  }
+}
+
+/**
+ * Add a (word, field_name) covering index to fulltext tables.
+ */
+function search_api_db_update_7105() {
+  // Get a connection for each service using Search API DB.
+  $servers_query = db_select('search_api_server', 's')
+    ->condition('s.class', 'search_api_db_service');
+  $servers_query->innerJoin('search_api_index', 'i', 'i.server = s.machine_name');
+  $servers_query->fields('s', array('options'));
+  $servers_query->fields('i', array('server', 'machine_name', 'item_type'));
+  $servers = $servers_query->execute();
+  $server_options = array();
+  foreach ($servers as $server) {
+    if (!isset($server_options[$server->server])) {
+      $server_options[$server->server] = unserialize($server->options);
+    }
+    $options = $server_options[$server->server];
+    list($key, $target) = explode(':', $options['database'], 2);
+    if (!empty($options['indexes'][$server->machine_name])) {
+      $connection = Database::getConnection($target, $key);
+      // Find name of text table.
+      foreach ($options['indexes'][$server->machine_name] as $field) {
+        if (search_api_is_text_type($field['type'])) {
+          // If the word index exists, replace it with word_field.
+          if ($connection->schema()->indexExists($field['table'], 'word')) {
+            $connection->schema()->dropIndex($field['table'], 'word');
+            $connection->schema()->addIndex($field['table'], 'word_field', array(array('word', 20), 'field_name'));
+          }
+          break;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Change full text score from float to int.
+ */
+function search_api_db_update_7106() {
+  // Get a connection for each service using Search API DB.
+  $servers_query = db_select('search_api_server', 's')
+    ->condition('s.class', 'search_api_db_service');
+  $servers_query->innerJoin('search_api_index', 'i', 'i.server = s.machine_name');
+  $servers_query->fields('s', array('options'));
+  $servers_query->fields('i', array('server', 'machine_name', 'item_type'));
+  $servers = $servers_query->execute();
+  $server_options = array();
+  foreach ($servers as $server) {
+    if (!isset($server_options[$server->server])) {
+      $server_options[$server->server] = unserialize($server->options);
+    }
+    $options = $server_options[$server->server];
+    list($key, $target) = explode(':', $options['database'], 2);
+    if (!empty($options['indexes'][$server->machine_name])) {
+      $connection = Database::getConnection($target, $key);
+      // Find name of text table.
+      foreach ($options['indexes'][$server->machine_name] as $field) {
+        if (search_api_is_text_type($field['type'])) {
+          $spec = array(
+            'description' => 'The score associated with this token.',
+            'type' => 'int',
+            'unsigned' => TRUE,
+            'not null' => TRUE,
+            'default' => 0,
+          );
+          // Add new field and poplate data.
+          $connection->schema()->addField($field['table'], 'score_int', $spec);
+          $connection->update($field['table'])
+            ->expression('score_int', 'score * 1000')
+            ->execute();
+          // Drop old column and move into place.
+          $connection->schema()->dropField($field['table'], 'score');
+          $connection->schema()->changeField($field['table'], 'score_int', 'score', $spec);
+          break;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Finds a free table name within the given database.
+ *
+ * Slightly modified copy of SearchApiDbService::findFreeTable().
+ *
+ * @param string $table
+ *   The base table name to use, if available, or to modify otherwise.
+ * @param DatabaseConnection $connection
+ *   The database in which the table will be created.
+ *
+ * @return string
+ *   A free table in the given database.
+ */
+function _search_api_db_update_find_free_table($table, DatabaseConnection $connection) {
+  // A DB prefix might further reduce the maximum length of the table name.
+  $maxbytes = 62;
+  if ($db_prefix = $connection->tablePrefix()) {
+    // Use strlen instead of drupal_strlen since we want to measure bytes
+    // instead of characters.
+    $maxbytes -= strlen($db_prefix);
+  }
+
+  $base = $table = _search_api_db_mb_strcut($table, 0, $maxbytes);
+  $i = 0;
+  while ($connection->schema()->tableExists($table)) {
+    $suffix = '_' . ++$i;
+    $table = _search_api_db_mb_strcut($base, 0, $maxbytes - strlen($suffix)) . $suffix;
+  }
+  return $table;
+}
+
+/**
+ * Emulates mb_strcut() if that is not available.
+ *
+ * Though the Mbstring PHP extension is recommended for running Drupal, it is
+ * not required. Therefore, we have to wrap calls to its functions.
+ *
+ * @param string $str
+ *   The string being cut.
+ * @param int $start
+ *   Starting position in bytes.
+ * @param int|null $length
+ *   (optional) Length in bytes. If NULL is passed, extract all bytes to the
+ *   end of the string.
+ *
+ * @return string
+ *   The portion of $str specified by the $start and $length parameters.
+ */
+function _search_api_db_mb_strcut($str, $start, $length = NULL) {
+  if (function_exists('mb_strcut')) {
+    return mb_strcut($str, $start, $length);
+  }
+  return substr($str, $start, $length);
+}

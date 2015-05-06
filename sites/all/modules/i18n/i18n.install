@@ -1,0 +1,66 @@
+<?php
+
+/**
+ * @file
+ * Installation file for Internationalization (i18n) module.
+ */
+
+
+/**
+ * Implements hook_install().
+ */
+function i18n_install() {
+  // Set module weight for it to run after core modules
+  db_query("UPDATE {system} SET weight = 10 WHERE name = 'i18n' AND type = 'module'");
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function i18n_uninstall() {
+  variable_del('i18n_drupal6_update');
+}
+
+/**
+ * Add fields to the schema if they don't exist.
+ *
+ * @param string $table
+ *   The name of the database table.
+ * @param array $fields
+ *   The list of database fields to create.
+ * @param boolean $force_rebuild_schema
+ *   Whether to force drupal_get_schema() to rebuild the schema. This may be
+ *   necessary when additional implementations of hook_schema_alter() have
+ *   become available since the schema was originally built.
+ */
+function i18n_install_create_fields($table, $fields, $force_rebuild_schema = FALSE) {
+  static $schema;
+  $rebuild_schema = !isset($schema) || $force_rebuild_schema;
+  $schema = drupal_get_schema($table, $rebuild_schema);
+  foreach ($fields as $field) {
+    if (!empty($schema['fields'][$field])) {
+      if (!db_field_exists($table, $field)) {
+        db_add_field($table, $field, $schema['fields'][$field]);
+      }
+      else {
+        // The field exists, make sure field definition is up to date.
+        db_change_field($table, $field, $field, $schema['fields'][$field]);
+      }
+    }
+  }
+}
+
+/**
+ * Mark this as updated so all (renamed) modules know they need to update from D6 version when installing
+ */
+function i18n_update_7000() {
+  variable_set('i18n_drupal6_update', TRUE);
+  variable_del('i18n_selection_mode');
+}
+
+/**
+ * Refresh caches and rebuild menus.
+ */
+function i18n_update_7001() {
+  drupal_flush_all_caches();
+}

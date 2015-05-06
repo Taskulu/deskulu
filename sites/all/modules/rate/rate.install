@@ -1,0 +1,159 @@
+<?php
+
+/**
+ * @file
+ * Installation/Uninstallation functions for rate module.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function rate_uninstall() {
+  variable_del('rate_widgets');
+}
+
+/**
+ * Implements hook_schema().
+ */
+function rate_schema() {
+  $schema = array();
+  
+  $schema['rate_bot_agent'] = array(
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'pattern' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('id'),
+  );
+  
+  $schema['rate_bot_ip'] = array(
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'ip' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('id'),
+  );
+  
+  return $schema;
+}
+
+/**
+ * Update css and js attributes in the widget objects.
+ * 
+ * This function has to be called when the information from hook_rate_templates() is changed.
+ */
+function _rate_update_templates_data() {
+  $templates = array();
+  foreach (module_implements('rate_templates') as $module) {
+    foreach (module_invoke($module, 'rate_templates') as $name => $template) {
+      $templates[$name] = $template;
+    }
+  }
+
+  $widgets = variable_get('rate_widgets', array());
+  foreach ($widgets as $widget_id => $widget) {
+    $template = isset($widget->template) ? $widget->template : NULL;
+    if (isset($templates[$template])) {
+      if (isset($widget->css)) {
+        unset($widget->css);
+      }
+      if (isset($templates[$template]->css)) {
+        $widget->css = $templates[$template]->css;
+      }
+      if (isset($widget->js)) {
+        unset($widget->js);
+      }
+      if (isset($templates[$template]->js)) {
+        $widget->js = $templates[$template]->js;
+      }
+    }
+    $widgets[$widget_id] = $widget;
+  }
+  variable_set('rate_widgets', $widgets);
+}
+
+/**
+ * Rename helpful template to yesno.
+ */
+function rate_update_6000() {
+  $widgets = variable_get('rate_widgets', array());
+  foreach ($widgets as $widget_id => $widget) {
+    $template = isset($widget->template) ? $widget->template : NULL;
+    // "helpful" template was renamed to "yesno".
+    if ($template == 'helpful') {
+      $widget->template = 'yesno';
+    }
+    $widgets[$widget_id] = $widget;
+  }
+  variable_set('rate_widgets', $widgets);
+  return array();
+}
+
+/**
+ * Update paths to JS and CSS files.
+ */
+function rate_update_6001() {
+  _rate_update_templates_data();
+  return array();
+}
+
+/**
+ * Create tables for blacklisting bots.
+ */
+function rate_update_7100() {
+  $schema = drupal_get_schema_unprocessed('rate');
+	if (!db_table_exists("rate_bot_agent")) {
+		db_create_table('rate_bot_agent', $schema['rate_bot_agent']);
+	}
+	if (!db_table_exists("rate_bot_ip")) {
+		db_create_table('rate_bot_ip', $schema['rate_bot_ip']);
+	}
+}
+
+/**
+ * Add "delete_vote_on_second_click" property.
+ */
+function rate_update_7101() {
+  $widgets = variable_get('rate_widgets', array());
+  foreach ($widgets as $widget_id => $widget) {
+    if (!isset($widget->delete_vote_on_second_click)) {
+      $widget->delete_vote_on_second_click = 0;
+    }
+    $widgets[$widget_id] = $widget;
+  }
+  variable_set('rate_widgets', $widgets);
+  return array();
+}
+
+/**
+ * Add "use_source_translation" property.
+ */
+function rate_update_7102() {
+  $widgets = variable_get('rate_widgets', array());
+  foreach ($widgets as $widget_id => $widget) {
+    if (!isset($widget->use_source_translation)) {
+      // The default setting for new widgets is TRUE. But we set it here to
+      // FALSE to not change existing behavior.
+      $widget->use_source_translation = FALSE;
+    }
+    $widgets[$widget_id] = $widget;
+  }
+  variable_set('rate_widgets', $widgets);
+  return array();
+}

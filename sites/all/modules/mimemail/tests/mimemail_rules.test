@@ -1,0 +1,220 @@
+<?php
+
+/**
+ * @file
+ * Functionality tests for the Rules integration in the Mime Mail module.
+ *
+ * @ingroup mimemail
+ */
+
+/**
+ * Tests the Rules integration.
+ */
+class MimeMailRulesTestCase extends DrupalWebTestCase {
+  protected $adminUser;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Rules integration',
+      'description' => 'Test the Rules integration.',
+      'group' => 'Mime Mail',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp('mailsystem', 'locale', 'entity', 'entity_token', 'rules', 'mimemail');
+
+    // Create and login user.
+    $this->adminUser = $this->drupalCreateUser(array(
+      'access administration pages',
+      'edit mimemail user settings',
+      'administer languages',
+      'administer rules',
+      'bypass rules access',
+      'access rules debug',
+    ));
+    $this->drupalLogin($this->adminUser);
+
+    // Enable another language too.
+    foreach (array('de', 'it') as $langcode) {
+      $edit = array();
+      $edit['langcode'] = $langcode;
+      $this->drupalPost('admin/config/regional/language/add', $edit, t('Add language'));
+    }
+
+    // Make sure we are not using a stale list.
+    drupal_static_reset('language_list');
+  }
+
+  /**
+   * Create rule with "mimemail" action and fire it.
+   */
+  public function testMailToUserAction() {
+    $settings = array(
+      'key' => 'mail-key-' . $this->randomName(),
+      'to'  => $this->randomName() . '@example.com',
+      'from' => $this->randomName() . '@example.com',
+      'subject' => $this->randomName(),
+      'body' => $this->randomName(60) . '<div></div><br /><hr>',
+      'plaintext' => $this->randomName(30) . '<div></div><br /><hr>',
+    );
+
+    // Set no language for the mail and check if the system default is used.
+    $rule = rule();
+    $rule->action('mimemail', array(
+      'key' => $settings['key'],
+      'to' => $settings['to'],
+      'from_mail' => $settings['from'],
+      'subject' => $settings['subject'],
+      'body' => $settings['body'],
+      'plaintext' => $settings['plaintext'],
+      'language' => '',
+    ))->save();
+
+    $rule->execute();
+    $mails = $this->drupalGetMails(array('key' => $settings['key']));
+    $this->assertEqual(count($mails), 1);
+    $mail = reset($mails);
+    $this->assertEqual($mail['to'], $settings['to']);
+    $this->assertEqual($mail['from'], $settings['from']);
+    $this->assertEqual($mail['subject'], $settings['subject']);
+    $this->assertEqual($mail['params']['context']['body'], $settings['body']);
+    $this->assertEqual($mail['params']['plaintext'], $settings['plaintext']);
+    $this->assertEqual($mail['language']->language, language_default('language'));
+
+    // Explicitly set another language for the mail.
+    $rule_action = $rule->elementMap()->lookup(3);
+    unset($rule_action->settings['language:select']);
+    $rule_action->settings['language'] = 'de';
+    $rule_action->settings['key'] = $settings['key'];
+    $rule->save();
+    $rule->execute();
+    $mails = $this->drupalGetMails(array('key' => $settings['key']));
+    $this->assertEqual(count($mails), 2);
+    $mail = end($mails);
+    $this->assertEqual($mail['language']->language, 'de');
+  }
+
+  /**
+   * Create rule with "mimemail_to_users_of_role" action and fire it.
+   */
+  public function testMailToUsersOfRoleAction() {
+    $languages = language_list();
+
+    // Add more users and roles.
+    $users = array(
+      $this->randomName() . '@example.com' => 'en',
+      $this->randomName() . '@example.com' => 'de',
+      $this->randomName() . '@example.com' => 'it',
+      $this->randomName() . '@example.com' => '',
+      $this->randomName() . '@example.com' => 'invalid',
+    );
+
+    $mimemail_role = $this->drupalCreateRole(array());
+
+    foreach ($users as $email => $language) {
+      $user = $this->drupalCreateUser(array(
+        'access administration pages',
+      ));
+      $user->language = $language;
+      $user->mail = $email;
+      $user->roles[$mimemail_role] = $mimemail_role;
+      user_save($user);
+    }
+
+    $settings = array(
+      'key' => 'mail-key-' . $this->randomName(),
+      'from' => $this->randomName() . '@example.com',
+      'subject' => $this->randomName(),
+      'body' => $this->randomName(60) . '<div></div><br /><hr>',
+      'plaintext' => $this->randomName(30) . '<div></div><br /><hr>',
+    );
+
+    // Rest the collected mails.
+    variable_set('drupal_test_email_collector', array());
+
+    // Send mails to all users of a role and respect the language of the users.
+    // Don't enforce a specific language as fallback use the system default.
+    $rule = rule();
+    $rule->action('mimemail_to_users_of_role', array(
+      'key' => $settings['key'],
+      'from_mail' => $settings['from'],
+      'subject' => $settings['subject'],
+      'body' => $settings['body'],
+      'plaintext' => $settings['plaintext'],
+      'roles' => array($mimemail_role => $mimemail_role),
+      'active' => TRUE,
+      'language_user' => TRUE,
+      'language' => '',
+    ));
+    $rule->save();
+    $rule->execute();
+    $mails = $this->drupalGetMails(array('key' => $settings['key']));
+    $this->assertEqual(count($mails), count($users));
+    $mail = reset($mails);
+    $this->assertEqual($mail['from'], $settings['from']);
+    $this->assertEqual($mail['subject'], $settings['subject']);
+    $this->assertEqual($mail['params']['context']['body'], $settings['body']);
+    $this->assertEqual($mail['params']['plaintext'], $settings['plaintext']);
+    foreach ($mails as $mail) {
+      // If the user hasn't a proper language the system default has to be used
+      // if the rules action doesn't provide a language to use.
+      $user_language = (!empty($languages[$users[$mail['to']]])) ? $users[$mail['to']] : language_default('language');
+      $this->assertEqual($mail['language']->language, $user_language);
+    }
+
+    // Rest the collected mails.
+    variable_set('drupal_test_email_collector', array());
+
+    // Send mails to all users of a role and respect the language of the users.
+    // Enforce German as fallback language if an user doesn't have a language.
+    $rule->elementMap()->lookup(3)->settings['language'] = 'de';
+    $rule->save();
+    $rule->execute();
+    $mails = $this->drupalGetMails(array('key' => $settings['key']));
+    $this->assertEqual(count($mails), count($users));
+    foreach ($mails as $mail) {
+      // If the user hasn't a proper language the language set in the rules
+      // action has to be used.
+      $user_language = (!empty($languages[$users[$mail['to']]])) ? $users[$mail['to']] : 'de';
+      $this->assertEqual($mail['language']->language, $user_language);
+    }
+
+    // Rest the collected mails.
+    variable_set('drupal_test_email_collector', array());
+
+    // Send mails to all users of a role but use the same language for all.
+    $rule->elementMap()->lookup(3)->settings['language_user'] = FALSE;
+    $rule->elementMap()->lookup(3)->settings['language'] = 'it';
+    $rule->save();
+    $rule->execute();
+    $mails = $this->drupalGetMails(array('key' => $settings['key']));
+    foreach ($mails as $mail) {
+      $this->assertEqual($mail['language']->language, 'it');
+    }
+
+    // Rest the collected mails.
+    variable_set('drupal_test_email_collector', array());
+
+    // Send mails to all users of a role except deactivated users.
+    // Disable one of the users.
+    reset($users);
+    $user = user_load_by_mail(key($users));
+    $user->status = 0;
+    user_save($user);
+    $rule->execute();
+    $mails = $this->drupalGetMails(array('key' => $settings['key']));
+    $this->assertEqual(count($mails), count($users) - 1);
+
+    // Rest the collected mails.
+    variable_set('drupal_test_email_collector', array());
+
+    // Send mails to all users, also to deactivated ones.
+    $rule->elementMap()->lookup(3)->settings['active'] = FALSE;
+    $rule->save();
+    $rule->execute();
+    $mails = $this->drupalGetMails(array('key' => $settings['key']));
+    // One user is disabled but it should be ignored.
+    $this->assertEqual(count($mails), count($users));
+  }
+}

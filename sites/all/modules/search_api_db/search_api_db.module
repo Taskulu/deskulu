@@ -1,0 +1,16 @@
+<?php
+
+/**
+ * Implements hook_search_api_service_info().
+ */
+function search_api_db_search_api_service_info() {
+  $services['search_api_db_service'] = array(
+    'name' => t('Database service'),
+    'description' => t('<p>Index items using multiple database tables, for simple searches.</p>' .
+        '<ul>' . '<li>All field types are supported and indexed in a special way, with URI/String and Integer/Duration being equivalent.</li>' .
+        '<li>The "direct" parse mode results in the keys being normally split around white-space, only preprocessing might differ.</li>' .
+        '<li>Currently, phrase queries are not supported.</li>' . '</ul>'),
+    'class' => 'SearchApiDbService',
+  );
+  return $services;
+}

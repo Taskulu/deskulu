@@ -1,0 +1,15 @@
+package = Mail
+name = Mail System
+description = Provides a user interface for per-module and site-wide mail_system selection.
+php = 5.0
+core = 7.x
+configure = admin/config/system/mailsystem
+dependencies[] = filter
+files[] = MailsystemDelegateMailSystem.inc
+
+; Information added by Drupal.org packaging script on 2014-10-01
+version = "7.x-3.0-alpha1+8-dev"
+core = "7.x"
+project = "mailsystem"
+datestamp = "1412135116"
+

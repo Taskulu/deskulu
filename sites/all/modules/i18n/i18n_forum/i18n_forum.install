@@ -1,0 +1,19 @@
+<?php
+/**
+ * @file
+ * Multilingual forum install file.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function i18n_forum_install() {
+  // Set module weight for it to run after core modules and i18n_taxonomy.
+  db_query("UPDATE {system} SET weight = 10 WHERE name = 'i18n_forum' AND type = 'module'");
+  // Make forum vocabulary translatable.
+  if (($vid = variable_get('forum_nav_vocabulary', 0)) && !i18n_taxonomy_vocabulary_mode($vid)) {
+    $vocabulary = taxonomy_vocabulary_load($vid);
+    $vocabulary->i18n_mode = I18N_MODE_LOCALIZE;
+    taxonomy_vocabulary_save($vocabulary);
+  }
+}

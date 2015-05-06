@@ -1,0 +1,14 @@
+name = Rate Expiration
+description = Add an expiration time to rate widgets
+core = 7.x
+package = Voting
+dependencies[] = rate
+dependencies[] = date
+files[] = rate_expiration.install
+files[] = rate_expiration.module
+; Information added by Drupal.org packaging script on 2014-02-10
+version = "7.x-1.7"
+core = "7.x"
+project = "rate"
+datestamp = "1392071605"
+

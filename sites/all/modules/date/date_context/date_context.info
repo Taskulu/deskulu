@@ -1,0 +1,16 @@
+name = Date Context
+description = Adds an option to the Context module to set a context condition based on the value of a date field.
+package = Date/Time
+core = 7.x
+
+dependencies[] = date
+dependencies[] = context
+
+files[] = date_context.module
+files[] = plugins/date_context_date_condition.inc
+; Information added by Drupal.org packaging script on 2014-07-29
+version = "7.x-2.8"
+core = "7.x"
+project = "date"
+datestamp = "1406653438"
+

@@ -1,0 +1,64 @@
+
+#admin-menu {
+  text-align: right;
+}
+#admin-menu .dropdown .admin-menu-users a {
+  background-position: 10% center;
+  padding-left: 22px;
+  padding-right: 0;
+}
+#admin-menu .dropdown .admin-menu-action,
+#admin-menu .dropdown .admin-menu-search {
+  float: left;
+}
+#admin-menu .dropdown .admin-menu-action a {
+  border-left: none;
+  border-right: 1px solid #323232;
+}
+
+/* All lists */
+#admin-menu a {
+  text-align: right;
+}
+#admin-menu .dropdown a {
+  border-left: 1px solid #323232;
+  border-right: 0;
+}
+#admin-menu .dropdown .admin-menu-tab a {
+  border-left: 1px solid #52565E;
+  border-right: 0;
+}
+#admin-menu .dropdown li li a {
+  border-left: 0;
+}
+
+/* All list items */
+#admin-menu .dropdown li {
+  float: right;
+}
+#admin-menu .dropdown li li {
+}
+
+/* Second-level lists */
+#admin-menu .dropdown li ul {
+  left: auto;
+  right: -999em;
+}
+
+/* Third-and-above-level lists */
+#admin-menu .dropdown li li.expandable ul {
+  margin-left: 0;
+  margin-right: 160px;
+}
+
+/* Lists nested under hovered list items */
+#admin-menu .dropdown li.admin-menu-action:hover ul {
+  left: 0 !important;
+  right: auto;
+}
+
+/* Second-and-more-level hovering */
+#admin-menu .dropdown li li.expandable {
+  background-image: url(images/arrow-rtl.png);
+  background-position: 5px 6px;
+}

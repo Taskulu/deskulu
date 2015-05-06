@@ -1,0 +1,28 @@
+name = @font-your-face UI
+description = Administrative interface for managing fonts.
+package = @font-your-face
+dependencies[] = fontyourface
+dependencies[] = views
+configure = admin/config/user-interface/fontyourface
+core = 7.x
+
+files[] = views/fontyourface.views_default.inc
+files[] = views/views_handler_field_fontyourface_font.inc
+files[] = views/views_handler_field_fontyourface_foundry.inc
+files[] = views/views_handler_field_fontyourface_license.inc
+files[] = views/views_handler_field_fontyourface_provider.inc
+files[] = views/views_handler_field_fontyourface_tag_font_tid.inc
+files[] = views/views_handler_filter_tag_font_tid.inc
+files[] = views/views_handler_relationship_fontyourface_tag.inc
+files[] = views/views_handler_field_fontyourface_preview.inc
+files[] = views/views_handler_field_fontyourface_enable_disable.inc
+files[] = views/views_handler_field_fontyourface_enabled_yes_no.inc
+files[] = views/views_handler_filter_fontyourface_provider.inc
+files[] = views/views_handler_filter_fontyourface_foundry.inc
+
+; Information added by drupal.org packaging script on 2013-04-29
+version = "7.x-2.8"
+core = "7.x"
+project = "fontyourface"
+datestamp = "1367195415"
+

@@ -1,0 +1,7 @@
+<?php
+
+function term_depth_ctools_plugin_directory($owner, $plugin) {
+  if ($owner == 'ctools' && $plugin == 'access') {
+    return 'plugins/' . $plugin;
+  }
+}

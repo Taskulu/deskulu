@@ -1,0 +1,107 @@
+<?php
+/**
+ * @file
+ * Variable API module - Admin UI
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function variable_admin_menu() {
+  $items['admin/config/system/variable'] = array(
+    'title' => 'Variables',
+    'description' => 'Variable settings for mixed modules.',
+    'page callback' => 'variable_admin_page_group',
+    'file' => 'variable_admin.inc',
+    'access arguments' => array('administer site configuration'),
+  );
+  $items['admin/config/system/variable/group'] = array(
+    'title' => 'Groups',
+    'description' => 'Variables per group.',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items['admin/config/system/variable/module'] = array(
+    'title' => 'Modules',
+    'description' => 'Variables per module.',
+    'page callback' => 'variable_admin_page_module',
+    'file' => 'variable_admin.inc',
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['admin/config/system/variable/edit/%'] = array(
+    'title' => 'Edit variable',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('variable_edit_form', 5),
+    'access callback' => 'variable_access',
+    'access arguments' => array(5),
+  );
+  if (module_exists('variable_realm')) {
+    $items['admin/config/system/variable/realm'] = array(
+      'title' => 'Realms',
+      'description' => 'Configure realms.',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('variable_admin_realm_overview'),
+      'file' => 'variable_admin.inc',
+      'access arguments' => array('administer site configuration'),
+      'type' => MENU_LOCAL_TASK,
+    );
+    $items['admin/config/system/variable/realm/overview'] = array(
+      'title' => 'Overview',
+      'description' => 'Configure realms.',
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+      'weight' => -10
+    );
+    $weight = 0;
+    foreach (variable_realm_list_all() as $realm => $controller) {
+      $items['admin/config/system/variable/realm/' . $realm] = array(
+        'title callback' => 'variable_admin_realm_title',
+        'title arguments' => array($realm),
+        'description' => 'Configure realm variables.',
+        'page callback' => 'variable_admin_realm_info',
+        'page arguments' => array($realm),
+        'access callback' => 'variable_admin_realm_access',
+        'access arguments' => array($realm),
+        'file' => 'variable_admin.inc',
+        'type' => MENU_LOCAL_TASK,
+        'weight' => $weight++,
+      );
+    }
+    $items['admin/config/system/variable/realm/%/edit'] = array(
+      'title' => 'Edit',
+      'description' => 'Edit realm variables.',
+      'page callback' => 'variable_admin_realm_edit',
+      'page arguments' => array(5),
+      'access callback' => 'variable_admin_realm_access',
+      'access arguments' => array(5, 'select'),
+      'file' => 'variable_admin.inc',
+    );
+    $items['admin/config/system/variable/realm/%/configure'] = array(
+      'title' => 'Configure',
+      'description' => 'Configure realm variables.',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('variable_realm_select_variables_form', 5),
+      'access callback' => 'variable_admin_realm_access',
+      'access arguments' => array(5, 'select'),
+      'file' => 'variable_realm.form.inc',
+      'file path' => drupal_get_path('module', 'variable_realm'),
+    );
+  }
+  return $items;
+}
+
+/**
+ * Check permission for administering realm
+ */
+function variable_admin_realm_access($realm_name, $property = 'title') {
+  if ($info = variable_realm_info($realm_name)) {
+    return !empty($info[$property]) && user_access('administer site configuration');
+  }
+}
+
+/**
+ * Retrieve title of given realm.
+ */
+function variable_admin_realm_title($realm) {
+  $info = variable_realm_info($realm);
+  return isset($info['title']) ? $info['title'] : $realm;
+}

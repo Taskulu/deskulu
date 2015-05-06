@@ -1,0 +1,65 @@
+.rate-widget-slider ul {
+  list-style: none;
+  overflow: hidden;
+}
+.rate-widget-slider .item-list ul li {
+  background-image: none;
+  padding: 0;
+  margin: 0 5px 0 0;
+}
+.rate-widget-slider ul li {
+  float: left;
+  list-style: none;
+}
+.rate-widget-slider ul li a {
+  display: block;
+  float: left;
+}
+
+.rate-widget-slider .rate-slider-value {
+  height: .8em;
+  background-color: #ccc;
+}
+
+.rate-widget-slider.rate-user .rate-slider-value {
+  background-color: #f99;
+}
+
+.rate-widget-slider .ui-slider {
+  /*resets*/margin: 0; padding: 0; border: 0; outline: 0; line-height: 1.3; text-decoration: none; font-size: 100%; list-style: none;
+  font-family: Verdana, Arial, sans-serif;
+  background: #eee;
+  border: 1px solid #ccc;
+  height: .8em;
+  width: 200px;
+  position: relative;
+}
+.rate-widget-slider .ui-slider-handle {
+  /*resets*/margin: 0; padding: 0; border: 0; outline: 0; line-height: 1.3; text-decoration: none; font-size: 100%; list-style: none;
+  position: absolute;
+  z-index: 2;
+  top: -3px;
+  width: 1.2em;
+  height: 1.2em;
+  background-color: #ccc;
+  border: 1px solid #999;
+}
+.rate-widget-slider .ui-slider-handle:hover {
+  background-color: #999;
+  border: 1px solid #999;
+}
+.rate-widget-slider .ui-slider-handle-active, .ui-slider-handle-active:hover {
+  background-color: #999;
+  border: 1px solid #999;
+}
+.rate-widget-slider .ui-slider-range {
+  /*resets*/margin: 0; padding: 0; border: 0; outline: 0; line-height: 1.3; text-decoration: none; font-size: 100%; list-style: none;
+  height: .8em;
+  background-color: #ccc;
+  position: absolute;
+  border: 1px solid #999;
+  border-left: 0;
+  border-right: 0;
+  top: -1px;
+  z-index: 1;
+}

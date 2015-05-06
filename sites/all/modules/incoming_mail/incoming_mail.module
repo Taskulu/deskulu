@@ -1,0 +1,158 @@
+<?php
+
+define('TICKET_OPEN_STATUS_TID', 9);
+
+/**
+ * Implements hook_menu().
+ */
+function incoming_mail_menu() {
+  $items = array();
+  $items['tickets/incoming/new'] = array(
+    'page callback' => 'incoming_mail_create_ticket',
+    'type' => MENU_CALLBACK,
+    'access callback' => 1,
+  );
+  $items['tickets/incoming/reply'] = array(
+    'page callback' => 'incoming_mail_create_ticket',
+    'type' => MENU_CALLBACK,
+    'access callback' => 1,
+  );
+  return $items;
+}
+
+/**
+ * Page callback for creating tickets using email.
+ */
+function incoming_mail_create_ticket() {
+  $input = file_get_contents('php://input');
+  $dec_url = urldecode($input);
+  $jsonready = substr($dec_url, 16);
+  $data = json_decode($jsonready,true);
+
+  watchdog('incoming_mail', '<pre>' . $input . '</pre>');
+  watchdog('incoming_mail', '<pre>' . var_export($_GET, 1) . '</pre>');
+  foreach ($data as $datum) {
+    $files = array();
+    $msg = $datum[0]['msg'];
+    if ($msg['email'] == 'support@taskulu.com') {
+      $event = 'incoming_mail_ticket_new';
+    }
+    elseif (preg_match('/ticket-(\d+)-(.+)@mail\.taskulu\.com/', $msg['email'], $matches)) {
+      $ticket = node_load($matches[1]);
+      if ($ticket) {
+        if ($ticket->field_security_token[LANGUAGE_NONE][0]['value'] == $matches[2]) {
+          $event = 'incoming_mail_ticket_reply';
+        }
+        else {
+          watchdog('incoming_mail', 'Reply received for !ticket, but security token does not match.<br><pre>!data</pre>', array('data' => var_export($datum, 1), '!ticket' => l('ticket #' . $matches[1], 'node/' . $matches[1])), WATCHDOG_ERROR);
+          continue;
+        }
+      }
+      else {
+        watchdog('incoming_mail', 'Reply received for a ticket that does not exist.<br><pre>!data</pre>', array('!data' => var_export($datum, 1)), WATCHDOG_ERROR);
+        continue;
+      }
+    }
+    else {
+      watchdog('incoming_mail', 'Email received for unrecognized inbox.<br><pre>!data</pre>', array('!data' => $datum), WATCHDOG_ERROR);
+      continue;
+    }
+
+    $body = incoming_mail_strip_quotes($msg['html']);
+    if (!empty($msg['attachments'])) {
+      foreach ($msg['attachments'] as $file) {
+        $file = incoming_mail_create_file($file);
+        if ($file !== FALSE) {
+          $files[] = $file;
+        }
+      }
+    }
+    if (!empty($msg['images'])) {
+      foreach($msg['images'] as $image) {
+        $image = incoming_mail_create_file($image);
+        if ($image !== FALSE) {
+          $body = str_replace('src="cid:' . $image['name'], 'src="' . file_create_url($image->uri), $body);
+          $files[] = $image;
+        }
+      }
+    }
+    if ($event == 'incoming_mail_ticket_new') {
+      rules_invoke_event('incoming_mail_new_ticket', check_plain($msg['subject']), $body, $files, $msg['from_name'], $msg['from_email']);
+    }
+    elseif ($event == 'incoming_mail_ticket_reply') {
+      rules_invoke_event('incoming_mail_ticket_reply', $ticket, $body, $files, $msg['from_name'], $msg['from_email']);
+    }
+  }
+  return 'OK';
+}
+
+/**
+ * Create file from file info array sent by Mandrill.
+ */
+function incoming_mail_create_file($file_info) {
+  if ($file_info['base64']) {
+    $file_info['content'] = base64_decode($file_info['content']);
+  }
+  return file_save_data($file_info['content'], 'private://tickets/' . $file_info['name']);
+}
+
+/**
+ * Implements hook_file_download().
+ */
+function incoming_mail_file_download($uri) {
+  // make sure only agents and ticket owner can access the file.
+  // https://api.drupal.org/api/drupal/modules%21system%21system.api.php/function/hook_file_download/7
+}
+
+/**
+ * Implements hook_node_presave().
+ */
+function incoming_mail_node_presave($node) {
+  if (empty($node->field_security_token[LANGUAGE_NONE][0]['value'])) {
+    $node->field_security_token[LANGUAGE_NONE][0]['value'] = str_random();
+  }
+  if (empty($node->field_ticket_status[LANGUAGE_NONE][0]['tid'])) {
+    $node->field_ticket_status[LANGUAGE_NONE][0]['tid'] = TICKET_OPEN_STATUS_TID;
+  }
+}
+
+/**
+ * Get rid of email reply quotes.
+ */
+function incoming_mail_strip_quotes($html) {
+  $headers = array(
+    '/(On\s.+wrote:)/ms', // On DATE, NAME <EMAIL> wrote:
+    '/(Le\s.+écrit :)/ms', // Le DATE, NAME <EMAIL> a écrit :
+    '/(El\s.+escribió:)/ms', // El DATE, NAME <EMAIL> escribió:
+    '/(W dniu\s.+(pisze|napisał):)/ms', // W dniu DATE, NAME <EMAIL> pisze|napisał:
+    '/(20[0-9]{2}\-(?:0?[1-9]|1[012])\-(?:0?[0-9]|[1-2][0-9]|3[01]|[1-9])\s[0-2]?[0-9]:\d{2}\s.+:)/ms', // 20YY-MM-DD HH:II GMT+01:00 NAME <EMAIL>:
+  );
+  $lines = explode("\n", $html);
+  $accepted = [];
+  foreach ($lines as $line) {
+    $rej = false;
+    foreach ($headers as $header) {
+      if (preg_match($header, $line)) {
+        $rej = true;
+        break;
+      }
+    }
+    if (!$rej) {
+      $accepted[] = $line;
+    }
+  }
+  return implode("\n", $accepted);
+}
+
+/**
+ * Returns a random string.
+ */
+function str_random($length = 32) {
+  $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  $charactersLength = strlen($characters);
+  $randomString = '';
+  for ($i = 0; $i < $length; $i++) {
+    $randomString .= $characters[rand(0, $charactersLength - 1)];
+  }
+  return $randomString;
+}

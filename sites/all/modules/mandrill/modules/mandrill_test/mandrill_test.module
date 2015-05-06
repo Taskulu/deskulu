@@ -1,0 +1,28 @@
+<?php
+
+/**
+ * @file
+ * Used to test Mandrill API hooks.
+ */
+
+/**
+ * Implements hook_mandrill_mail_alter().
+ */
+function mandrill_test_mandrill_mail_alter(&$mandrill_params, $message) {
+  $mandrill_params['message']['subject'] = 'Altered Test Subject';
+  $mandrill_params['message']['html'] = '<p>Altered mail content</p>';
+}
+
+/**
+ * Implements hook_mandrill_valid_attachment_types_alter().
+ */
+function mandrill_test_mandrill_valid_attachment_types_alter(&$types) {
+  $types[] = 'application/pdf';
+}
+
+/**
+ * Implements hook_mandrill_mailsend_result().
+ */
+function mandrill_test_mandrill_mailsend_result($result) {
+  variable_set('mandrill_test_mailsend_result', $result);
+}

@@ -1,0 +1,586 @@
+<?php
+
+/**
+ * @file
+ * Enables Drupal to send email directly through Mandrill.
+ */
+
+
+define('MANDRILL_QUEUE', 'mandrill_queue');
+define('MANDRILL_EMAIL_REGEX', '/^\s*(.+?)\s*<\s*([^>]+)\s*>$/');
+
+/**
+ * Implements hook_help().
+ */
+function mandrill_help($path, $arg) {
+  $output = '';
+  switch ($path) {
+    case 'admin/help#mandrill':
+      $output = t('Allow for site emails to be sent through Mandrill.');
+  }
+  return $output;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function mandrill_menu() {
+  $items = array();
+  $items['admin/config/services/mandrill'] = array(
+    'title' => 'Mandrill',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('mandrill_admin_settings'),
+    'access arguments' => array('administer mandrill'),
+    'description' => 'Send emails through the Mandrill transactional email service.',
+    'file' => 'mandrill.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['admin/config/services/mandrill/settings'] = array(
+    'title' => 'Settings',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => 0,
+  );
+  $items['admin/config/services/mandrill/test'] = array(
+    'title' => 'Send test email',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('mandrill_test_form'),
+    'access callback' => 'mandrill_test_access',
+    'description' => 'Send a test email using the Mandrill API.',
+    'file' => 'mandrill.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 1,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_libraries_info().
+ */
+function mandrill_libraries_info() {
+  $libraries['mandrill'] = array(
+    'name' => 'Mandrill API',
+    'vendor url' => 'https://mandrillapp.com/api/docs',
+    'download url' => 'https://bitbucket.org/mailchimp/mandrill-api-php/get/1.0.52.tar.gz',
+    'path' => 'src',
+    'version arguments' => array(
+      'file' => 'composer.json',
+      // Version 1.0.52
+      'pattern' => '/\"version": \"((\d+)\.(\d+)\.(\d+))\",/',
+    ),
+    'files' => array(
+      'php' => array('Mandrill.php'),
+    ),
+  );
+
+  return $libraries;
+}
+
+/**
+ * Access callback for sending test email.
+ *
+ * @return bool
+ *   True if current user has access to send test messages
+ */
+function mandrill_test_access() {
+  $a = user_access('administer mandrill');
+  $b = variable_get('mandrill_api_key');
+  return $a & !empty($b);
+}
+
+/**
+ * Implements hook_permission().
+ */
+function mandrill_permission() {
+  return array(
+    'administer mandrill' => array(
+      'title' => t('Administer Mandrill'),
+      'description' => t('Perform administration tasks for the Mandrill email service.'),
+      "restrict access" => TRUE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_cron_queue_info().
+ */
+function mandrill_cron_queue_info() {
+  $queues = array();
+  $queues[MANDRILL_QUEUE] = array(
+    'worker callback' => 'mandrill_queue_worker_mailsend',
+    'time' => variable_get('mandrill_queue_worker_timeout', 15),
+  );
+  return $queues;
+}
+
+/**
+ * Sends a queued email.
+ * @see mandrill_cron_queue_info()
+ */
+function mandrill_queue_worker_mailsend($data) {
+  // Send the message stored in the queue item.
+  mandrill_mailsend(
+    $data['message'],
+    $data['function'],
+    $data['args']
+  );
+}
+
+/**
+ * Implements hook_mail().
+ */
+function mandrill_mail($key, &$message, $params) {
+  if ($key == 'test') {
+    $message['subject'] = $params['subject'];
+    $message['body'] = $params['body'];
+    if ($params['include_attachment']) {
+      $message['attachments'][] = drupal_realpath('misc/druplicon.png');
+      $message['body'] .= '  ' . t('The Drupal icon is included as an attachment to test the attachment functionality.');
+    }
+  }
+}
+
+/**
+ * Abstracts sending of messages, allowing queueing option.
+ * 
+ * @param array $message
+ *   A message array formatted for Mandrill's sending API, plus 2 additional
+ *   indexes for the send_function and an array of $args, if needed by the send
+ *   function.
+ * @param string $function
+ *   The name of the function to use to send the message.
+ * @param array $args
+ *   Array of arguments to pass to the function provided by $function.
+ *
+ * @return bool
+ *   TRUE if no exception thrown
+ */
+function mandrill_mailsend($message, $function, $args = array()) {
+  try {
+    if (!function_exists($function)) {
+      watchdog('mandrill', 'Error sending email from %from to %to. Function %function not found.',
+        array(
+          '%from' => $message['from_email'],
+          '%to' => $message['to'],
+          '%function' => $function,
+        ),
+        WATCHDOG_ERROR
+      );
+      return FALSE;
+    }
+
+    $params = array($message) + $args;
+    $response = call_user_func_array($function, $params);
+
+    if (!isset($response['status'])) {
+      foreach ($response as $result) {
+        // Allow other modules to react based on a send result.
+        module_invoke_all('mandrill_mailsend_result', $result);
+
+        switch ($result['status']) {
+          case "error":
+          case "invalid":
+          case "rejected":
+            if (!variable_get('mandrill_test_mode')) {
+              $to = isset($result['email']) ? $result['email'] : 'recipient';
+              $status = isset($result['status']) ? $result['status'] : 'message';
+              $error_message = isset($result['message']) ? $result['message'] : 'no message';
+              watchdog('mandrill', 'Failed sending email from %from to %to. @status: @message',
+                array(
+                  '%from' => $message['from_email'],
+                  '%to' => $to,
+                  '@status' => $status,
+                  '@message' => $error_message,
+                ),
+                WATCHDOG_ERROR
+              );
+            }
+            return FALSE;
+
+          case "queued":
+            watchdog('mandrill', 'Email from %from to %to queued by Mandrill App.',
+              array(
+                '%from' => $message['from_email'],
+                '%to' => $result['email'],
+              ),
+              WATCHDOG_INFO
+            );
+            break;
+
+        }
+      }
+    }
+    else {
+      watchdog('mandrill', 'Mail send failed with status %status: code %code, %name, %message',
+        array(
+          '%status' => $response['status'],
+          '%code' => $response['code'],
+          '%name' => $response['name'],
+          '%message' => $response['message'],
+        ),
+        WATCHDOG_WARNING
+      );
+      return FALSE;
+    }
+    return TRUE;
+  }
+  catch (Mandrill_Error $e) {
+    watchdog('mandrill', 'Error sending email from %from to %to. @code: @message',
+      array(
+        '%from' => $message['from_email'],
+        '%to' => $message['to'],
+        '@code' => $e->getCode(),
+        '@message' => $e->getMessage(),
+      ),
+      WATCHDOG_ERROR
+    );
+
+    return FALSE;
+  }
+}
+
+/**
+ * The actual function that calls the API send message.
+ * 
+ * This is the default function used by mandrill_mailsend().
+ * 
+ * @param array $message
+ *   Associative array containing message data.
+ * 
+ * @return array
+ *   Results of sending the message.
+ *
+ * @throws Mandrill_Error
+ */
+function mandrill_sender_plain($message) {
+  if ($mailer = mandrill_get_api_object()) {
+    return $mailer->messages->send($message);
+  }
+  else {
+    throw new Mandrill_Error('Missing API key.');
+  }
+}
+
+/**
+ * Return Mandrill API object for communication with the mandrill server.
+ *
+ * @param bool $reset
+ *   Pass in TRUE to reset the statically cached object.
+ *
+ * @return Mandrill|bool
+ *   Mandrill Object upon success
+ *   FALSE if variable_get('mandrill_api_key') is unset
+ */
+function mandrill_get_api_object($reset = FALSE) {
+  $api =& drupal_static(__FUNCTION__, NULL);
+
+  if ($api === NULL || $reset === TRUE) {
+
+    $library = libraries_load('mandrill');
+    if (!$library['installed']) {
+      $msg = t('Failed to load Mandrill PHP library. Please refer to the installation requirements.');
+      watchdog('mandrill', $msg, NULL, WATCHDOG_ERROR);
+      drupal_set_message($msg, 'error');
+      return NULL;
+    }
+
+    $api_key = variable_get('mandrill_api_key', '');
+    $api_timeout = variable_get('mandrill_api_timeout', 60);
+    if (empty($api_key)) {
+      $msg = t('Failed to load Mandrill API Key. Please check your Mandrill settings.');
+      drupal_set_message($msg, 'error');
+      return FALSE;
+    }
+
+    // We allow the class name to be overridden, following the example of core's
+    // mailsystem, in order to use alternate Mandrill classes. The bundled tests
+    // use this approach to extend the Mandrill class with a test server.
+    $classname = variable_get('mandrill_api_classname', 'DrupalMandrill');
+    $api = new $classname($api_key, $api_timeout);
+  }
+
+  return $api;
+}
+
+/**
+ * Display the names of the modules that are using Mailsystem.
+ *
+ * This is consistent with with Mailsystem's display. In the future, if
+ * Mailsystem were to provide an API for their labeling, that should be used.
+ *
+ * @return array
+ *   Array of all module names indexing to their "display" names,
+ *   and some special items for non-module values like null, default-system,
+ *   and some clarification talked onto the end of the Mandrill module's name.
+ */
+function mandrill_get_module_key_names() {
+  $name_array = array(
+    '' => '--none--',
+    'default-system' => "Site-wide default",
+  );
+  $descriptions = array();
+  foreach (system_rebuild_module_data() as $item) {
+    if ($item->status) {
+      $descriptions[$item->name] = (empty($item->info['package']) ? '' : $item->info['package']) . ' » ' . t('!module module', array('!module' => $item->info['name']));
+    }
+  }
+  asort($descriptions);
+  $mailsystem_settings = mailsystem_get();
+  unset($mailsystem_settings['default-system']);
+  foreach ($mailsystem_settings as $id => $class) {
+    // Separate $id into $module and $key.
+    $module = $id;
+    while ($module && empty($descriptions[$module])) {
+      // Remove a key from the end.
+      $module = implode('_', explode('_', $module, -1));
+    }
+    // If an array key of the $mail_system variable is neither "default-system"
+    // nor begins with a module name, then it should be unset.
+    if (empty($module)) {
+      // This shouldn't happen.
+    }
+    // Set $title to the human-readable module name.
+    $title = preg_replace('/^.* » /', '', $descriptions[$module]);
+    if ($key = substr($id, strlen($module) + 1)) {
+      $title .= " ($key key)";
+    }
+    $name_array[$id] = $title;
+  }
+
+  return $name_array;
+}
+
+/**
+ * Get a list of mandrill template objects.
+ *
+ * @return array
+ *   An of available templates with complete data or NULL if none are available.
+ */
+function mandrill_get_templates() {
+  // Only show the template settings if the mandrill api can be called.
+  $templates = NULL;
+  try {
+    if ($mailer = mandrill_get_api_object()) {
+      $templates = $mailer->templates->getList();
+    }
+  }
+  catch (Mandrill_Error $e) {
+    drupal_set_message(t('Mandrill: %message', array('%message' => check_plain($e->getMessage()))), 'error');
+    watchdog_exception('mandrill', $e);
+  }
+  return $templates;
+}
+
+/**
+ * Get a list of subaccounts.
+ */
+function mandrill_get_subaccounts() {
+  $subaccounts = array();
+  try {
+    if ($mandrill = mandrill_get_api_object()) {
+      $subaccounts = $mandrill->subaccounts->getList();
+    }
+  }
+  catch (Mandrill_Error $e) {
+    drupal_set_message(t('Mandrill: %message', array('%message' => check_plain($e->getMessage()))), 'error');
+    watchdog_exception('mandrill', $e);
+  }
+
+  return $subaccounts;
+}
+
+/**
+ * Get a list of webhooks.
+ */
+function mandrill_get_webhooks() {
+  $webhooks = array();
+  try {
+    if ($mandrill = mandrill_get_api_object()) {
+      $webhooks = $mandrill->webhooks->getList();
+    }
+  }
+  catch (Mandrill_Error $e) {
+    drupal_set_message(t('Mandrill: %message', array('%message' => check_plain($e->getMessage()))), 'error');
+    watchdog_exception('mandrill', $e);
+  }
+
+  return $webhooks;
+}
+
+/**
+ * Get a list of inbound email domains.
+ */
+function mandrill_get_inbound_domains() {
+  $domains = array();
+  try {
+    if ($mandrill = mandrill_get_api_object()) {
+      $domains = $mandrill->inbound->domains();
+    }
+    else {
+      $domains = FALSE;
+    }
+  }
+  catch (Mandrill_Error $e) {
+    drupal_set_message(t('Mandrill: %message', array('%message' => check_plain($e->getMessage()))), 'error');
+    watchdog_exception('mandrill', $e);
+  }
+
+  return $domains;
+}
+
+/**
+ * Get a list of inbound email routes for a domain.
+ */
+function mandrill_get_inbound_routes($domain) {
+  $routes = array();
+  try {
+    if ($mandrill = mandrill_get_api_object()) {
+      $routes = $mandrill->inbound->routes($domain);
+    }
+  }
+  catch (Mandrill_Error $e) {
+    drupal_set_message(t('Mandrill: %message', array('%message' => check_plain($e->getMessage()))), 'error');
+    watchdog_exception('mandrill', $e);
+  }
+
+  return $routes;
+}
+
+/**
+ * Create a new inbound domain.
+ */
+function mandrill_add_inbound_domain($domain) {
+  $result = NULL;
+  try {
+    if ($mandrill = mandrill_get_api_object()) {
+      $result = $mandrill->inbound->addDomain($domain);
+    }
+  }
+  catch (Mandrill_Error $e) {
+    drupal_set_message(t('Mandrill: %message', array('%message' => check_plain($e->getMessage()))), 'error');
+    watchdog_exception('mandrill', $e);
+  }
+
+  return $result;
+}
+
+/**
+ * Create a new inbound domain.
+ */
+function mandrill_add_webhook($path, $events, $description = 'Drupal Webhook') {
+  $result = NULL;
+  try {
+    if ($mandrill = mandrill_get_api_object()) {
+      $result = $mandrill->webhooks->add($GLOBALS['base_url'] . '/' . $path, $description, $events);
+    }
+  }
+  catch (Mandrill_Error $e) {
+    drupal_set_message(t('Mandrill: %message', array('%message' => check_plain($e->getMessage()))), 'error');
+    watchdog_exception('mandrill', $e);
+  }
+
+  return $result;
+}
+
+/**
+ * Delete an inbound domain.
+ */
+function mandrill_delete_inbound_domain($domain) {
+  $result = NULL;
+  try {
+    if ($mandrill = mandrill_get_api_object()) {
+      $result = $mandrill->inbound->deleteDomain($domain);
+    }
+  }
+  catch (Mandrill_Error $e) {
+    drupal_set_message(t('Mandrill: %message', array('%message' => check_plain($e->getMessage()))), 'error');
+    watchdog_exception('mandrill', $e);
+  }
+
+  return $result;
+}
+
+/**
+ * Create a new inbound route for a domain.
+ */
+function mandrill_add_inbound_route($domain, $pattern, $url) {
+  $route = NULL;
+  try {
+    if ($mandrill = mandrill_get_api_object()) {
+      $route = $mandrill->inbound->addRoute($domain, $pattern, $url);
+    }
+  }
+  catch (Mandrill_Error $e) {
+    drupal_set_message(t('Mandrill: %message', array('%message' => check_plain($e->getMessage()))), 'error');
+    watchdog_exception('mandrill', $e);
+  }
+
+  return $route;
+}
+
+/**
+ * Helper to return a comma delimited list of mail keys to not log content for.
+ *
+ * @return string
+ *   a comma delimited list of mail keys
+ */
+function mandrill_mail_key_blacklist() {
+  return variable_get('mandrill_mail_key_blacklist', 'user_password_reset');
+}
+
+/**
+ * Helper to generate an array of recipients.
+ *
+ * @param mixed $to
+ *   a comma delimited list of email addresses in 1 of 2 forms:
+ *   user@domain.com
+ *   any number of names <user@domain.com>
+ * 
+ * @return array
+ *   array of email addresses
+ */
+function mandrill_get_to($to) {
+  $recipients = array();
+  $to_array = explode(',', $to);
+  foreach ($to_array as $email) {
+    if (preg_match(MANDRILL_EMAIL_REGEX, $email, $matches)) {
+      $recipients[] = array(
+        'email' => $matches[2],
+        'name' => $matches[1],
+      );
+    }
+    else {
+      $recipients[] = array('email' => $email);
+    }
+  }
+  return $recipients;
+}
+
+/**
+ * Determine if mail should be processed asynchronously.
+ *
+ * @return bool
+ *   True if asyncronous processing is enabled
+ */
+function mandrill_process_async() {
+  return variable_get('mandrill_process_async', FALSE);
+}
+
+/**
+ * Returns an array containing the from information for a Mandrill message.
+ *
+ * @return array
+ *   array(
+ *     'email' => 'admin@example.com',
+ *     'name' => 'My Site',
+ *   )
+ */
+function mandrill_from() {
+  $default_from = variable_get('site_mail', ini_get('sendmail_from'));
+  $email = variable_get('mandrill_from', $default_from);
+  $name = variable_get('mandrill_from_name', variable_get('site_name'));
+  return array(
+    'email' => $email,
+    'name' => $name,
+  );
+}

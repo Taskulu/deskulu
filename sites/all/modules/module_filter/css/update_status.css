@@ -1,0 +1,18 @@
+#module-filter-update-status-form {
+  float: right;
+}
+.module-filter-inputs-wrapper label {
+  display: inline;
+}
+.module-filter-inputs-wrapper .form-item-module-filter-name {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  text-align: right;
+}
+#module-filter-show-wrapper .form-item {
+  padding: 5px;
+}
+p.module-filter-no-results {
+  clear: both;
+  padding-top: 30px;
+}

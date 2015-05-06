@@ -1,0 +1,339 @@
+<?php
+
+/**
+ * @file
+ * Tests for field_permissions.module.
+ */
+
+/**
+ * Tests the Field Permissions module.
+ */
+class FieldPermissionsTestCase extends DrupalWebTestCase {
+  private $admin_user = NULL;
+  private $limited_user = NULL;
+  private $admin_rid = NULL;
+  private $limited_rid = NULL;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Field permissions functionality',
+      'description' => 'Test field permissions.',
+      'group' => 'Field permissions'
+    );
+  }
+
+  function setUp() {
+    parent::setUp('field_ui', 'field_permissions');
+
+    // Create test user.
+    $admin_permissions = array('access content', 'administer nodes', 'bypass node access', 'administer content types', 'administer taxonomy', 'administer permissions', 'create page content');
+    $this->limited_user = $this->drupalCreateUser($admin_permissions);
+    $all_rids = array_keys($this->limited_user->roles);
+    sort($all_rids);
+    $this->limited_rid = array_pop($all_rids);
+
+    $admin_permissions[] = 'administer field permissions';
+    $admin_permissions[] = 'administer users';
+    $this->admin_user = $this->drupalCreateUser($admin_permissions);
+    $all_rids = array_keys($this->admin_user->roles);
+    sort($all_rids);
+    $this->admin_rid = array_pop($all_rids);
+
+    $this->drupalLogin($this->limited_user);
+  }
+
+  function testPermissionsUI() {
+    // This depends on a page node type with a body field, standard install.
+    // Could alternatively extend field_ui.test classes, but would be much
+    // slower to run. Tradeoffs.
+    $field_info = array(
+      'admin_path' => 'admin/structure/types/manage/page/fields/body',
+      'machine_name' => 'body',
+      'add_path' => 'node/add/page',
+      'name' => 'Body',
+      'form_field' => 'body[und][0][value]',
+      'value' => $this->randomName(),
+    );
+
+    // Check if we can see the field on the entity creation form.
+    $this->drupalGet($field_info['add_path']);
+    $this->assertText($field_info['name']);
+
+    // Admin users cannot access field permissions without specifically being
+    // granted the permission to do so.
+    $this->drupalGet($field_info['admin_path']);
+    $this->assertNoText(t('Field visibility and permissions'));
+
+    // Switch to admin user who can see the field permissions UI.
+    $this->drupalGet('user/logout');
+    $this->drupalLogin($this->admin_user);
+    $this->drupalGet($field_info['admin_path']);
+    $this->assertText(t('Field visibility and permissions'));
+
+    // == PUBLIC FIELD =========================================================
+
+    $this->assertFieldChecked('edit-field-field-permissions-type-0');
+
+    // Although simpletest could create a node for us, we are doing this directly
+    // to ensure we have full control over the process. Given that we work with
+    // field permissions.
+    $this->drupalGet('user/logout');
+    $this->drupalLogin($this->limited_user);
+    $node1_values = array(
+      'title' => $this->randomName(),
+      $field_info['form_field'] => $field_info['value'],
+    );
+    $this->drupalPost($field_info['add_path'], $node1_values, t('Save'));
+    $this->assertText($node1_values['title']);
+    $this->assertText($field_info['value']);
+    $url = $this->getUrl();
+    $nid1 = preg_replace('!^.*node/(\d+)$!', '\1', $url);
+
+    // Switch to admin user to check we can see the body.
+    $this->drupalGet('user/logout');
+    $this->drupalLogin($this->admin_user);
+    $this->drupalGet('node/' . $nid1);
+    $this->assertText($node1_values['title']);
+    $this->assertText($field_info['value']);
+
+    // And we can edit the title and body.
+    $this->drupalGet('node/' . $nid1 . '/edit');
+    $this->assertText('Title');
+    $this->assertText($node1_values['title']);
+    $this->assertText($field_info['name']);
+    $this->assertText($field_info['value']);
+
+    // == PRIVATE FIELD ========================================================
+
+    // Switch to admin user to set field to private.
+    $edit = array(
+      'field[field_permissions][type]' => 1,
+    );
+    $this->drupalPost($field_info['admin_path'], $edit, t('Save settings'));
+
+    // Now we should not have access to see or edit this field.
+    $this->drupalGet('node/' . $nid1);
+    $this->assertText($node1_values['title']);
+    $this->assertNoText($field_info['value']);
+    $this->drupalGet($field_info['add_path']);
+    $this->assertText('Title');
+    $this->assertText($field_info['name']);
+    $this->drupalGet('node/' . $nid1 . '/edit');
+    $this->assertText('Title');
+    $this->assertNoText($field_info['name']);
+    $this->assertNoText($field_info['value']);
+
+    // Grant this user the Drupal core administrator role. This will give them
+    // the 'access private fields' permission (tested here), and it also means
+    // that when custom field permissions are created later on in this test,
+    // the admin user will automatically get those permissions granted also.
+    $user_admin_rid = variable_get('user_admin_role', 0);
+    $edit = array(
+      "roles[$user_admin_rid]" => TRUE,
+    );
+    $this->drupalPost('user/' . $this->admin_user->uid . '/edit', $edit, t('Save'));
+
+    // Now we should have access to see or submit or edit this field again.
+    $this->drupalGet('node/' . $nid1);
+    $this->assertText($node1_values['title']);
+    $this->assertText($field_info['value']);
+    $this->drupalGet($field_info['add_path']);
+    $this->assertText('Title');
+    $this->assertText($field_info['name']);
+    $this->drupalGet('node/' . $nid1 . '/edit');
+    $this->assertText('Title');
+    $this->assertText($field_info['name']);
+    $this->assertText($field_info['value']);
+
+    // == CUSTOM PERMISSIONS ===================================================
+
+    // Introduce body creation permission.
+    $edit = array(
+      'field[field_permissions][type]' => 2,
+    );
+    $this->drupalPost($field_info['admin_path'], $edit, t('Save settings'));
+    $this->drupalGet($field_info['admin_path']);
+    $this->assertRaw(t('Create own value for field %field', array('%field' => $field_info['name'])));
+    $this->assertRaw(t('Edit own value for field %field', array('%field' => $field_info['name'])));
+    $this->assertRaw(t("Edit anyone's value for field %field", array('%field' => $field_info['name'])));
+    $this->assertRaw(t('View own value for field %field', array('%field' => $field_info['name'])));
+    $this->assertRaw(t("View anyone's value for field %field", array('%field' => $field_info['name'])));
+
+    // See if we have that exposed on the permissions UI as well now.
+    $this->drupalGet('admin/people/permissions');
+    $this->assertText(t('Field Permissions'));
+    $this->assertRaw(t('Create own value for field %field', array('%field' => $field_info['name'])));
+    $this->assertRaw(t('Edit own value for field %field', array('%field' => $field_info['name'])));
+    $this->assertRaw(t("Edit anyone's value for field %field", array('%field' => $field_info['name'])));
+    $this->assertRaw(t('View own value for field %field', array('%field' => $field_info['name'])));
+    $this->assertRaw(t("View anyone's value for field %field", array('%field' => $field_info['name'])));
+
+    // == CREATE ===============================================================
+
+    // The admin user should have been automatically granted the create
+    // permission, but the limited user shouldn't have it yet.
+    $this->assertUserHasPermission($this->admin_user, 'create ' . $field_info['machine_name'], t('Admin user does have "create @field" permission.', array('@field' => $field_info['machine_name'])));
+    $this->assertUserDoesNotHavePermission($this->limited_user, 'create ' . $field_info['machine_name'], t('Limited user does not have "create @field" permission.', array('@field' => $field_info['machine_name'])));
+
+    // Should not see the field on the entity creation form anymore for limited_user.
+    $this->drupalGet('user/logout');
+    $this->drupalLogin($this->limited_user);
+    $this->drupalGet($field_info['add_path']);
+    $this->assertNoText($field_info['name']);
+
+    // Grant body creation permission to limited users too.
+    $edit = array(
+      $this->limited_rid .'[create '. $field_info['machine_name'] .']' => TRUE,
+    );
+    $this->drupalPost('admin/people/permissions', $edit, t('Save permissions'));
+    $this->assertUserHasPermission($this->admin_user, 'create ' . $field_info['machine_name'], t('Admin user does have "create @field" permission.', array('@field' => $field_info['machine_name'])));
+    $this->assertUserHasPermission($this->limited_user, 'create ' . $field_info['machine_name'], t('Limited user does have "create @field" permission.', array('@field' => $field_info['machine_name'])));
+
+    // Should see the field again on the entity creation form.
+    $this->drupalGet($field_info['add_path']);
+    $this->assertText($field_info['name']);
+
+    // Although simpletest could create a node for us, we are doing this directly
+    // to ensure we have full control over the process. Given that we work with
+    // field permissions.
+    $node2_values = array(
+      'title' => $this->randomName(),
+      $field_info['form_field'] => $field_info['value'],
+    );
+    $this->drupalPost($field_info['add_path'], $node2_values, t('Save'));
+    $this->assertText($node2_values['title']);
+    // The body will not yet be visible to this user.
+    $this->assertNoText($field_info['value']);
+    $url = $this->getUrl();
+    $nid2 = preg_replace('!^.*node/(\d+)$!', '\1', $url);
+
+    // Switch to admin user and prove she has access to body.
+    $this->drupalGet('user/logout');
+    $this->drupalLogin($this->admin_user);
+    $this->drupalGet('node/' . $nid2);
+    $this->assertText($node2_values['title']);
+    $this->assertText($field_info['value']);
+
+    // == VIEW =================================================================
+
+    // Grant body view permission to limited users too.
+    $edit = array(
+      $this->limited_rid .'[view '. $field_info['machine_name'] .']' => TRUE,
+    );
+    $this->drupalPost('admin/people/permissions', $edit, t('Save permissions'));
+    $this->assertUserHasPermission($this->admin_user, 'view ' . $field_info['machine_name'], t('Admin user does have "view @field" permission.', array('@field' => $field_info['machine_name'])));
+    $this->assertUserHasPermission($this->limited_user, 'view ' . $field_info['machine_name'], t('Limited user does have "view @field" permission.', array('@field' => $field_info['machine_name'])));
+
+    // Limited user can now see the field.
+    $this->drupalGet('user/logout');
+    $this->drupalLogin($this->limited_user);
+    $this->drupalGet('node/' . $nid2);
+    $this->assertText($node2_values['title']);
+    $this->assertText($field_info['value']);
+
+    // == EDIT =================================================================
+
+    // We still don't have access to edit our field.
+    $this->drupalGet('node/' . $nid2 . '/edit');
+    $this->assertNoText($field_info['value']);
+
+    // Switch to admin user to configure edit permissions.
+    $this->drupalGet('user/logout');
+    $this->drupalLogin($this->admin_user);
+
+    // Ensure the editing screen now has the body.
+    $this->drupalGet('node/' . $nid2 . '/edit');
+    $this->assertText($field_info['value']);
+
+    // Grant body editing permission for the limited role.
+    $edit = array(
+      $this->limited_rid .'[edit '. $field_info['machine_name'] .']' => TRUE,
+    );
+    $this->drupalPost('admin/people/permissions', $edit, t('Save permissions'));
+    $this->assertUserHasPermission($this->admin_user, 'edit ' . $field_info['machine_name'], t('Admin user does have "edit @field" permission.', array('@field' => $field_info['machine_name'])));
+    $this->assertUserHasPermission($this->limited_user, 'edit ' . $field_info['machine_name'], t('Limited user does have "edit @field" permission.', array('@field' => $field_info['machine_name'])));
+
+    // Ensure the editing screen still has the body.
+    $this->drupalGet('node/' . $nid2 . '/edit');
+    $this->assertText($field_info['value']);
+
+    // Switch to limited user to check that we can edit body now.
+    $this->drupalGet('user/logout');
+    $this->drupalLogin($this->limited_user);
+    $this->drupalGet('node/' . $nid2 . '/edit');
+    $this->assertText($field_info['value']);
+  }
+
+  function testUserFields() {
+    // Create a field attached to users and make it appear on the user
+    // registration form with (default) custom permissions.
+    $this->drupalLogin($this->admin_user);
+    $label = 'Field attached to users';
+    $edit = array(
+      'fields[_add_new_field][label]' => $label,
+      'fields[_add_new_field][field_name]' => 'attached_to_users',
+      'fields[_add_new_field][type]' => 'text',
+      'fields[_add_new_field][widget_type]' => 'text_textfield',
+    );
+    $this->drupalPost('admin/config/people/accounts/fields',  $edit, t('Save'));
+    $this->drupalPost(NULL, array(), t('Save field settings'));
+    $edit = array(
+      'field[field_permissions][type]' => 2,
+      'instance[settings][user_register_form]' => TRUE,
+    );
+    $this->drupalPost(NULL, $edit, t('Save settings'));
+
+    // Log out, go to the registration form and make sure the field appears
+    // there for anonymous users.
+    $this->drupalLogout();
+    $this->drupalGet('user/register');
+    $this->assertText($label);
+
+    // Log in and make sure the user does not have access to edit the field
+    // (i.e., there are only default permissions to create it).
+    $this->drupalLogin($this->limited_user);
+    $this->drupalGet('user/' . $this->limited_user->uid . '/edit');
+    $this->assertResponse(200);
+    $this->assertNoText($label);
+  }
+
+  /**
+   * Asserts that a user account has a permission.
+   */
+  protected function assertUserHasPermission($account, $permission, $message) {
+     $this->_assertUserPermissionState($account, $permission, $message, TRUE);
+  }
+
+  /**
+   * Asserts that a user account does not have a permission.
+   */
+  protected function assertUserDoesNotHavePermission($account, $permission, $message) {
+    $this->_assertUserPermissionState($account, $permission, $message, FALSE);
+  }
+
+  /**
+   * Helper function for asserting user permissions.
+   */
+  protected function _assertUserPermissionState($account, $permission, $message, $should_have_permission) {
+    // We need to clear static caches since the tests may have recently changed
+    // the permissions via the UI (i.e., in a different thread than the one
+    // running the tests).
+    drupal_static_reset('user_access');
+    drupal_static_reset('user_role_permissions');
+
+    // Load the full user account, since we may have been provided an out of
+    // date pseudo-account of the kind SimpleTest uses (e.g. as returned by
+    // drupalCreateUser()), rather than an up to date object that actually
+    // contains the full list of roles this user has been assigned.
+    $full_account = user_load($account->uid);
+
+    // Now check the permission.
+    $has_permission = user_access($permission, $full_account);
+    if ($should_have_permission) {
+      $this->assertTrue($has_permission, $message);
+    }
+    else {
+      $this->assertFalse($has_permission, $message);
+    }
+  }
+}

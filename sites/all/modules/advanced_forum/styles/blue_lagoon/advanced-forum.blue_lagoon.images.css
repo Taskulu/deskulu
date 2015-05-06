@@ -1,0 +1,257 @@
+/* FORUM LIST ICONS *********************************************************/
+
+.forum-list-icon-wrapper {
+  font-family: Helvetica, Arial, Sans-Serif;
+  text-decoration: none;
+  vertical-align: middle;
+  margin: 10px;
+  width: 50px;
+  height: 50px;
+  display: block;
+}
+
+tr.even td.forum-list-icon-default .forum-list-icon-wrapper span,
+tr.odd td.forum-list-icon-default .forum-list-icon-wrapper span,
+.forum-list-icon-legend .forum-list-icon-default {
+  background: transparent url(images/forum_list_default.png) no-repeat center center;
+}
+
+tr.even td.forum-list-icon-new-posts .forum-list-icon-wrapper span,
+tr.odd td.forum-list-icon-new-posts .forum-list-icon-wrapper span,
+.forum-list-icon-legend .forum-list-icon-new-posts {
+  background: transparent url(images/forum_list_new_posts.png) no-repeat center center;
+}
+
+/* TOPIC LIST ICONS *********************************************************/
+span.topic-icon {
+  width: 24px;
+  height: 24px;
+  text-indent: -9999px;
+}
+
+.topic-icon-default {
+  background: transparent url(images/topic_list_default.png) no-repeat center center;
+}
+
+.topic-icon-new {
+  background: transparent url(images/topic_list_new.png) no-repeat center center;
+}
+
+.topic-icon-hot {
+  background: transparent url(images/topic_list_hot.png) no-repeat center center;
+}
+
+.topic-icon-hot-new {
+  background: transparent url(images/topic_list_hot_new.png) no-repeat center center;
+}
+
+.topic-icon-sticky {
+  background: transparent url(images/topic_list_sticky.png) no-repeat center center;
+}
+
+.topic-icon-closed {
+  background: transparent url(images/topic_list_closed.png) no-repeat center center;
+}
+
+/* TOPIC LIST ICON LEGEND ***************************************************/
+.topic-icon-default {
+  background: transparent url(images/topic_list_default.png) no-repeat top left;
+}
+
+.topic-icon-new {
+  background: transparent url(images/topic_list_new.png) no-repeat top left;
+}
+
+.topic-icon-hot {
+  background: transparent url(images/topic_list_hot.png) no-repeat top left;
+}
+
+.topic-icon-hot-new {
+  background: transparent url(images/topic_list_hot_new.png) no-repeat top left;
+}
+
+.topic-icon-sticky {
+  background: transparent url(images/topic_list_sticky.png) no-repeat top left;
+}
+
+.topic-icon-closed {
+  background: transparent url(images/topic_list_closed.png) no-repeat top left;
+}
+
+/* AUTHOR PANE **************************************************************/
+
+.forum-post-panel-sub .author-online {
+  background: transparent url(images/ap_user_online.png) no-repeat;
+  padding-left: 20px;
+  height: 20px;
+  width: 125px;
+  display: block;
+}
+
+.forum-post-panel-sub .author-offline {
+  background: transparent url(images/ap_user_offline.png) no-repeat;
+  padding-left: 20px;
+  height: 20px;
+  width: 125px;
+  display: block;
+}
+
+/* BUTTONIZED LINKS - GENERAL ***********************************************/
+/* Based on http://css-tricks.com/examples/ButtonMaker */
+
+a.af-button-large,
+a.af-button-large:link,
+a.af-button-large:visited,
+a.af-button-small,
+a.af-button-small:link,
+a.af-button-small:visited,
+a.author-pane-link,
+a.author-pane-link:link,
+a.author-pane-link:visited {
+  color: #FFFFFF;
+  text-decoration: none;
+}
+
+.af-button-large,
+.af-button-small,
+.author-pane-link {
+  display: block;
+  border-top: 1px solid #1659AC;
+  background: #2587C4;
+  background: -webkit-gradient(linear, left top, left bottom, from(#2587C4), to(#58B3ED));
+  background: -moz-linear-gradient(top, #2587C4, #58B3ED);
+  color: #FFFFFF;
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  border-radius: 5px;
+  -webkit-box-shadow: rgba(0,0,0,1) 0 1px 0;
+  -moz-box-shadow: rgba(0,0,0,1) 0 1px 0;
+  box-shadow: rgba(0,0,0,1) 0 1px 0;
+  text-shadow: rgba(0,0,0,.4) 0 1px 0;
+  color: #333333;
+  font-family: Helvetica, Arial, Sans-Serif;
+  text-decoration: none;
+  vertical-align: middle;
+}
+
+a.af-button-large:hover,
+a.af-button-small:hover,
+a.author-pane-link:hover {
+  background: #2587C4;
+  color: #333333;
+  border-top-color: #EFEFEF;
+}
+
+a.af-button-large:active,
+a.af-button-small:active,
+a.author-pane-link:active {
+  background: #2587C4;
+  color: #333333;
+  border-top-color: #EFEFEF;
+}
+
+.af-button-large span {
+  font-size: 14px;
+  padding: 2px 2px 2px 25px; /* Last number controls width for image */
+  line-height: 30px; /* Approximate height of button */
+  margin: 0 7px 0 7px; /* Left and right space outside text & image */
+}
+
+.af-button-small span {
+  font-size: 12px;
+  padding: 2px 2px 2px 20px; /* Last number controls width for image */
+  line-height: 25px; /* Approximate height of button */
+  margin: 0 7px 0 7px; /* Left and right space outside text & image */
+}
+
+.author-pane-link span {
+  font-size: 12px;
+  padding: 0 0 0 22px; /* Last number controls width for image */
+  line-height: 22px; /* Approximate height of button */
+  margin: 0 7px 0 7px; /* Left and right space outside text & image */
+}
+
+/* BUTTONIZED LINKS - INDIVIDUAL BUTTONS ************************************/
+
+.forum-add-forum .af-button-large span {
+  background: url(images/add_topic.png) no-repeat;
+}
+
+.forum-add-poll .af-button-large span {
+  background: url(images/add_poll.png) no-repeat;
+}
+
+/*** Reply/Locked at the top and bottom of individual topics. ***/
+
+/* Reply link */
+.topic-reply-allowed .af-button-large span {
+  background: url(images/topic_reply.png) no-repeat;
+}
+
+/* Locked topic (not a link so an extra span is used instead of the "a". */
+.topic-reply-locked .af-button-large span {
+  background: url(images/topic_locked.png) no-repeat;
+}
+
+/* Last post */
+.last-post-link .af-button-large span {
+  background: url(images/topic_last_post.png) no-repeat;
+}
+
+/* First unread */
+.topic-new-post-link .af-button-large span {
+  background: url(images/topic_first_unread_post.png) no-repeat;
+}
+
+
+/*** Links on the individual posts (nodes and comments). ***/
+
+/* General */
+.forum-post-links .af-button-small span {
+}
+
+/* Reply */
+.comment-add .af-button-small span,
+.comment-reply .af-button-small span {
+  background: url(images/post_reply.png) no-repeat;
+}
+
+/* Quote */
+.quote .af-button-small span {
+  background: url(images/post_quote.png) no-repeat;
+}
+
+/* Edit */
+.comment-edit .af-button-small span,
+.post-edit .af-button-small span {
+  background: url(images/post_edit.png) no-repeat;
+}
+
+/* Delete */
+.comment-delete .af-button-small span,
+.post-delete .af-button-small span {
+  background: url(images/post_delete.png) no-repeat;
+}
+
+/* Jump to top */
+.forum-jump-links .af-button-small span {
+  background: url(images/topic_top.png) no-repeat;
+}
+
+/*** AUTHOR PANE ***/
+
+.forum-post-panel-sub .author-contact .author-pane-link span {
+  background: transparent url(images/ap_email.png) no-repeat;
+}
+
+.forum-post-panel-sub .author-privatemsg .author-pane-link span {
+  background: transparent url(images/ap_private_message.png) no-repeat;
+}
+
+.forum-post-panel-sub .author-relationship-add-icon.author-pane-link span {
+  background: transparent url(images/ap_contact_add.png) no-repeat;
+}
+
+.forum-post-panel-sub .author-relationship-remove-icon.author-pane-link {
+  background: transparent url(images/ap_contact_remove.png) no-repeat;
+}

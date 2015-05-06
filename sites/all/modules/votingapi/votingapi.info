@@ -1,0 +1,18 @@
+name = Voting API
+description = Provides a shared voting API for other modules.
+package = Voting
+core = 7.x
+configure = admin/config/search/votingapi
+
+files[] = tests/votingapi.test
+
+files[] = views/votingapi_views_handler_field_value.inc
+files[] = views/votingapi_views_handler_sort_nullable.inc
+files[] = views/votingapi_views_handler_relationship.inc
+
+; Information added by Drupal.org packaging script on 2014-08-14
+version = "7.x-2.12"
+core = "7.x"
+project = "votingapi"
+datestamp = "1407995929"
+

@@ -1,0 +1,99 @@
+<?php
+
+/**
+ * @file
+ * Contains test cases for the i18n_node module.
+ */
+
+class I18nNodeTestCase extends Drupali18nTestCase {
+  public static function getInfo() {
+    return array(
+      'name' => 'Content translation',
+      'group' => 'Internationalization',
+      'description' => 'Content translation functions',
+    );
+  }
+
+  function setUp() {
+    parent::setUp('translation', 'i18n_node');
+    parent::setUpLanguages(array('administer content translations', 'translate content'));
+    parent::setUpContentTranslation();
+
+    $this->addLanguage('pt-br');
+    // Add a disabled language.
+    $this->addLanguage('it');
+    $edit = array('enabled[it]' => FALSE);
+    $this->drupalPost('admin/config/regional/language', $edit, t('Save configuration'));
+  }
+
+  /**
+   * Tests for adding content to an existing translation set.
+   */
+  function testAddContentToTranslationSet() {
+    module_load_include('inc', 'i18n_node', 'i18n_node.pages');
+
+    // Create 3 nodes in different languages.
+    $en_title = $this->randomName(10);
+    $en_body = $this->randomString(50);
+    $en_node = $this->createNode('page', $en_title, $en_body, 'en');
+
+    $es_title = $this->randomName(10);
+    $es_body = $this->randomString(50);
+    $es_node = $this->createNode('page', $es_title, $es_body, 'es');
+
+    $ptbr_title = $this->randomName(10);
+    $ptbr_body = $this->randomString(50);
+    $ptbr_node = $this->createNode('page', $ptbr_title, $ptbr_body, 'pt-br');
+
+    // Check the autocomplete suggestions.
+    $this->drupalGet('i18n/node/autocomplete/page/es/' . substr($es_title, 0, 3));
+    $this->assertText($es_title);
+    $this->assertNoText($en_title);
+    $this->assertNoText($ptbr_title);
+
+    $this->drupalGet('i18n/node/autocomplete/page/es/' . substr($en_title, 0, 3));
+    $this->assertNoText($es_title);
+    $this->assertNoText($en_title);
+    $this->assertNoText($ptbr_title);
+
+    $this->drupalGet('i18n/node/autocomplete/page/pt-br/' . substr($ptbr_title, 0, 3));
+    $this->assertNoText($es_title);
+    $this->assertNoText($en_title);
+    $this->assertText($ptbr_title);
+
+    // Go to the translations tab.
+    $this->drupalGet('node/' . $en_node->nid);
+    $this->clickLink(t('Translate'));
+
+    // Make sure that the disabled language doesn't show up.
+    $this->assertNoText(t('Italian'));
+
+    // Test validation.
+    $edit = array(
+      'translations[node][es]' => $ptbr_title,
+    );
+    $this->drupalPost(NULL, $edit, t('Update translations'));
+    $this->assertText(t('Found no valid post with that title: @title', array('@title' => $ptbr_title)));
+
+    // Add two translated nodes.
+    $edit = array(
+      'translations[node][pt-br]' => $ptbr_title,
+      'translations[node][es]' => $es_title,
+    );
+    $this->drupalPost(NULL, $edit, t('Update translations'));
+    $this->assertText(t('Added @count nodes to the translation set.', array('@count' => 2)));
+
+    $this->assertFieldByName('translations[node][es]', i18n_node_nid2autocomplete($es_node->nid));
+    $this->assertFieldByName('translations[node][pt-br]', i18n_node_nid2autocomplete($ptbr_node->nid));
+
+    // Remove a translation node again.
+    $edit = array(
+      'translations[node][pt-br]' => '',
+    );
+    $this->drupalPost(NULL, $edit, t('Update translations'));
+    $this->assertText(t('Removed a node from the translation set.'));
+
+    $this->assertFieldByName('translations[node][es]', i18n_node_nid2autocomplete($es_node->nid));
+    $this->assertFieldByName('translations[node][pt-br]', '');
+  }
+}

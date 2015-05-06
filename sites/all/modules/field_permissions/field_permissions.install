@@ -1,0 +1,127 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the Field Permissions module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function field_permissions_install() {
+  // Set a larger weight for the module.
+  db_update('system')
+    ->fields(array('weight' => 50))
+    ->condition('name', 'field_permissions')
+    ->execute();
+}
+
+/**
+ * Sets a larger weight for the module so that the Field Permissions become available.
+ */
+function field_permissions_update_7000(&$sandbox) {
+  db_update('system')
+    ->fields(array('weight' => 50))
+    ->condition('name', 'field_permissions')
+    ->execute();
+}
+
+/**
+ * Migrate field permission settings to the new system (public/private/custom).
+ */
+function field_permissions_update_7001() {
+  foreach (field_info_fields() as $field_name => $field) {
+    // If the field has any field permissions enabled, it will be using custom
+    // permissions under the new system and needs to be converted. Otherwise,
+    // it is a public field (the default) and can be ignored.
+    if (!empty($field['settings']['field_permissions']) && array_filter($field['settings']['field_permissions'])) {
+      // Set the type to FIELD_PERMISSIONS_CUSTOM. (The module may be disabled
+      // when this update function runs, so we need to use the numeric value
+      // rather than relying on the constant being defined.)
+      $field['field_permissions']['type'] = 2;
+
+      $field_permissions = $field['settings']['field_permissions'];
+      $permissions_by_operation = array(
+        // View-related permissions.
+        array(
+          'view' => "view $field_name",
+          'view own' => "view own $field_name",
+        ),
+        // Edit-related permissions.
+        array(
+          'create' => "create $field_name",
+          'edit' => "edit $field_name",
+          'edit own' => "edit own $field_name",
+        ),
+      );
+
+      // Loop through each type of operation (view or edit).
+      foreach ($permissions_by_operation as $permissions) {
+        $actions = array_keys($permissions);
+        // If none of the related permissions were enabled, all users were
+        // allowed to perform the relevant actions on this field, so we need to
+        // assign permissions here to preserve that behavior.
+        $has_enabled_permissions = (bool) array_filter(array_intersect_key($field_permissions, array_flip($actions)));
+        if (!$has_enabled_permissions) {
+          _update_7000_user_role_grant_permissions(DRUPAL_ANONYMOUS_RID, $permissions, 'field_permissions');
+          _update_7000_user_role_grant_permissions(DRUPAL_AUTHENTICATED_RID, $permissions, 'field_permissions');
+        }
+        // Otherwise, for each permission that was disabled, no users should be
+        // allowed to perform that action; therefore, make sure to unassign any
+        // (stale) permissions that they may have.
+        else {
+          foreach ($actions as $action) {
+            if (empty($field_permissions[$action])) {
+              if ($action != 'create') {
+                $permission = $permissions[$action];
+                $rids = array_keys(user_roles(FALSE, $permission));
+                foreach ($rids as $rid) {
+                  user_role_revoke_permissions($rid, array($permission));
+                }
+              }
+              // The 'create' action needs special handling, since previously,
+              // if create permissions were not enabled the code would have
+              // fallen back on checking edit permissions. Now, though, create
+              // permissions are always enabled (and always checked when an
+              // entity is being created). Therefore, we need to figure out
+              // what the fallback would have been and assign new create
+              // permissions based on that.
+              else {
+                $rids_with_create_access = array();
+                // The first fallback is edit permissions; if those are
+                // enabled, any role with edit permission would have been
+                // granted access.
+                if (!empty($field_permissions['edit'])) {
+                  $rids_with_create_access = array_keys(user_roles(FALSE, $permissions['edit']));
+                }
+                // The final fallback is 'edit own' permissions; if those are
+                // enabled, any role with 'edit own' permission would have been
+                // granted access. (It is additionally required that the entity
+                // being checked is owned by the current user, but in the case
+                // of nodes being created that will always be the case anyway,
+                // and nodes are the only entities we need to support for the
+                // D6-to-D7 upgrade.)
+                if (!empty($field_permissions['edit own'])) {
+                  $rids_with_create_access = array_unique(array_merge($rids_with_create_access, array_keys(user_roles(FALSE, $permissions['edit own']))));
+                }
+                // Assign create permissions to all the relevant roles.
+                foreach ($rids_with_create_access as $rid) {
+                  _update_7000_user_role_grant_permissions($rid, array($permissions['create']), 'field_permissions');
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Remove the old field permissions settings if necessary, and save the
+    // field.
+    if (isset($field['settings']['field_permissions'])) {
+      // We can't unset this or field_update_field() will automatically add it
+      // back (using the prior field data), so do the next best thing.
+      $field['settings']['field_permissions'] = NULL;
+      field_update_field($field);
+    }
+  }
+}

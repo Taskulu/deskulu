@@ -1,0 +1,104 @@
+/* FORUM LIST ICONS *********************************************************/
+td.forum-list-icon {
+  vertical-align: middle;
+  text-align: center;
+  width: 70px;
+}
+
+.forum-list-icon-wrapper span {
+  text-indent: -9999px;
+  width: 50px;
+  height: 50px;
+  display: block;
+}
+
+tr.even td.forum-list-icon-default .forum-list-icon-wrapper span,
+tr.odd td.forum-list-icon-default .forum-list-icon-wrapper span {
+  background: transparent url(images/forum_list_default.png) no-repeat center center;
+}
+
+tr.even td.forum-list-icon-new-posts .forum-list-icon-wrapper span,
+tr.odd td.forum-list-icon-new-posts .forum-list-icon-wrapper span {
+  background: transparent url(images/forum_list_new_posts.png) no-repeat center center;
+}
+
+/* FORUM LIST ICON LEGEND ***************************************************/
+.forum-list-icon-legend .forum-list-icon-default {
+  background: transparent url(images/forum_list_default.png) no-repeat center center;
+}
+
+.forum-list-icon-legend .forum-list-icon-new-posts {
+  background: transparent url(images/forum_list_new_posts.png) no-repeat center center;
+}
+
+/* TOPIC LIST ICONS *********************************************************/
+span.topic-icon {
+  width: 24px;
+  height: 24px;
+  text-indent: -9999px;
+}
+
+.topic-icon-default {
+  background: transparent url(images/topic_list_default.png) no-repeat center center;
+}
+
+.topic-icon-new {
+  background: transparent url(images/topic_list_new.png) no-repeat center center;
+}
+
+.topic-icon-hot {
+  background: transparent url(images/topic_list_hot.png) no-repeat center center;
+}
+
+.topic-icon-hot-new {
+  background: transparent url(images/topic_list_hot_new.png) no-repeat center center;
+}
+
+.topic-icon-sticky {
+  background: transparent url(images/topic_list_sticky.png) no-repeat center center;
+}
+
+.topic-icon-closed {
+  background: transparent url(images/topic_list_closed.png) no-repeat center center;
+}
+
+/* TOPIC LIST ICON LEGEND ***************************************************/
+.topic-icon-default {
+  background: transparent url(images/topic_list_default.png) no-repeat top left;
+}
+
+.topic-icon-new {
+  background: transparent url(images/topic_list_new.png) no-repeat top left;
+}
+
+.topic-icon-hot {
+  background: transparent url(images/topic_list_hot.png) no-repeat top left;
+}
+
+.topic-icon-hot-new {
+  background: transparent url(images/topic_list_hot_new.png) no-repeat top left;
+}
+
+.topic-icon-sticky {
+  background: transparent url(images/topic_list_sticky.png) no-repeat top left;
+}
+
+.topic-icon-closed {
+  background: transparent url(images/topic_list_closed.png) no-repeat top left;
+}
+
+span.forum-collapsible {
+  width: 9px;
+  height: 100%;
+  text-indent: -9999px;
+  display: block;
+  margin-left: 10px;
+  margin-right: 10px;
+  float: right;
+  background: transparent url(images/container_collapse.png) no-repeat center center;
+
+}
+
+span.container-collapsed {
+  background: transparent url(images/container_expand.png) no-repeat center center;
+}

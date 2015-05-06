@@ -1,0 +1,262 @@
+.sticky-header {
+  z-index: 1;
+}
+
+#module-filter-tabs {
+  float: left;
+}
+#module-filter-tabs ul {
+  width: 239px;
+  list-style: none;
+  list-style-image: none;
+  background-color: #ddd;
+  border: 1px solid #ccc;
+  border-top: none;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+}
+#module-filter-tabs li {
+  background: #eee;
+  border-top: 1px solid #ccc;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+#module-filter-tabs li#new-tab {
+  margin-bottom: 10px;
+  border-bottom: 1px solid #ccc;
+}
+#module-filter-tabs li.disabled,
+#module-filter-tabs li#new-tab.disabled {
+  pointer-events: none;
+  cursor: default;
+  background: #ccc;
+  border-top-color: #bbb;
+  border-bottom-color: #bbb;
+}
+#module-filter-tabs li.disabled a,
+#module-filter-tabs li.disabled span {
+  color: #999;
+}
+#module-filter-tabs li.suggest {
+  background: #F9F9F9;
+}
+#module-filter-tabs li a {
+  display: block;
+  text-decoration: none;
+  padding: 10px;
+}
+#module-filter-tabs li a span.result-info {
+  float: right;
+  font-size: 10px;
+  color: #999;
+  margin-top: 3px;
+}
+#module-filter-tabs li a span.visual-aid {
+  font-size: 8px;
+/*  float: right;*/
+}
+#module-filter-tabs li span.visual-aid {
+  font-weight: bold;
+}
+#module-filter-tabs li a span.enabling {
+  color: green;
+}
+#module-filter-tabs li a span.disabling {
+  color: red;
+}
+#module-filter-tabs li strong {
+  font-size: 0.923em;
+}
+#module-filter-tabs li a:hover,
+#module-filter-tabs li a:focus {
+  outline: 1px dotted;
+  background: #d5d5d5;
+  text-decoration: none;
+  outline: 0;
+}
+#module-filter-tabs li.selected a,
+#module-filter-tabs li.selected a:hover,
+#module-filter-tabs li.selected a:focus,
+#module-filter-tabs li.selected a:active {
+  background-color: #fff;
+  margin-right: -1px;
+}
+#module-filter-tabs li .summary {
+  display: block;
+  margin-bottom: 0;
+  color: #666;
+  font-size: 0.846em;
+  padding-top: 0.4em;
+}
+#module-filter-tabs li .summary .count {
+  display: none;
+}
+#module-filter-tabs li.selected .summary .count {
+  display: block;
+}
+html.js #module-filter-submit input {
+  margin: 2em 2em 1em;
+}
+html.js .module-filter-inputs-wrapper {
+  text-align: center;
+}
+html.js .module-filter-inputs-wrapper .form-item {
+  margin: 0;
+  padding: 9px;
+}
+html.js .module-filter-inputs-wrapper label {
+  display: inline;
+}
+html.js .module-filter-inputs-wrapper input[name="module_filter[name]"] {
+  width: 80%;
+}
+html.js #module-filter-show-wrapper {
+  margin-bottom: 1em;
+}
+html.js #module-filter-modules {
+  margin-left: 240px;
+  border: 1px solid #ccc;
+}
+#module-filter-modules table {
+  border-top: none;
+  border-right: none;
+  border-left: none;
+}
+html.js #module-filter-modules table {
+  margin: 0;
+  border-bottom: none;
+}
+html.js #module-filter-modules table tr,
+html.js #module-filter-modules table td {
+  border-left: 0;
+  border-right: 0;
+}
+#module-filter-modules table thead {
+  display: none;
+}
+#module-filter-modules table tr.admin-package-title,
+#module-filter-modules table tr.admin-package-title td {
+  border: none !important;
+  border-top: 1px solid #ccc !important;
+  background-color: transparent !important;
+  padding: 10px 0 0;
+}
+#module-filter-modules table tr.admin-package-title.first,
+#module-filter-modules table tr.admin-package-title.first td {
+  border-top: none !important;
+}
+#module-filter-modules table tr.admin-package-header td {
+  border: 1px solid #ccc;
+  text-transform: uppercase;
+  background: #E1E2DC;
+  font-weight: normal;
+  padding: 3px 10px;
+}
+#module-filter-modules table tr.enabling {
+  background-color: #dfd;
+}
+#module-filter-modules table tr.disabling {
+  background-color: #fcc;
+}
+#module-filter-modules span.module-machine-name {
+  font-size: 0.9em;
+  font-weight: normal;
+}
+.admin-version {
+  white-space: nowrap;
+}
+.admin-operations {
+  float: right;
+}
+.admin-operations a.module-link {
+  display: inline;
+}
+
+html.js .toggle-enable {
+  margin: auto;
+  position: relative;
+  width: 50px;
+  overflow: hidden;
+  height: 18px;
+  line-height: 18px;
+  font-size: 11px;
+  text-align: center;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
+  -khtml-border-radius: 3px;
+  border-radius: 3px;
+  -moz-box-shadow: 0 0 10px rgba(0,0,0,0.50) inset;
+  -webkit-box-shadow: 0 0 10px rgba(0,0,0,0.50) inset;
+  box-shadow: 0 0 10px rgba(0,0,0,0.50) inset;
+  background-clip: padding-box;
+  background-image: -webkit-gradient(linear, 0% 0%, 100% 0%, color-stop(50%, red), color-stop(50%, orange), color-stop(100%, orange));
+  background-image: -moz-linear-gradient(left, red 50%, orange 50%, orange 100%);
+  background-image: linear-gradient(left, red 50%, orange 50%, orange 100%);
+}
+html.js .toggle-enable.enabled {
+  background-image: -webkit-gradient(linear, 0% 0%, 100% 0%, color-stop(50%, orange), color-stop(50%, green), color-stop(100%, green));
+  background-image: -moz-linear-gradient(left, orange 50%, green 50%, green 100%);
+  background-image: linear-gradient(left, orange 50%, green 50%, green 100%);
+}
+html.js .toggle-enable.disabled {
+  background: #ccc;
+  border-color: #ddd;
+  cursor: auto;
+}
+html.js .toggle-enable div {
+  position: relative;
+  color: #777;
+  width: 26px;
+  -moz-border-radius: 2px;
+  -webkit-border-radius: 2px;
+  -khtml-border-radius: 2px;
+  border-radius: 2px;
+  background: white;
+  text-shadow: 1px 1px 0 white;
+  background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, color-stop(0%, #FEFEFE), color-stop(100%, #EAEAEA));
+  background-image: -moz-linear-gradient(top, #FEFEFE 0%, #EAEAEA 100%);
+  background-image: linear-gradient(top, #FEFEFE 0%, #EAEAEA 100%);
+  -webkit-transition: left 0.2s;
+  -mox-transition: left 0.2s;
+  -o-transition: left 0.2s;
+  transition: left 0.2s;
+}
+html.js .toggle-enable.disabled div {
+  background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, color-stop(0%, #FEFEFE), color-stop(100%, #EEEEEE));
+  background-image: -moz-linear-gradient(top, #FEFEFE 0%, #EEEEEE 100%);
+  background-image: linear-gradient(top, #FEFEFE 0%, #EEEEEE 100%);
+}
+html.js .toggle-enable div:after,
+html.js .toggle-enable div:before {
+  color: white;
+  text-shadow: none;
+  width: 25px;
+  position: absolute;
+  top: 0;
+  font-size: 9px;
+  font-weight: bold;
+}
+html.js .toggle-enable div:before {
+  content: "OFF";
+  left: -24px;
+}
+html.js .toggle-enable div:after {
+  content: "ON";
+  right: -24px;
+}
+html.js .toggle-enable.off div {
+  left: 24px;
+}
+
+#module-filter-tabs.top-fixed {
+  position: fixed;
+  top: 0;
+}
+#module-filter-tabs.bottom-fixed {
+  position: fixed;
+  bottom: 0;
+}

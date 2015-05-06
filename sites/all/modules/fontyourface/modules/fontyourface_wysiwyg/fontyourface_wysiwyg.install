@@ -1,0 +1,10 @@
+<?php
+
+/**
+ * Implements hook_uninstall().
+ */
+function fontyourface_wysiwyg_uninstall() {
+
+  variable_del('fontyourface_wysiwyg_css_md5');  
+  
+} // fontyourface_wysiwyg_uninstall

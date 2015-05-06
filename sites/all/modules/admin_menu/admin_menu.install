@@ -1,0 +1,123 @@
+<?php
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the admin menu module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function admin_menu_schema() {
+  $schema['cache_admin_menu'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_admin_menu']['description'] = 'Cache table for Administration menu to store client-side caching hashes.';
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function admin_menu_install() {
+  // Increase the module weight, so admin_menu catches any alterations made by
+  // other modules in hook_menu_alter().
+  db_update('system')
+    ->fields(array('weight' => 100))
+    ->condition('type', 'module')
+    ->condition('name', 'admin_menu')
+    ->execute();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function admin_menu_uninstall() {
+  // Delete variables.
+  variable_del('admin_menu_components');
+  variable_del('admin_menu_margin_top');
+  variable_del('admin_menu_position_fixed');
+  variable_del('admin_menu_tweak_modules');
+  variable_del('admin_menu_tweak_tabs');
+  variable_del('admin_menu_show_all');
+  variable_del('admin_menu_display');
+  variable_del('admin_menu_cache_server');
+  variable_del('admin_menu_cache_client');
+  // Unused variables still should be deleted.
+  variable_del('admin_menu_devel_modules');
+  variable_del('admin_menu_devel_modules_enabled');
+  variable_del('admin_menu_devel_modules_skip');
+}
+
+/**
+ * Ensure that admin_menu is rebuilt after upgrading to D6.
+ */
+function admin_menu_update_6000() {
+  // Drop the {admin_menu} table in admin_menu_update_6000() on sites that used
+  // one of the later patches in #132524.
+  if (db_table_exists('admin_menu')) {
+    db_drop_table('admin_menu');
+  }
+}
+
+/**
+ * Wipe and rebuild so we can switch the icon path to <front>.
+ */
+function admin_menu_update_6001() {
+  db_delete('menu_links')->condition('module', 'admin_menu')->execute();
+  menu_cache_clear('admin_menu');
+}
+
+/**
+ * Add {cache_admin_menu} table.
+ */
+function admin_menu_update_7300() {
+  if (!db_table_exists('cache_admin_menu')) {
+    $schema = drupal_get_schema_unprocessed('system', 'cache');
+    db_create_table('cache_admin_menu', $schema);
+  }
+}
+
+/**
+ * Increase the module weight.
+ *
+ * @see admin_menu_install()
+ */
+function admin_menu_update_7302() {
+  db_update('system')
+    ->fields(array('weight' => 100))
+    ->condition('type', 'module')
+    ->condition('name', 'admin_menu')
+    ->execute();
+}
+
+/**
+ * Remove local tasks from {menu_links} table.
+ */
+function admin_menu_update_7303() {
+  db_delete('menu_router')
+    ->condition('path', 'admin/%', 'LIKE')
+    ->condition('type', MENU_IS_LOCAL_TASK, '&')
+    ->execute();
+}
+
+/**
+ * Remove obsolete 'admin_menu' menu and all orphan links in it.
+ */
+function admin_menu_update_7304() {
+  // Remove the custom menu used by 6.x-1.x.
+  if (db_table_exists('menu_custom')) {
+    db_delete('menu_custom')->condition('menu_name', 'admin_menu')->execute();
+  }
+
+  // 6.x-1.x cloned the entire link structure below the path 'admin' into a
+  // separate 'menu_name' "admin_menu" with 'module' "admin_menu". 6.x-3.x and
+  // early alpha versions of 7.x-3.x still did something similar. All of these
+  // records are obsolete. Removal of the 'module' records (without different
+  // menu_name) is particularly important, since they would otherwise appear
+  // as duplicate links.
+  db_delete('menu_links')
+    ->condition(db_or()
+      ->condition('module', 'admin_menu')
+      ->condition('menu_name', 'admin_menu')
+    )
+    ->execute();
+}

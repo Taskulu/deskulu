@@ -1,0 +1,10 @@
+
+This document is intended to be a guide for developers upgrading a VotingAPI-based module from one major version of VotingAPI or Drupal to the next.
+
+VotingAPI 6.x-2.x to 7.x-2.x
+----------------------------
+The Drupal 7 upgrade for VotingAPI makes one important change: the "content_type" and "content_id" terminology that's been present for several years has been changed to avoid confusion with other parts of core.
+
+VotingAPI has never stored individual *node* types, like 'story' or 'page', and new developers often mistake the 'content_type' indicator in VotingAPI for a node-type field. As such, VotingAPI now uses the names 'entity_type' and 'entity_id'.
+
+When data is being passed into VotingAPI, be sure that you use the new 'entity' terminology in your array keys, etc. In addition, if you're doing raw SQL queries against the VotingAPI data in your database, be sure to change the column names. A full search and replace for content_type and content_id, replacing them with entity_type and entity_id, should do the trick.

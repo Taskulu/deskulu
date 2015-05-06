@@ -1,0 +1,118 @@
+<?php
+
+$handler = new stdClass();
+$handler->disabled = FALSE; /* Edit this to true to make a default handler disabled initially */
+$handler->api_version = 1;
+$handler->name = 'forum_panel_context_top';
+$handler->task = 'forum';
+$handler->subtask = '';
+$handler->handler = 'panel_context';
+$handler->weight = 0;
+$handler->conf = array(
+  'title' => 'Top Level Forum',
+  'no_blocks' => 0,
+  'css_id' => 'forum',
+  'css' => '',
+  'contexts' => array(),
+  'relationships' => array(),
+  'access' => array(
+    'plugins' => array(
+      0 => array(
+        'name' => 'forum_id',
+        'settings' => array(
+          'tids' => array(
+            0 => '0',
+          ),
+        ),
+        'context' => 'argument_forum_id_1',
+      ),
+    ),
+    'logic' => 'and',
+  ),
+  'pipeline' => 'standard',
+);
+
+if (module_exists('panels')) {
+  $display = new panels_display();
+  $display->layout = 'flexible';
+  $display->layout_settings = array();
+  $display->panel_settings = array(
+    'style_settings' => array(
+      'default' => NULL,
+      'center' => NULL,
+    ),
+  );
+  $display->cache = array();
+  $display->title = '%forum:name';
+  $display->content = array();
+  $display->panels = array();
+  $pane = new stdClass();
+  $pane->pid = 'new-1';
+  $pane->panel = 'center';
+  $pane->type = 'forum_list';
+  $pane->subtype = 'forum_list';
+  $pane->shown = TRUE;
+  $pane->access = array();
+  $pane->configuration = array(
+    'context' => 'argument_forum_id_1',
+    'override_title' => 0,
+    'override_title_text' => '',
+  );
+  $pane->cache = array();
+  $pane->style = array(
+    'settings' => NULL,
+  );
+  $pane->css = array();
+  $pane->extras = array();
+  $pane->position = 0;
+  $pane->locks = '';
+  $display->content['new-1'] = $pane;
+  $display->panels['center'][0] = 'new-1';
+  $pane = new stdClass();
+  $pane->pid = 'new-2';
+  $pane->panel = 'center';
+  $pane->type = 'forum_legend';
+  $pane->subtype = 'forum_legend';
+  $pane->shown = TRUE;
+  $pane->access = array();
+  $pane->configuration = array(
+    'context' => 'argument_forum_id_1',
+    'override_title' => 0,
+    'override_title_text' => '',
+  );
+  $pane->cache = array();
+  $pane->style = array(
+    'settings' => NULL,
+  );
+  $pane->css = array();
+  $pane->extras = array();
+  $pane->position = 1;
+  $pane->locks = '';
+  $display->content['new-2'] = $pane;
+  $display->panels['center'][1] = 'new-2';
+  $pane = new stdClass();
+  $pane->pid = 'new-3';
+  $pane->panel = 'center';
+  $pane->type = 'forum_statistics';
+  $pane->subtype = 'forum_statistics';
+  $pane->shown = TRUE;
+  $pane->access = array();
+  $pane->configuration = array(
+    'context' => 'argument_forum_id_1',
+    'override_title' => 0,
+    'override_title_text' => '',
+  );
+  $pane->cache = array();
+  $pane->style = array(
+    'settings' => NULL,
+  );
+  $pane->css = array();
+  $pane->extras = array();
+  $pane->position = 2;
+  $pane->locks = '';
+  $display->content['new-3'] = $pane;
+  $display->panels['center'][2] = 'new-3';
+  $display->hide_title = PANELS_TITLE_FIXED;
+  $display->title_pane = '0';
+  $handler->conf['display'] = $display;
+}

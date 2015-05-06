@@ -1,0 +1,47 @@
+#system-modules table {
+  table-layout: fixed;
+}
+#system-modules th.checkbox {
+  width: 8%;
+}
+#system-modules th.name {
+  width: 25%;
+}
+#system-modules th.links {
+  width: 15%;
+}
+#system-modules td {
+  vertical-align: top;
+}
+#system-modules .expand.inner {
+  background: transparent url(/misc/menu-collapsed.png) left 0.6em no-repeat;
+  margin-left: -12px;
+  padding-left: 12px;
+}
+#system-modules .expanded.expand.inner {
+  background: transparent url(/misc/menu-expanded.png) left 0.6em no-repeat;
+}
+#system-modules .description {
+  cursor: pointer;
+}
+#system-modules .description .inner {
+  overflow: hidden; /* truncates descriptions if too long */
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#system-modules .description .requirements,
+#system-modules .description .links {
+  display: none;
+}
+#system-modules .description .expanded.inner {
+  overflow: visible;
+  white-space: normal;
+}
+#system-modules .description .expanded .requirements,
+#system-modules .description .expanded .links {
+  display: block;
+}
+#system-modules .requirements {
+  padding: 5px 0;
+  max-width: 490px;
+}

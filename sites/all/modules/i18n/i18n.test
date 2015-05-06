@@ -1,0 +1,464 @@
+<?php
+
+/**
+ * @file
+ * Base class for Internationalization tests
+ */
+class Drupali18nTestCase extends DrupalWebTestCase {
+  protected $current_user;
+  protected $default_language;
+  protected $secondary_language;
+
+  function setUpLanguages($admin_permissions = array()) {
+    // Setup admin user.
+    $this->admin_user = $this->drupalCreateUser(array_merge(array('bypass node access', 'administer nodes', 'administer languages', 'administer content types', 'administer blocks', 'access administration pages', 'translate interface'), $admin_permissions));
+
+    $this->drupalLogin($this->admin_user);
+
+    // Add languages.
+    $this->default_language = 'en';
+    $this->secondary_language = 'es';
+    $this->addLanguage($this->default_language);
+    $this->addLanguage($this->secondary_language);
+
+    // Enable URL language detection and selection to make the language switcher
+    // block appear.
+    $edit = array('language[enabled][locale-url]' => TRUE);
+    $this->drupalPost('admin/config/regional/language/configure', $edit, t('Save settings'));
+    $this->assertRaw(t('Language negotiation configuration saved.'), t('URL language detection enabled.'));
+    $this->drupalGet('admin/config/regional/language/configure');
+    $this->resetCaches();
+  }
+
+  /**
+   * Set up content-type (with translation).
+   */
+  function setUpContentType($settings = array()) {
+    $settings += array(
+      'type' => 'page',
+      'mode' => TRANSLATION_ENABLED,
+      'status' => 1,
+      'promote' => 0,
+    );
+
+    $type = node_type_get_type($settings['type']);
+    // Create content editor with translation permissions.
+    $this->content_editor = $this->drupalCreateUser(array(
+      'create ' . $type->type . ' content',
+      'edit own ' . $type->type . ' content',
+      'translate content',
+      'translate interface',
+    ));
+
+    $this->drupalLogin($this->admin_user);
+    // Set content type to use multilingual support with translation.
+    $this->drupalGet('admin/structure/types/manage/' . $type->type);
+    $edit = array();
+    $edit['language_content_type'] = $settings['mode'];
+    // Mark status and promoted
+    $edit['node_options[status]'] = $settings['status'];
+    $edit['node_options[promote]'] = $settings['promote'];
+    $this->drupalPost('admin/structure/types/manage/' . $type->type, $edit, t('Save content type'));
+    $this->assertRaw(t('The content type %type has been updated.', array('%type' => $type->name)), t('%type content type has been updated.', array('%type' => $type->name)));
+    $this->drupalGet('admin/structure/types/manage/' . $type->type);
+    $this->enableLanguageBlock();
+  }
+
+  /**
+   * Enable the language switcher block.
+   */
+  function enableLanguageBlock() {
+    // Enable the language switcher block.
+    $language_type = LANGUAGE_TYPE_INTERFACE;
+    $edit = array("blocks[locale_$language_type][region]" => 'sidebar_first');
+    $this->drupalPost('admin/structure/block', $edit, t('Save blocks'));
+  }
+
+  /**
+   * Set up translation for content type (default: page).
+   */
+  function setUpContentTranslation($settings = array()) {
+    $settings += array(
+      'mode' => TRANSLATION_ENABLED,
+    );
+    $this->setUpContentType($settings);
+  }
+
+  /**
+   * Install a the specified language if it has not been already. Otherwise make sure that
+   * the language is enabled.
+   *
+   * @param $language_code
+   *   The language code the check.
+   */
+  function addLanguage($language_code) {
+    // Check to make sure that language has not already been installed.
+    $this->drupalGet('admin/config/regional/language');
+
+    if (strpos($this->drupalGetContent(), 'enabled[' . $language_code . ']') === FALSE) {
+      // Doesn't have language installed so add it.
+      $edit = array();
+      $edit['langcode'] = $language_code;
+      $this->drupalPost('admin/config/regional/language/add', $edit, t('Add language'));
+
+      // Make sure we are not using a stale list.
+      drupal_static_reset('language_list');
+      $languages = language_list('language');
+      $this->assertTrue(array_key_exists($language_code, $languages), t('Language was installed successfully.'));
+
+      if (array_key_exists($language_code, $languages)) {
+        $this->assertRaw(t('The language %language has been created and can now be used. More information is available on the <a href="@locale-help">help screen</a>.', array('%language' => $languages[$language_code]->name, '@locale-help' => url('admin/help/locale'))), t('Language has been created.'));
+      }
+    }
+    elseif ($this->xpath('//input[@type="checkbox" and @name=:name and @checked="checked"]', array(':name' => 'enabled[' . $language_code . ']'))) {
+      // It's installed and enabled. No need to do anything.
+      $this->assertTrue(true, 'Language [' . $language_code . '] already installed and enabled.');
+    }
+    else {
+      // It's installed but not enabled. Enable it.
+      $this->assertTrue(true, 'Language [' . $language_code . '] already installed.');
+      $this->drupalPost(NULL, array('enabled[' . $language_code . ']' => TRUE), t('Save configuration'));
+      $this->assertRaw(t('Configuration saved.'), t('Language successfully enabled.'));
+    }
+  }
+
+  /**
+   * Create translation set from a node
+   *
+   * @param $source
+   *   Source node
+   * @param $languages
+   *   Optional list of language codes
+   */
+  function createNodeTranslationSet(&$source, $languages = NULL) {
+    if (empty($source->tnid)) {
+      $source->tnid = $source->nid;
+    }
+    $translations[$source->language] = $source;
+    foreach (language_list() as $language) {
+      if ($language->language != $source->language) {
+        $translations[$language->language] = $this->createNodeTranslation($source, $language);
+      }
+    }
+    return $translations;
+  }
+
+  /**
+   * Create a node of the specified type in the specified language.
+   
+   * @param $type
+   *   The node type.
+   * @param $title
+   *   Title of node in specified language.
+   * @param $body
+   *   Body of node in specified language.
+   * @param $langcode
+   *   Language code.
+   */
+  function createNode($type, $title, $body, $langcode, $edit = array()) {
+    $lang = LANGUAGE_NONE;
+    $edit["title"] = $title;
+    $edit["body[$lang][0][value]"] = $body;
+    $edit['language'] = $langcode;
+    $this->drupalPost('node/add/' . $type, $edit, t('Save'));
+    $info = node_type_load($type);
+    $message = t('@name %title has been created.', array('@name' => $info->name, '%title' => $title));
+    $this->assertRaw($message);
+
+    // Check to make sure the node was created.
+    $node = $this->drupalGetNodeByTitle($title);
+    $this->assertTrue($node, t('Node found in database.'));
+
+    return $node;
+  }
+
+  /**
+   * Create a translation for the specified node in the specified language.
+   *
+   * @param $node
+   *   The basic page to create translation for.
+   * @param $title
+   *   Title of node in specified language.
+   * @param $body
+   *   Body of node in specified language.
+   * @param $language
+   *   Language code.
+   */
+  function createNodeTranslation($node, $language, $title = NULL, $body = NULL) {
+    $body = $body ? $body : $this->randomName();
+    $title = $title ? $title : $this->randomName();
+    $this->drupalGet('node/add/' . $node->type, array('query' => array('translation' => $node->nid, 'target' => $language->language)));
+
+
+    $this->assertFieldByXPath('//input[@id="edit-title"]', $node->title, "Original title value correctly populated.");
+    $field_lang = field_language('node', $node, 'body');
+    $body_key = "body[und][0][value]";
+    $this->assertFieldByXPath("//textarea[@name='$body_key']", $node->body[$field_lang][0]['value'], "Original body value correctly populated.");
+
+    $edit = array();
+    $edit["title"] = $title;
+    $edit[$body_key] = $body;
+    $this->drupalPost(NULL, $edit, t('Save'));
+    $info = node_type_load($node->type);
+    $message = t('@name %title has been created.', array('@name' => $info->name, '%title' => $title));
+    $this->assertRaw($message);
+    // Check to make sure that translation was successful.
+    $translation = $this->drupalGetNodeByTitle($title);
+    $this->assertTrue($translation, t('Node found in database.'));
+    $this->assertTrue($translation->tnid == $node->nid, t('Translation set id correctly stored.'));
+
+    return $translation;
+  }
+
+  /**
+   * Retrieves a Drupal path or an absolute path with language
+   *
+   * @param $language
+   *   Language code or language object
+   */
+  protected function i18nGet($language, $path = '', array $options = array(), array $headers = array()) {
+    $options['language'] = $this->getLanguage($language);
+    return $this->drupalGet($path, $options, $headers);
+  }
+  /**
+   * Check strings for different languages
+   */
+  function i18nAssertTranslations($translations, $path = '', $message = 'Translation found for language.') {
+    foreach ($translations as $langcode => $text) {
+      $language = $this->getLanguage($langcode);
+      if ($language->enabled) {
+        $this->i18nGet($language, $path);
+        $this->assertRaw($text, $message . ' ' . $language->name . ': ' . check_plain($text));
+      }
+    }
+  }
+  /**
+   * Create node with language
+   */
+  protected function i18nCreateNode($language, $settings = array()) {
+    $language = $this->getLanguage($language);
+    $settings += array('language'  => $language->language, 'body' => array());
+    $settings['body'] += array($language->language => array(array()));
+    return $this->drupalCreateNode($settings);
+  }
+  /**
+   * Move block to region, from block.test
+   */
+  function moveBlockToRegion($block, $region = 'sidebar_first') {
+    $this->drupalLogin($this->admin_user);
+    // Set the created block to a specific region.
+    $edit = array();
+    $edit['blocks[' . $block['module'] . '_' . $block['delta'] . '][region]'] = $region;
+    $this->drupalPost('admin/structure/block', $edit, t('Save blocks'));
+
+    // Confirm that the block was moved to the proper region.
+    $this->assertText(t('The block settings have been updated.'), t('Block successfully moved to %region_name region.', array( '%region_name' => $region)));
+
+    // Confirm that the block is being displayed.
+    $this->drupalGet('node');
+    $this->assertText(check_plain($block['title']), t('Block successfully being displayed on the page.'));
+
+    // Confirm that the custom block was found at the proper region.
+    $xpath = $this->buildXPathQuery('//div[@class=:region-class]//div[@id=:block-id]/*', array(
+      ':region-class' => 'region region-' . str_replace('_', '-', $region),
+      ':block-id' => 'block-' . $block['module'] . '-' . $block['delta'],
+    ));
+    $this->assertFieldByXPath($xpath, NULL, t('Custom block found in %region_name region.', array('%region_name' => $region)));
+  }
+  /**
+   * Get language object for langcode
+   */
+  public function getLanguage($langcode) {
+    if (is_object($langcode)) {
+      return $langcode;
+    }
+    else {
+      $language_list = language_list();
+      return $language_list[$langcode];
+    }
+  }
+  /**
+   * Switch global language
+   */
+  public function switchLanguage($newlang = NULL) {
+    $newlang = $newlang ? $newlang : $this->install_locale;
+    $GLOBALS[LANGUAGE_TYPE_INTERFACE] = $this->getLanguage($newlang);
+  }
+
+  /**
+   * Get all languages that are not default
+   */
+  public function getOtherLanguages() {
+    $languages = language_list();
+    unset($languages[language_default('language')]);
+    return $languages;
+  }
+  /**
+   * Get enabled languages
+   */
+  public function getEnabledLanguages() {
+    $list = array();
+    foreach (language_list() as $langcode => $language) {
+      if (!empty($language->enabled)) {
+        $list[$langcode] = $language;
+      }
+    }
+    return $list;
+  }
+  /**
+   * Create translation for string in textgroup
+   *
+   * @param $translations
+   *   Optional array of langcode => translation. If not present, it will be generated.
+   */
+  function createStringTranslation($textgroup, $name, $translations = NULL) {
+    // Generate translations if not found, they will be the same length as source string
+    if (!$translations) {
+      $length = strlen($name);
+      foreach ($this->getOtherLanguages() as $language) {
+        $translations[$language->language] = $this->randomName($length);
+      }
+    }
+    $this->drupalLogin($this->translator);
+    // This is the language indicator on the translation search screen for
+    // untranslated strings. Copied straight from locale.inc.
+    $language_indicator = "<em class=\"locale-untranslated\">";
+    // Search for the name and translate it.
+    $search = array(
+      'string' => $name,
+      'language' => 'all',
+      'translation' => 'all',
+      'group' => $textgroup,
+    );
+    $this->drupalPost('admin/config/regional/translate/translate', $search, t('Filter'));
+    // assertText() seems to remove the input field where $name always could be
+    // found, so this is not a false assert. See how assertNoText succeeds
+    // later.
+    $this->assertText(check_plain($name), t('Search found the name.'));
+    $this->assertRaw($language_indicator, t('Name is untranslated.'));
+    // Assume this is the only result, given the random name.
+    $this->clickLink(t('edit'));
+    // We save the lid from the path.
+    $matches = array();
+    preg_match('!admin/config/regional/translate/edit/(\d+)!', $this->getUrl(), $matches);
+    $lid = $matches[1];
+    // No t() here, it's surely not translated yet.
+    $this->assertText(check_plain($name), t('name found on edit screen.'));
+    foreach ($translations as $langcode => $translation) {
+      $edit["translations[$langcode]"] = $translation;
+    }
+    $this->drupalPost(NULL, $edit, t('Save translations'));
+    $this->assertText(t('The string has been saved.'), t('The string has been saved.'));
+    $this->assertEqual($this->getUrl(), url('admin/config/regional/translate/translate', array('absolute' => TRUE)), t('Correct page redirection.'));
+    $this->drupalPost('admin/config/regional/translate/translate', $search, t('Filter'));
+    // The indicator should not be here.
+    $this->assertNoRaw($language_indicator, t('String is translated.'));
+    return $translations;
+  }
+
+  /**
+   * Reset static caches to make the test code match the client site behavior.
+   */
+  function resetCaches() {
+    drupal_static_reset('locale_url_outbound_alter');
+    drupal_static_reset('language_list');
+  }
+
+  /**
+   * Print out a variable for debugging
+   */
+  function printDebug($data, $title = 'Debug') {
+    $output = '<h2>' . $title . '<h2 />';
+    $output .= '<pre>';
+    $output .= is_array($data) || is_object($data) ? print_r($data, TRUE) : $data;
+    $output .= '<pre>';
+    //$this->assertTrue(TRUE, $output);
+    $this->verbose($output);
+  }
+  /**
+   * Debug dump object with some formatting
+   */
+  function printObject($object, $title = 'Object') {
+    $output = $this->formatTable($object);
+    $this->printDebug($output, $title);
+  }
+
+  /**
+   * Print out current HTML page
+   */
+  function printPage() {
+    $this->printDebug($this->drupalGetContent());
+  }
+
+  /**
+   * Dump table contents
+   *
+   * @params $table1, $table2..
+   *   One or more table names
+   */
+  function dumpTable() {
+    $output = '';
+    foreach (func_get_args() as $table) {
+      $header = $rows = array();
+      $result = db_query('SELECT * FROM {' . $table . '}');
+      $output .= '<h2>Table dump <i>' . $table . '</i>:</h2>';
+      while ($row = $result->fetchAssoc()) {
+        $rows[] = $row;
+        if (empty($header)) {
+          $header = array_keys($row);
+        }
+      }
+      if (!empty($rows)) {
+        $output .= theme('table', array('header' => $header, 'rows' => $rows));
+      }
+      else {
+        $output .= ' No rows';
+      }
+      $output .= '<br />';
+    }
+    $this->verbose($output);
+  }
+
+  /**
+   * Format object as table, recursive
+   */
+  function formatTable($object) {
+    foreach ($object as $key => $value) {
+      $rows[] = array(
+        $key,
+        is_array($value) || is_object($value) ? $this->formatTable($value) : $value,
+      );
+    }
+    if (!empty($rows)) {
+      return theme('table', array('rows' => $rows));
+    }
+    else {
+      return 'No properties';
+    }
+  }
+}
+
+class Drupali18nConfigTestCase extends Drupali18nTestCase {
+  public static function getInfo() {
+    return array(
+      'name' => 'Multilingual configuration',
+      'group' => 'Internationalization',
+      'description' => 'Basic configuration for the i18n module',
+    );
+  }
+
+  function setUp() {
+    parent::setUp('translation', 'i18n_node');
+    parent::setUpLanguages();
+  }
+
+  function testEnableLanguages() {
+    // A language with two letter code may help too
+    $this->addLanguage('pt-br');
+
+    // Disable Italian to test the translation behavior with disabled languages.
+    $this->addLanguage('it');
+    $edit = array('enabled[it]' => FALSE);
+    $this->drupalPost('admin/config/regional/language', $edit, t('Save configuration'));
+  }
+}

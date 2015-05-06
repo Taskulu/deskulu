@@ -1,0 +1,596 @@
+<?php
+
+/**
+ * Implements hook_element_info().
+ */
+function elements_element_info() {
+  $types['emailfield'] = array(
+    '#input' => TRUE,
+    '#size' => 60,
+    '#maxlength' => 128,
+    '#autocomplete_path' => FALSE,
+    '#process' => array('ajax_process_form', 'elements_process_pattern'),
+    '#element_validate' => array('elements_validate_email'),
+    '#theme' => 'emailfield',
+    '#theme_wrappers' => array('form_element'),
+  );
+  $types['searchfield'] = array(
+    '#input' => TRUE,
+    '#size' => 60,
+    '#maxlength' => 128,
+    '#autocomplete_path' => FALSE,
+    '#process' => array('ajax_process_form'),
+    '#theme' => 'searchfield',
+    '#theme_wrappers' => array('form_element'),
+  );
+  $types['telfield'] = array(
+    '#input' => TRUE,
+    '#size' => 20,
+    '#maxlength' => 64,
+    '#process' => array('ajax_process_form', 'elements_process_pattern'),
+    '#theme' => 'telfield',
+    '#theme_wrappers' => array('form_element'),
+  );
+  $types['urlfield'] = array(
+    '#input' => TRUE,
+    '#size' => 80,
+    '#maxlength' => 128,
+    '#autocomplete_path' => FALSE,
+    '#process' => array('ajax_process_form', 'elements_process_pattern'),
+    '#element_validate' => array('elements_validate_url'),
+    '#theme' => 'urlfield',
+    '#theme_wrappers' => array('form_element'),
+  );
+  $types['numberfield'] = array(
+    '#input' => TRUE,
+    '#step' => 1,
+    '#process' => array('ajax_process_form'),
+    '#element_validate' => array('elements_validate_number'),
+    '#theme' => 'numberfield',
+    '#theme_wrappers' => array('form_element'),
+  );
+  $types['rangefield'] = array(
+    '#input' => TRUE,
+    '#step' => 1,
+    '#min' => 0,
+    '#max' => 100,
+    '#process' => array('ajax_process_form'),
+    '#element_validate' => array('elements_validate_number'),
+    '#theme' => 'rangefield',
+    '#theme_wrappers' => array('form_element'),
+  );
+
+  // Backported table element from https://drupal.org/node/80855
+  $types['table'] = array(
+    '#header' => array(),
+    '#rows' => array(),
+    '#empty' => '',
+    // Properties for tableselect support.
+    '#input' => TRUE,
+    '#tree' => TRUE,
+    '#tableselect' => FALSE,
+    '#multiple' => TRUE,
+    '#js_select' => TRUE,
+    '#value_callback' => 'elements_table_value',
+    '#process' => array('elements_table_process'),
+    '#element_validate' => array('elements_table_validate'),
+    // Properties for tabledrag support.
+    // The value is a list of arrays that are passed to drupal_add_tabledrag().
+    // elements_pre_render_table() prepends the HTML ID of the table to each set
+    // of arguments.
+    // @see drupal_add_tabledrag()
+    '#tabledrag' => array(),
+    // Render properties.
+    '#pre_render' => array('elements_pre_render_table'),
+    '#theme' => 'table',
+  );
+
+  return $types;
+}
+
+/**
+ * Implements hook_element_info_alter().
+ */
+function elements_element_info_alter(&$types) {
+  // Add placeholder and pattern support to core form elements.
+  foreach (array_keys($types) as $type) {
+    switch ($type) {
+      case 'textfield':
+      case 'textarea':
+      case 'password':
+        $types[$type]['#process'][] = 'elements_process_placeholder';
+        $types[$type]['#process'][] = 'elements_process_pattern';
+        break;
+    }
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function elements_theme() {
+  return array(
+    'emailfield' => array(
+      'arguments' => array('element' => NULL),
+      'render element' => 'element',
+      'file' => 'elements.theme.inc',
+    ),
+    'searchfield' => array(
+      'arguments' => array('element' => NULL),
+      'render element' => 'element',
+      'file' => 'elements.theme.inc',
+    ),
+    'telfield' => array(
+      'arguments' => array('element' => NULL),
+      'render element' => 'element',
+      'file' => 'elements.theme.inc',
+    ),
+    'urlfield' => array(
+      'arguments' => array('element' => NULL),
+      'render element' => 'element',
+      'file' => 'elements.theme.inc',
+    ),
+    'numberfield' => array(
+      'arguments' => array('element' => NULL),
+      'render element' => 'element',
+      'file' => 'elements.theme.inc',
+    ),
+    'rangefield' => array(
+      'arguments' => array('element' => NULL),
+      'render element' => 'element',
+      'file' => 'elements.theme.inc',
+    ),
+  );
+}
+
+/**
+ * Return the autocompletion HTML for a form element.
+ *
+ * @param $element
+ *   The renderable element to process for autocompletion.
+ *
+ * @return
+ *   The rendered autocompletion element HTML, or an empty string if the field
+ *   has no autocompletion enabled.
+ */
+function elements_add_autocomplete(&$element) {
+  $extra = '';
+
+  if (!empty($element['#autocomplete_path']) && drupal_valid_path($element['#autocomplete_path'])) {
+    drupal_add_library('system', 'drupal.autocomplete');
+    $element['#attributes']['class'][] = 'form-autocomplete';
+
+    $attributes = array();
+    $attributes['type'] = 'hidden';
+    $attributes['id'] = $element['#attributes']['id'] . '-autocomplete';
+    $attributes['value'] = url($element['#autocomplete_path'], array('absolute' => TRUE));
+    $attributes['disabled'] = 'disabled';
+    $attributes['class'][] = 'autocomplete';
+    $extra = '<input' . drupal_attributes($attributes) . ' />';
+  }
+
+  return $extra;
+}
+
+/**
+ * #process callback for #placeholder form element property.
+ *
+ * @param $element
+ *   An associative array containing the properties and children of the
+ *   generic input element.
+ *
+ * @return
+ *   The processed element.
+ */
+function elements_process_placeholder($element) {
+  if (isset($element['#placeholder']) && !isset($element['#attributes']['placeholder'])) {
+    $element['#attributes']['placeholder'] = $element['#placeholder'];
+  }
+
+  return $element;
+}
+
+/**
+ * #process callback for #pattern form element property.
+ *
+ * @param $element
+ *   An associative array containing the properties and children of the
+ *   generic input element.
+ *
+ * @return
+ *   The processed element.
+ *
+ * @see elements_validate_pattern()
+ */
+function elements_process_pattern($element) {
+  if (isset($element['#pattern']) && !isset($element['#attributes']['pattern'])) {
+    $element['#attributes']['pattern'] = $element['#pattern'];
+    $element['#element_validate'][] = 'form_validate_pattern';
+  }
+
+  return $element;
+}
+
+/**
+ * #element_validate callback for #pattern form element property.
+ *
+ * @param $element
+ *   An associative array containing the properties and children of the
+ *   generic form element.
+ * @param $form_state
+ *   The $form_state array for the form this element belongs to.
+ *
+ * @see element_process_pattern()
+ */
+function elements_validate_pattern($element, &$form_state) {
+  if ($element['#value'] !== '') {
+    // The pattern must match the entire string and should have the same
+    // behavior as the RegExp object in ECMA 262.
+    // - Use bracket-style delimiters to avoid introducing a special delimiter
+    //   character like '/' that would have to be escaped.
+    // - Put in brackets so that the pattern can't interfere with what's
+    //   prepended and appended.
+    $pattern = '{^(?:' . $element['#pattern'] . ')$}';
+
+    if (!preg_match($pattern, $element['#value'])) {
+      form_error($element, t('%name field is not in the right format.', array('%name' => $element['#title'])));
+    }
+  }
+}
+
+/**
+ * Form element validation handler for #type 'email'.
+ *
+ * Note that #maxlength and #required is validated by _form_validate() already.
+ */
+function elements_validate_email(&$element, &$form_state) {
+  if ($element['#value'] && !valid_email_address($element['#value'])) {
+    form_error($element, t('The e-mail address %mail is not valid.', array('%mail' => $element['#value'])));
+  }
+}
+
+/**
+ * Form element validation handler for #type 'url'.
+ *
+ * Note that #maxlength and #required is validated by _form_validate() already.
+ */
+function elements_validate_url(&$element, &$form_state) {
+  if ($element['#value'] && !valid_url($element['#value'], TRUE)) {
+    form_error($element, t('The URL %url is not valid.', array('%url' => $element['#value'])));
+  }
+}
+
+/**
+ * Form element validation handler for #type 'number'.
+ *
+ * Note that #required is validated by _form_validate() already.
+ */
+function elements_validate_number(&$element, &$form_state) {
+  $value = $element['#value'];
+  if ($value === '') {
+    return;
+  }
+
+  $name = empty($element['#title']) ? $element['#parents'][0] : $element['#title'];
+
+  // Ensure the input is numeric.
+  if (!is_numeric($value)) {
+    form_error($element, t('%name must be a number.', array('%name' => $name)));
+    return;
+  }
+
+  // Ensure that the input is greater than the #min property, if set.
+  if (isset($element['#min']) && $value < $element['#min']) {
+    form_error($element, t('%name must be higher or equal to %min.', array('%name' => $name, '%min' => $element['#min'])));
+  }
+
+  // Ensure that the input is less than the #max property, if set.
+  if (isset($element['#max']) && $value > $element['#max']) {
+    form_error($element, t('%name must be below or equal to %max.', array('%name' => $name, '%max' => $element['#max'])));
+  }
+
+  if (isset($element['#step']) && strtolower($element['#step']) != 'any') {
+    // Check that the input is an allowed multiple of #step (offset by #min if
+    // #min is set).
+    $offset = isset($element['#min']) ? $element['#min'] : 0.0;
+
+    if (!elements_valid_number_step($value, $element['#step'], $offset)) {
+      form_error($element, t('%name is not a valid number.', array('%name' => $name)));
+    }
+  }
+}
+
+/**
+ * Verifies that a number is a multiple of a given step.
+ *
+ * The implementation assumes it is dealing with IEEE 754 double precision
+ * floating point numbers that are used by PHP on most systems.
+ *
+ * This is based on the number/range verification methods of webkit.
+ *
+ * @param $value
+ *   The value that needs to be checked.
+ * @param $step
+ *   The step scale factor. Must be positive.
+ * @param $offset
+ *   (optional) An offset, to which the difference must be a multiple of the
+ *   given step.
+ *
+ * @return bool
+ *   TRUE if no step mismatch has occured, or FALSE otherwise.
+ *
+ * @see http://opensource.apple.com/source/WebCore/WebCore-1298/html/NumberInputType.cpp
+ */
+function elements_valid_number_step($value, $step, $offset = 0.0) {
+  $double_value = (double) abs($value - $offset);
+
+  // The fractional part of a double has 53 bits. The greatest number that could
+  // be represented with that is 2^53. If the given value is even bigger than
+  // $step * 2^53, then dividing by $step will result in a very small remainder.
+  // Since that remainder can't even be represented with a single precision
+  // float the following computation of the remainder makes no sense and we can
+  // safely ignore it instead.
+  if ($double_value / pow(2.0, 53) > $step) {
+    return TRUE;
+  }
+
+  // Now compute that remainder of a division by $step.
+  $remainder = (double) abs($double_value - $step * round($double_value / $step));
+
+  // $remainder is a double precision floating point number. Remainders that
+  // can't be represented with single precision floats are acceptable. The
+  // fractional part of a float has 24 bits. That means remainders smaller than
+  // $step * 2^-24 are acceptable.
+  $computed_acceptable_error = (double) ($step / pow(2.0, 24));
+
+  return $computed_acceptable_error >= $remainder || $remainder >= ($step - $computed_acceptable_error);
+}
+
+/**
+ * Determines the value of a table form element.
+ *
+ * @param array $element
+ *   The form element whose value is being populated.
+ * @param array|false $input
+ *   The incoming input to populate the form element. If this is FALSE,
+ *   the element's default value should be returned.
+ *
+ * @return array
+ *   The data that will appear in the $form_state['values'] collection
+ *   for this element. Return nothing to use the default.
+ */
+function elements_table_value(array $element, $input = FALSE) {
+  // If #multiple is FALSE, the regular default value of radio buttons is used.
+  if (!empty($element['#tableselect']) && !empty($element['#multiple'])) {
+    // Contrary to #type 'checkboxes', the default value of checkboxes in a
+    // table is built from the array keys (instead of array values) of the
+    // #default_value property.
+    // @todo D8: Remove this inconsistency.
+    if ($input === FALSE) {
+      $element += array('#default_value' => array());
+      return drupal_map_assoc(array_keys(array_filter($element['#default_value'])));
+    }
+    else {
+      return is_array($input) ? drupal_map_assoc($input) : array();
+    }
+  }
+}
+
+/**
+ * Creates checkbox or radio elements to populate a tableselect table.
+ *
+ * @param $element
+ *   An associative array containing the properties and children of the
+ *   tableselect element.
+ *
+ * @return
+ *   The processed element.
+ */
+function elements_table_process($element, &$form_state) {
+  if ($element['#tableselect']) {
+    if ($element['#multiple']) {
+      $value = is_array($element['#value']) ? $element['#value'] : array();
+    }
+    // Advanced selection behaviour makes no sense for radios.
+    else {
+      $element['#js_select'] = FALSE;
+    }
+    // Add a "Select all" checkbox column to the header.
+    // @todo D8: Rename into #select_all?
+    if ($element['#js_select']) {
+      $element['#attached']['js'][] = 'misc/tableselect.js';
+      array_unshift($element['#header'], array('class' => array('select-all')));
+    }
+    // Add an empty header column for radio buttons or when a "Select all"
+    // checkbox is not desired.
+    else {
+      array_unshift($element['#header'], '');
+    }
+
+    if (!isset($element['#default_value']) || $element['#default_value'] === 0) {
+      $element['#default_value'] = array();
+    }
+    // Create a checkbox or radio for each row in a way that the value of the
+    // tableselect element behaves as if it had been of #type checkboxes or
+    // radios.
+    foreach (element_children($element) as $key) {
+      // Do not overwrite manually created children.
+      if (!isset($element[$key]['select'])) {
+        // Determine option label; either an assumed 'title' column, or the
+        // first available column containing a #title or #markup.
+        // @todo Consider to add an optional $element[$key]['#title_key']
+        //   defaulting to 'title'?
+        $title = '';
+        if (!empty($element[$key]['title']['#title'])) {
+          $title = $element[$key]['title']['#title'];
+        }
+        else {
+          foreach (element_children($element[$key]) as $column) {
+            if (isset($element[$key][$column]['#title'])) {
+              $title = $element[$key][$column]['#title'];
+              break;
+            }
+            if (isset($element[$key][$column]['#markup'])) {
+              $title = $element[$key][$column]['#markup'];
+              break;
+            }
+          }
+        }
+        if ($title !== '') {
+          $title = t('Update !title', array('!title' => $title));
+        }
+
+        // Prepend the select column to existing columns.
+        $element[$key] = array('select' => array()) + $element[$key];
+        $element[$key]['select'] += array(
+          '#type' => $element['#multiple'] ? 'checkbox' : 'radio',
+          '#title' => $title,
+          '#title_display' => 'invisible',
+
+          // @todo If rows happen to use numeric indexes instead of string keys,
+          //   this results in a first row with $key === 0, which is always FALSE.
+          '#return_value' => $key,
+          '#attributes' => $element['#attributes'],
+        );
+        $element_parents = array_merge($element['#parents'], array($key));
+        if ($element['#multiple']) {
+          $element[$key]['select']['#default_value'] = isset($value[$key]) ? $key : NULL;
+          $element[$key]['select']['#parents'] = $element_parents;
+        }
+        else {
+          $element[$key]['select']['#default_value'] = ($element['#default_value'] == $key ? $key : NULL);
+          $element[$key]['select']['#parents'] = $element['#parents'];
+          $element[$key]['select']['#id'] = drupal_html_id('edit-' . implode('-', $element_parents));
+        }
+      }
+    }
+  }
+
+  return $element;
+}
+
+/**
+ * #element_validate callback for #type 'table'.
+ *
+ * @param array $element
+ *   An associative array containing the properties and children of the
+ *   table element.
+ * @param array $form_state
+ *   The current state of the form.
+ */
+function elements_table_validate($element, &$form_state) {
+  // Skip this validation if the button to submit the form does not require
+  // selected table row data.
+  if (empty($form_state['triggering_element']['#tableselect'])) {
+    return;
+  }
+  if ($element['#multiple']) {
+    if (!is_array($element['#value']) || !count(array_filter($element['#value']))) {
+      form_error($element, t('No items selected.'));
+    }
+  }
+  elseif (!isset($element['#value']) || $element['#value'] === '') {
+    form_error($element, t('No item selected.'));
+  }
+}
+
+/**
+ * #pre_render callback to transform children of an element into #rows suitable for theme_table().
+ *
+ * This function converts sub-elements of an element of #type 'table' to be
+ * suitable for theme_table():
+ * - The first level of sub-elements are table rows. Only the #attributes
+ *   property is taken into account.
+ * - The second level of sub-elements is converted into columns for the
+ *   corresponding first-level table row.
+ *
+ * Simple example usage:
+ * @code
+ * $form['table'] = array(
+ *   '#type' => 'table',
+ *   '#header' => array(t('Title'), array('data' => t('Operations'), 'colspan' => '1')),
+ *   // Optionally, to add tableDrag support:
+ *   '#tabledrag' => array(
+ *     array('order', 'sibling', 'thing-weight'),
+ *   ),
+ * );
+ * foreach ($things as $row => $thing) {
+ *   $form['table'][$row]['#weight'] = $thing['weight'];
+ *
+ *   $form['table'][$row]['title'] = array(
+ *     '#type' => 'textfield',
+ *     '#default_value' => $thing['title'],
+ *   );
+ *
+ *   // Optionally, to add tableDrag support:
+ *   $form['table'][$row]['#attributes']['class'][] = 'draggable';
+ *   $form['table'][$row]['weight'] = array(
+ *     '#type' => 'textfield',
+ *     '#title' => t('Weight for @title', array('@title' => $thing['title'])),
+ *     '#title_display' => 'invisible',
+ *     '#size' => 4,
+ *     '#default_value' => $thing['weight'],
+ *     '#attributes' => array('class' => array('thing-weight')),
+ *   );
+ *
+ *   // The amount of link columns should be identical to the 'colspan'
+ *   // attribute in #header above.
+ *   $form['table'][$row]['edit'] = array(
+ *     '#type' => 'link',
+ *     '#title' => t('Edit'),
+ *     '#href' => 'thing/' . $row . '/edit',
+ *   );
+ * }
+ * @endcode
+ *
+ * @param array $element
+ *   A structured array containing two sub-levels of elements. Properties used:
+ *   - #tabledrag: The value is a list of arrays that are passed to
+ *     drupal_add_tabledrag(). The HTML ID of the table is prepended to each set
+ *     of arguments.
+ *
+ * @see elements_element_info()
+ * @see theme_table()
+ * @see drupal_process_attached()
+ * @see drupal_add_tabledrag()
+ */
+function elements_pre_render_table(array $element) {
+  foreach (element_children($element) as $first) {
+    $row = array('data' => array());
+    // Apply attributes of first-level elements as table row attributes.
+    if (isset($element[$first]['#attributes'])) {
+      $row += $element[$first]['#attributes'];
+    }
+    // Turn second-level elements into table row columns.
+    // @todo Do not render a cell for children of #type 'value'.
+    // @see http://drupal.org/node/1248940
+    foreach (element_children($element[$first]) as $second) {
+      // Assign the element by reference, so any potential changes to the
+      // original element are taken over.
+      $column = array('data' => &$element[$first][$second]);
+
+      // Apply wrapper attributes of second-level elements as table cell
+      // attributes.
+      //if (isset($element[$first][$second]['#wrapper_attributes'])) {
+      //  $column += $element[$first][$second]['#wrapper_attributes'];
+      //}
+
+      $row['data'][] = $column;
+    }
+    $element['#rows'][] = $row;
+  }
+
+  // Take over $element['#id'] as HTML ID attribute, if not already set.
+  element_set_attributes($element, array('id'));
+
+  // If the custom #tabledrag is set and there is a HTML ID, inject the table's
+  // HTML ID as first callback argument and attach the behavior.
+  if (!empty($element['#tabledrag']) && isset($element['#attributes']['id'])) {
+    foreach ($element['#tabledrag'] as &$args) {
+      array_unshift($args, $element['#attributes']['id']);
+    }
+    $element['#attached']['drupal_add_tabledrag'] = $element['#tabledrag'];
+  }
+
+  return $element;
+}

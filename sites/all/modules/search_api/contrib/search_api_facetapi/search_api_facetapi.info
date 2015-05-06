@@ -1,0 +1,17 @@
+name = Search facets
+description = "Integrate the Search API with the Facet API to provide facetted searches."
+dependencies[] = search_api
+dependencies[] = facetapi
+core = 7.x
+package = Search
+
+files[] = plugins/facetapi/adapter.inc
+files[] = plugins/facetapi/query_type_term.inc
+files[] = plugins/facetapi/query_type_date.inc
+
+; Information added by Drupal.org packaging script on 2014-12-26
+version = "7.x-1.14"
+core = "7.x"
+project = "search_api"
+datestamp = "1419580682"
+

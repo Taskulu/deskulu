@@ -1,0 +1,226 @@
+<?php
+
+define('FONTDECK_BASE_URL', 'http://fontdeck.com/api/v1/');
+
+/**
+ * Implements hook_fontyourface_info().
+ */
+function fontdeck_fontyourface_info() {
+
+  return array(
+    'name' => 'Fontdeck',
+    'url' => 'http://fontdeck.com/',
+    'base_path' => 'http://fontdeck.com/search?q=',
+  );
+
+  return $info;
+
+} // fontdeck_fontyourface_info
+
+/**
+ * Implements hook_fontyourface_import().
+ */
+function fontdeck_fontyourface_import() {
+
+  $success = TRUE;
+  $project = variable_get('fontdeck_project', '');
+  $domain = fontdeck_get_domain();
+
+  $project_info_url = FONTDECK_BASE_URL . 'project-info?project=' . $project . '&domain=' . $domain;
+
+  if ($project != '') {
+
+    $response = drupal_http_request($project_info_url);
+
+    if ($response->code == 200) {
+
+      $data = json_decode($response->data);
+
+      if (isset($data->error)) {
+        drupal_set_message($data->error, 'error');
+        return;
+      }
+
+      $fontdeck_css = variable_get('fontdeck_css', array());
+
+      if (!isset($fontdeck_css[$project])) {
+        $fontdeck_css[$project] = array();
+      } // if
+
+      $fontdeck_css[$project][$domain] = $data->css;
+
+      variable_set('fontdeck_css', $fontdeck_css);
+
+      foreach ($data->provides as $import_font) {
+
+        $font = new StdClass;
+        $font->name = $import_font->name;
+        $font->url = 'http://fontdeck.com/search?q=' . urlencode($import_font->name);
+        $font->provider = 'fontdeck';
+        $font->tags = array();
+        $font->css_family = $import_font->name;
+        $font->css_style = $import_font->style;
+        $font->css_weight = $import_font->weight;
+
+        fontyourface_save_font($font);
+
+      } // foreach
+
+    } // if
+    else {
+
+      $success = FALSE;
+      drupal_set_message(t('There was an error importing font information for project @project on this domain (@domain) from Fontdeck.', array('@project' => $project, '@domain' => $domain)), 'error');
+
+    } // else
+
+  } // if
+  else {
+
+    $success = FALSE;
+    drupal_set_message(t('Missing project number to import.'), 'error');
+
+  } // else
+
+  return $success;
+
+} // fontdeck_fontyourface_import
+
+/**
+ * Implements hook_form_alter().
+ */
+function fontdeck_form_alter(&$form, &$form_state, $form_id) {
+
+  if ($form_id == 'fontyourface_ui_settings_form') {
+
+    $form['fontdeck'] = array(
+      '#type' => 'fieldset',
+      '#title' => 'Fontdeck',
+      '#weight' => -1,
+      'fontdeck_project' => array(
+        '#type' => 'textfield',
+        '#title' => t('Fontdeck project number'),
+        '#description' => t('Only paste the project number part in the URL.'),
+        '#default_value' => variable_get('fontdeck_project', ''),
+        '#field_prefix' => t('http://fontdeck.com/project/'),
+        '#size' => 10,
+      ),
+      'fontdeck_project_save' => array(
+        '#type' => 'submit',
+        '#value' => t('Save project number'),
+      ),
+    );
+
+    // Move the default update/import button to the Fontdeck fieldset
+    if (isset($form['providers']['fontdeck_import'])) {
+      $form['fontdeck']['fontdeck_import'] = $form['providers']['fontdeck_import'];
+      unset($form['providers']['fontdeck_import']);
+    }
+
+    $form['#submit'][] = 'fontdeck_project_submit';
+
+  } // if
+
+} // fontdeck_form_alter
+
+/**
+ * Updates project number.
+ */
+function fontdeck_project_submit($form, &$form_state) {
+
+  if ($form_state['clicked_button']['#parents'][0] == 'fontdeck_project_save') {
+
+    variable_set('fontdeck_project', $form_state['values']['fontdeck_project']);
+    drupal_set_message(t('Fontdeck project updated.'));
+
+  } // if
+
+} // fontdeck_project_submit
+
+/**
+ * Implements hook_fontyourface_preview().
+ */
+function fontdeck_fontyourface_preview($font, $text = NULL, $size = 18) {
+
+  $output = '';
+
+  if ($text == NULL) {
+    $text = $font->name;
+  } // if
+
+  if ($size == 'all') {
+
+    // Display variety of sizes.
+
+    $sizes = array(32, 24, 18, 14, 12, 10);
+
+    foreach ($sizes as $size) {
+
+      $output .= '<div style="' . fontyourface_font_css($font) . ' font-size: ' . $size . 'px; line-height: ' . $size . 'px;">' . $text . '</div>';
+
+    } // foreach
+
+  } // if
+  else {
+
+    // Display single size.
+
+    $output = '<span style="' . fontyourface_font_css($font) . ' font-size: ' . $size . 'px; line-height: ' . $size . 'px;">' . $text . '</span>';
+
+  } // else
+
+  return $output;
+
+} // fontdeck_fontyourface_preview
+
+/**
+ * Implements template_preprocess_html().
+ */
+function fontdeck_preprocess_html(&$vars) {
+
+  $project = variable_get('fontdeck_project', '');
+  $domain = fontdeck_get_domain();
+
+  if (!empty($vars['fontyourface']) && $project != '') {
+
+    $enabled_fonts = FALSE;
+
+    foreach ($vars['fontyourface'] as $used_font) {
+
+      if ($used_font->provider == 'fontdeck') {
+        $enabled_fonts = TRUE;
+      } // if
+
+    } // foreach
+
+    if ($enabled_fonts) {
+
+      $fontdeck_css = variable_get('fontdeck_css', array());
+
+      if (isset($fontdeck_css[$project][$domain])) {
+
+        fontyourface_add_css_in_preprocess($vars, $fontdeck_css[$project][$domain], 'remote');
+
+      } // if
+
+    } // if
+
+  } // if
+
+} // fontdeck_preprocess_html
+
+/**
+ * Helper function - gets the correct domain for authentication with Fontdeck.
+ */
+function fontdeck_get_domain() {
+
+  // We attempt to parse it as an URL, looking mainly to strip non-standard
+  // port numbers. If it does not parse, it is obviously simple enought to be
+  // used as it is.
+
+  $details = parse_url($_SERVER['HTTP_HOST']);
+  $host = isset($details['host']) ? $details['host'] : $_SERVER['HTTP_HOST'];
+
+  return preg_replace('#^www.#', '', $host);
+
+} // fontdeck_get_domain

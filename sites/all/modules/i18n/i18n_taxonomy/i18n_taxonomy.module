@@ -1,0 +1,1263 @@
+<?php
+
+/**
+ * @file
+ * i18n taxonomy module
+ *
+ * Internationalization (i18n) package.
+ *
+ * This module groups together all existing i18n taxonomy functionality
+ * providing several options for taxonomy translation.
+ *
+ * Translates taxonomy term for selected vocabularies running them through the localization system.
+ * It also translates terms for views filters and views results.
+ *
+ * @author Jose A. Reyero, 2004
+ */
+
+/**
+ * Implements hook_help().
+ */
+function i18n_taxonomy_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#i18n_taxonomy' :
+      $output = '<p>' . t('This module adds support for multilingual taxonomy. You can set up multilingual options for each vocabulary:') . '</p>';
+      $output .= '<ul>';
+      $output .= '<li>' . t('A language can be assigned globaly for a vocabulary.') . '</li>';
+      $output .= '<li>' . t('Different terms for each language with translation relationships.') . '</li>';
+      $output .= '<li>' . t('Terms can be common to all languages, but may be localized.') . '</li>';
+      $output .= '</ul>';
+      $output .= '<p>' . t('To search and translate strings, use the <a href="@translate-interface">translation interface</a> pages.', array('@translate-interface' => url('admin/config/regional/translate'))) . '</p>';
+      $output .= '<p>' . t('For more information, see the online handbook entry for <a href="@i18n">Internationalization module</a>.', array('@i18n' => 'http://drupal.org/node/133977')) . '</p>';
+      return $output;
+
+    case 'admin/config/regional/i18n':
+      $output = '<p>' . t('To set up multilingual options for vocabularies go to <a href="@configure_taxonomy">Taxonomy configuration page</a>.', array('@configure_taxonomy' => url('admin/structure/taxonomy'))) . '</p>';
+      return $output;
+
+    case 'admin/structure/taxonomy/%':
+      $vocabulary = taxonomy_vocabulary_machine_name_load($arg[3]);
+      switch (i18n_taxonomy_vocabulary_mode($vocabulary)) {
+        case I18N_MODE_LOCALIZE:
+          return '<p>' . t('%capital_name is a localizable vocabulary. You will be able to translate term names and descriptions using the <a href="@translate-interface">translate interface</a> pages.', array('%capital_name' => drupal_ucfirst($vocabulary->name), '%name' => $vocabulary->name, '@translate-interface' => url('admin/config/regional/translate'))) . '</p>';
+
+        case I18N_MODE_LANGUAGE:
+          return '<p>' . t('%capital_name is a vocabulary with a fixed language. All the terms in this vocabulary will have %language language.', array('%capital_name' => drupal_ucfirst($vocabulary->name), '%name' => $vocabulary->name, '%language' => i18n_language_property($vocabulary->language, 'name'))) . '</p>';
+
+        case I18N_MODE_TRANSLATE:
+          return '<p>' . t('%capital_name is a full multilingual vocabulary. You will be able to set a language for each term and create translation relationships.', array('%capital_name' => drupal_ucfirst($vocabulary->name))) . '</p>';
+      }
+      break;
+
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function i18n_taxonomy_menu() {
+  $items['admin/structure/taxonomy/%taxonomy_vocabulary_machine_name/list/list'] = array(
+    'title' => 'Terms',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -20,
+  );
+  $items['admin/structure/taxonomy/%taxonomy_vocabulary_machine_name/list/sets'] = array(
+    'title' => 'Translation sets',
+    'page callback' => 'i18n_taxonomy_translation_sets_overview',
+    'page arguments' => array(3),
+    'access callback' => 'i18n_taxonomy_vocabulary_translation_tab_sets_access',
+    'access arguments' => array(3),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'i18n_taxonomy.admin.inc',
+  );
+  $items['admin/structure/taxonomy/%taxonomy_vocabulary_machine_name/list/sets/add'] = array(
+    'title' => 'Create new translation',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('i18n_taxonomy_translation_term_form', 3),
+    'access callback' => 'i18n_taxonomy_vocabulary_translation_tab_sets_access',
+    'access arguments' => array(3),
+    'type' => MENU_LOCAL_ACTION,
+    //'parent' => 'admin/content/taxonomy/%taxonomy_vocabulary',
+    'file' => 'i18n_taxonomy.admin.inc',
+  );
+  $items['admin/structure/taxonomy/%taxonomy_vocabulary_machine_name/list/sets/edit/%i18n_taxonomy_translation_set'] = array(
+    'title' => 'Edit translation',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('i18n_taxonomy_translation_term_form', 3, 7),
+    'access callback' => 'i18n_taxonomy_vocabulary_translation_tab_sets_access',
+    'access arguments' => array(3),
+    'type' => MENU_CALLBACK,
+    //'parent' => 'admin/content/taxonomy/%taxonomy_vocabulary',
+    'file' => 'i18n_taxonomy.admin.inc',
+  );
+  $items['admin/structure/taxonomy/%taxonomy_vocabulary_machine_name/list/sets/delete/%i18n_taxonomy_translation_set'] = array(
+    'title' => 'Delete translation',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('i18n_translation_set_delete_confirm', 7),
+    'access callback' => 'i18n_taxonomy_vocabulary_translation_tab_sets_access',
+    'access arguments' => array(3),
+    'type' => MENU_CALLBACK,
+  );
+  $items['i18n/taxonomy/autocomplete/vocabulary/%taxonomy_vocabulary_machine_name/%'] = array(
+    'title' => 'Autocomplete taxonomy',
+    'page callback' => 'i18n_taxonomy_autocomplete_language',
+    'page arguments' => array(5, 4),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+    'file' => 'i18n_taxonomy.pages.inc',
+  );
+  $items['i18n/taxonomy/autocomplete/language/%'] = array(
+    'title' => 'Autocomplete taxonomy',
+    'page callback' => 'i18n_taxonomy_autocomplete_language',
+    'page arguments' => array(4, NULL),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+    'file' => 'i18n_taxonomy.pages.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_admin_paths().
+ */
+function i18n_taxonomy_admin_paths() {
+  $paths = array(
+    'taxonomy/*/translate' => TRUE,
+    'taxonomy/*/translate/*' => TRUE,
+  );
+  return $paths;
+}
+
+/**
+ * Implements hook_menu_alter().
+ *
+ * Take over the taxonomy pages
+ */
+function i18n_taxonomy_menu_alter(&$items) {
+  // If ctool's page manager is active for the path skip this modules override.
+  // Also views module takes over this page so this won't work if views enabled.
+  // Skip when taxonomy_display enabled, see http://drupal.org/node/1280194
+  if (variable_get('page_manager_term_view_disabled', TRUE) && !module_exists('taxonomy_display')) {
+    // Taxonomy term page. Localize terms.
+    $items['taxonomy/term/%taxonomy_term']['page callback'] = 'i18n_taxonomy_term_page';
+    $items['taxonomy/term/%taxonomy_term']['title callback'] = 'i18n_taxonomy_term_name';
+    $items['taxonomy/term/%taxonomy_term']['file'] = 'i18n_taxonomy.pages.inc';
+    $items['taxonomy/term/%taxonomy_term']['file path'] = drupal_get_path('module', 'i18n_taxonomy');
+  }
+
+  // Localize autocomplete
+  $items['taxonomy/autocomplete']['page callback'] = 'i18n_taxonomy_autocomplete_field';
+  $items['taxonomy/autocomplete']['file'] = 'i18n_taxonomy.pages.inc';
+  $items['taxonomy/autocomplete']['file path'] = drupal_get_path('module', 'i18n_taxonomy');
+}
+
+/**
+ * Menu access callback for vocabulary translation tab. Show tab only for full multilingual vocabularies.
+ */
+function i18n_taxonomy_vocabulary_translation_tab_sets_access($vocabulary) {
+  return user_access('administer taxonomy') && i18n_taxonomy_vocabulary_mode($vocabulary->vid, I18N_MODE_TRANSLATE);
+}
+
+/**
+ * Menu access callback for term translation tab. Show tab only for translatable terms
+ *
+ * @todo This should work also for localizable terms when we've got that part implemented
+ */
+function i18n_taxonomy_term_translation_tab_access($term) {
+  return taxonomy_term_edit_access($term) && i18n_taxonomy_vocabulary_mode($term->vid) & I18N_MODE_MULTIPLE && user_access('translate interface');
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function i18n_taxonomy_field_formatter_info() {
+  return array(
+    'i18n_taxonomy_term_reference_link' => array(
+      'label' => t('Link (localized)'),
+      'field types' => array('taxonomy_term_reference'),
+    ),
+    'i18n_taxonomy_term_reference_plain' => array(
+      'label' => t('Plain text (localized)'),
+      'field types' => array('taxonomy_term_reference'),
+    ),
+  );
+}
+
+ /**
+ * Implements hook_field_formatter_prepare_view().
+ *
+ * This preloads all taxonomy terms for multiple loaded objects at once and
+ * unsets values for invalid terms that do not exist.
+ */
+function i18n_taxonomy_field_formatter_prepare_view($entity_type, $entities, $field, $instances, $langcode, &$items, $displays) {
+  return taxonomy_field_formatter_prepare_view($entity_type, $entities, $field, $instances, $langcode, $items, $displays);
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function i18n_taxonomy_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+  $language = i18n_language_interface();
+
+  // Terms whose tid is 'autocreate' do not exist
+  // yet and $item['taxonomy_term'] is not set. Theme such terms as
+  // just their name.
+
+  switch ($display['type']) {
+    case 'i18n_taxonomy_term_reference_link':
+      foreach ($items as $delta => $item) {
+        if ($item['tid'] == 'autocreate') {
+          $element[$delta] = array(
+            '#markup' => check_plain($item['name']),
+          );
+        }
+        else {
+          $term = $item['taxonomy_term'];
+          $uri = entity_uri('taxonomy_term', $term);
+          $element[$delta] = array(
+            '#type' => 'link',
+            '#title' => i18n_taxonomy_term_name($term, $language->language),
+            '#href' => $uri['path'],
+            '#options' => $uri['options'],
+          );
+        }
+      }
+      break;
+
+    case 'i18n_taxonomy_term_reference_plain':
+      foreach ($items as $delta => $item) {
+        $name = ($item['tid'] != 'autocreate' ? i18n_taxonomy_term_name($item['taxonomy_term'], $language->language): $item['name']);
+        $element[$delta] = array(
+          '#markup' => check_plain($name),
+        );
+      }
+      break;
+  }
+
+  return $element;
+}
+
+/**
+ * Implements hook_field_extra_fields().
+ */
+function i18n_taxonomy_field_extra_fields() {
+  $return = array();
+  $info = entity_get_info('taxonomy_term');
+  foreach (array_keys($info['bundles']) as $bundle) {
+    $vocabulary = taxonomy_vocabulary_machine_name_load($bundle);
+    if ($vocabulary && i18n_taxonomy_vocabulary_mode($vocabulary, I18N_MODE_TRANSLATE)) {
+      $return['taxonomy_term'][$bundle] = i18n_language_field_extra();
+    }
+  }
+  return $return;
+}
+
+/**
+ * Implements hook_field_attach_view_alter().
+ */
+function i18n_taxonomy_field_attach_view_alter(&$output, $context) {
+  // Copied from rdf_field_attach_view_alter of modules/rdf/rdf.module since we have another #formatter
+  // Append term mappings on displayed taxonomy links.
+  foreach (element_children($output) as $field_name) {
+    $element = &$output[$field_name];
+    if (isset($element['#field_type']) && $element['#field_type'] == 'taxonomy_term_reference' && $element['#formatter'] == 'i18n_taxonomy_term_reference_link') {
+      foreach ($element['#items'] as $delta => $item) {
+        // This function is invoked during entity preview when taxonomy term
+        // reference items might contain free-tagging terms that do not exist
+        // yet and thus have no $item['taxonomy_term'].
+        if (isset($item['taxonomy_term'])) {
+          $term = $item['taxonomy_term'];
+          if (!empty($term->rdf_mapping['rdftype'])) {
+            $element[$delta]['#options']['attributes']['typeof'] = $term->rdf_mapping['rdftype'];
+          }
+          if (!empty($term->rdf_mapping['name']['predicates'])) {
+            $element[$delta]['#options']['attributes']['property'] = $term->rdf_mapping['name']['predicates'];
+          }
+        }
+      }
+    }
+  }
+  // Add language field for display
+  if ($context['entity_type'] == 'taxonomy_term' && i18n_taxonomy_vocabulary_mode($context['entity']->vid, I18N_MODE_TRANSLATE)) {
+    $output['language'] = array(
+      '#type' => 'item',
+      '#title' => t('Language'),
+      '#markup' => i18n_language_name($context['entity']->language),
+    );
+  }
+}
+
+/**
+ * Implements hook_field_info_alter()
+ */
+function i18n_taxonomy_field_info_alter(&$info) {
+  // Change default formatter for term reference fields
+  $info['taxonomy_term_reference']['default_formatter'] = 'i18n_taxonomy_term_reference_link';
+
+  // Translate field values.
+  $info['taxonomy_term_reference']['options_list_callback'] = 'i18n_taxonomy_allowed_values';
+
+  // Sync callback for field translations
+  $info['taxonomy_term_reference']['i18n_sync_callback'] = 'i18n_taxonomy_field_prepare_translation';
+}
+
+/**
+ * Implements hook_field_storage_details_alter().
+ *
+ * We don't alter the storage details but the stored details of the field itself...
+ *
+ * @param array $field
+ *   The field record just read from the database.
+ */
+function i18n_taxonomy_field_storage_details_alter(&$details, &$field) {
+  if ($field['type'] === 'taxonomy_term_reference') {
+    $field['settings']['options_list_callback'] = 'i18n_taxonomy_allowed_values';
+  }
+}
+
+/**
+ * Implements hook_field_attach_prepare_translation_alter().
+ *
+ * Prepare and synchronize translation for term reference fields.
+ */
+function i18n_taxonomy_field_attach_prepare_translation_alter(&$entity, $context) {
+  $entity_type = $context['entity_type'];
+  $source_entity = $context['source_entity'];
+
+  $options = array(
+    'default' => FALSE,
+    'deleted' => FALSE,
+    'language' => NULL,
+  );
+
+  // Determine the list of instances to iterate on.
+  list(, , $bundle) = entity_extract_ids($entity_type, $source_entity);
+  $instances = _field_invoke_get_instances($entity_type, $bundle, $options);
+  if (!empty($instances)) {
+    foreach ($instances as $field_info) {
+      $field = field_info_field($field_info['field_name']);
+      if ($field['type'] == 'taxonomy_term_reference' && isset($entity->{$field_info['field_name']})) {
+        // iterate over languages.
+        foreach ($entity->{$field_info['field_name']} as $language => &$items) {
+          i18n_taxonomy_field_prepare_translation($entity_type, $entity, $field, $field_info, $entity->language, $items, $source_entity, $source_entity->language);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Prepare and synchronize translation for term reference fields
+ */
+function i18n_taxonomy_field_prepare_translation($entity_type, $entity, $field, $instance, $langcode, &$items, $source_entity, $source_langcode) {
+  foreach ($items as $index => $item) {
+    $term = isset($item['taxonomy_term']) ? $item['taxonomy_term'] : taxonomy_term_load($item['tid']);
+    if ($translation = i18n_taxonomy_term_get_translation($term, $langcode)) {
+      $items[$index] = array(
+        'taxonomy_term' => $translation,
+        'tid' => $translation->tid
+      );
+    }
+    $field['settings']['options_list_callback'] = 'i18n_taxonomy_allowed_values';
+  }
+}
+
+/**
+ * Returns the set of valid terms for a taxonomy field.
+ *
+ * @param $field
+ *   The field definition.
+ * @return
+ *   The array of valid terms for this field, keyed by term id.
+ */
+function i18n_taxonomy_allowed_values($field) {
+  $options = array();
+  foreach ($field['settings']['allowed_values'] as $tree) {
+    if ($vocabulary = taxonomy_vocabulary_machine_name_load($tree['vocabulary'])) {
+      if ($terms = taxonomy_get_tree($vocabulary->vid, $tree['parent'])) {
+        foreach ($terms as $term) {
+          $options[$term->tid] = str_repeat('-', $term->depth) . i18n_taxonomy_term_name($term);
+        }
+      }
+    }
+  }
+  return $options;
+}
+
+/**
+ * Implements hook_i18n_translate_path()
+ */
+function i18n_taxonomy_i18n_translate_path($path) {
+  if (strpos($path, 'taxonomy/term/') === 0) {
+    return i18n_taxonomy_translate_path($path);
+  }
+}
+
+/**
+ * Implements hook_i18n_context_language().
+ */
+function i18n_taxonomy_i18n_context_language() {
+  if (arg(0) == 'taxonomy') {
+    // Taxonomy term pages
+    if (arg(1) == 'term' && is_numeric(arg(2)) && ($term = menu_get_object('taxonomy_term', 2)) && ($langcode = i18n_object_langcode($term))) {
+      return i18n_language_object($langcode);
+    }
+  }
+}
+
+/**
+ * Find translations for taxonomy paths.
+ *
+ * @param $path
+ *   Path to translate.
+ * @param $path_prefix
+ *   Path prefix, including trailing slash, defaults to 'taxonomy/term/'.
+ *   It will be different for taxonomy term pages and for forum pages.
+ *
+ * @return
+ *   Array of links (each an array with href, title), indexed by language code.
+ */
+function i18n_taxonomy_translate_path($path, $path_prefix = 'taxonomy/term/') {
+  $prefix_match = strtr($path_prefix, array('/' => '\/'));
+  if (preg_match("/^($prefix_match)([^\/]*)(.*)$/", $path, $matches)) {
+    $links = array();
+    $term = FALSE;
+    // If single term, treat it differently
+    if (is_numeric($matches[2]) && !$matches[3]) {
+      $term = taxonomy_term_load($matches[2]);
+      if (!empty($term->i18n_tsid)) {
+        $set = i18n_translation_set_load($term->i18n_tsid);
+      }
+    }
+    foreach (language_list() as $langcode => $language) {
+      if ($term) {
+        if (!empty($set) && ($translation = $set->get_item($langcode))) {
+          $links[$langcode] = array(
+            'href' => $path_prefix . $translation->tid,
+            'title' => $translation->name,
+          );
+        }
+        else {
+          $links[$langcode] = array(
+            'href' => $path,
+            'title' => i18n_taxonomy_term_name($term, $langcode),
+          );
+        }
+      }
+      elseif ($str_tids = i18n_taxonomy_translation_tids($matches[2], $langcode)) {
+        $links[$langcode]['href'] = $path_prefix . $str_tids . $matches[3];
+      }
+    }
+    return $links;
+  }
+}
+
+/**
+ * Get localized term name unfiltered.
+ */
+function i18n_taxonomy_term_name($term, $langcode = NULL) {
+  $key = i18n_object_info('taxonomy_term', 'key');
+  return i18n_taxonomy_vocabulary_mode($term->vid, I18N_MODE_LOCALIZE) ? i18n_string(array('taxonomy', 'term', $term->{$key}, 'name'), $term->name, array('langcode' => $langcode, 'sanitize' => FALSE)) : $term->name;
+}
+
+
+/**
+ * Get localized term description unfiltered.
+ */
+function i18n_taxonomy_term_description($term, $langcode = NULL) {
+  $key = i18n_object_info('taxonomy_term', 'key');
+  return i18n_taxonomy_vocabulary_mode($term->vid, I18N_MODE_LOCALIZE) ? i18n_string(array('taxonomy', 'term', $term->{$key}, 'description'), $term->description, array('langcode' => $langcode, 'sanitize' => FALSE)) : $term->description;
+}
+
+/**
+ * Find term translation from translation set.
+ *
+ * @param $term
+ *   Term object to find translation.
+ * @param $langcode
+ *   Language code to find translation for.
+ * @result object Taxonomy Term
+ *   Translation if exists.
+ */
+function i18n_taxonomy_term_get_translation($term, $langcode) {
+  if (i18n_object_langcode($term)) {
+    if ($term->language == $langcode) {
+      // Translation is the term itself.
+      return $term;
+    }
+    elseif (!empty($term->i18n_tsid)) {
+      return i18n_translation_set_load($term->i18n_tsid)->get_item($langcode);
+    }
+    else {
+      return NULL;
+    }
+  }
+  else {
+    // Term has no language, translation should be the same
+    return $term;
+  }
+}
+
+/**
+ * Get localized vocabulary name, unfiltered.
+ */
+function i18n_taxonomy_vocabulary_name($vocabulary, $langcode = NULL) {
+  return i18n_object_langcode($vocabulary) ? $vocabulary->name : i18n_string(array('taxonomy', 'vocabulary', $vocabulary->vid, 'name'), $vocabulary->name, array('langcode' => $langcode, 'sanitize' => FALSE));
+}
+
+/**
+ * Get localized vocabulary description, unfiltered.
+ */
+function i18n_taxonomy_vocabulary_description($vocabulary, $langcode = NULL) {
+  return i18n_object_langcode($vocabulary) ? $vocabulary->description : i18n_string(array('taxonomy', 'vocabulary', $vocabulary->vid, 'description'), $vocabulary->description, array('langcode' => $langcode, 'sanitize' => FALSE));
+}
+
+/**
+ * Get translated term's tid.
+ *
+ * @param $tid
+ *   Node nid to search for translation.
+ * @param $language
+ *   Language to search for the translation, defaults to current language.
+ * @param $default
+ *   Value that will be returned if no translation is found.
+ * @return
+ *   Translated term tid if exists, or $default.
+ */
+function i18n_taxonomy_translation_term_tid($tid, $language = NULL, $default = NULL) {
+  $translation = db_query('SELECT t.tid FROM {taxonomy_term_data} t INNER JOIN {taxonomy_term_data} a ON t.i18n_tsid = a.i18n_tsid AND t.tid <> a.tid WHERE a.tid = :tid AND t.language = :language AND t.i18n_tsid > 0', array(
+    ':tid' => $tid,
+    ':language' => $language ? $language : i18n_language_content()->language
+  ))->fetchField();
+  return $translation ? $translation : $default;
+}
+
+/**
+ *  Returns an url for the translated taxonomy-page, if exists.
+ */
+function i18n_taxonomy_translation_tids($str_tids, $lang) {
+  if (preg_match('/^([0-9]+[+ ])+[0-9]+$/', $str_tids)) {
+    $separator = '+';
+    // The '+' character in a query string may be parsed as ' '.
+    $tids = preg_split('/[+ ]/', $str_tids);
+  }
+  elseif (preg_match('/^([0-9]+,)*[0-9]+$/', $str_tids)) {
+    $separator = ',';
+    $tids = explode(',', $str_tids);
+  }
+  else {
+    return;
+  }
+  $translated_tids = array();
+  foreach ($tids as $tid) {
+    if ($translated_tid = i18n_taxonomy_translation_term_tid($tid, $lang)) {
+      $translated_tids[] = $translated_tid;
+    }
+  }
+  return implode($separator, $translated_tids);
+}
+
+/**
+ * Implements hook_taxonomy_display_breadcrumb_parents_alter().
+ */
+function i18n_taxonomy_taxonomy_display_breadcrumb_parents_alter(&$parents) {
+  $parents = i18n_taxonomy_localize_terms($parents);
+}
+
+/**
+ * Implements hook_taxonomy_display_term_page_term_object_alter().
+ */
+function i18n_taxonomy_taxonomy_display_term_page_term_object_alter(&$term) {
+  $term = i18n_taxonomy_localize_terms($term);
+}
+
+/**
+ * Implements hook_taxonomy_term_insert()
+ */
+function i18n_taxonomy_taxonomy_term_insert($term) {
+  i18n_taxonomy_taxonomy_term_update($term);
+}
+
+/**
+ * Implements hook_taxonomy_term_update()
+ */
+function i18n_taxonomy_taxonomy_term_update($term) {
+  if (i18n_taxonomy_vocabulary_mode($term->vid, I18N_MODE_LOCALIZE)) {
+    i18n_string_object_update('taxonomy_term', $term);
+  }
+  // Multilingual terms, translatable. Link / unlink from translation set.
+  if (i18n_taxonomy_vocabulary_mode($term->vid, I18N_MODE_TRANSLATE) && !empty($term->translation_set)) {
+    if (i18n_object_langcode($term)) {
+      $term->translation_set
+        ->add_item($term)
+        ->save();
+    }
+    elseif (!empty($term->original)) {
+      // Term set to language neutral, remove it from translation set and update set (delete if empty)
+      $term->translation_set
+        ->remove_item($term->original)
+        ->update_delete();
+    }
+  }
+}
+
+/**
+ * Implements hook_taxonomy_term_delete()
+ */
+function i18n_taxonomy_taxonomy_term_delete($term) {
+  // If a translation set exists for this term, remove this term from the set.
+  if (isset($term->i18n_tsid) && $term->i18n_tsid) {
+    $translation_set = i18n_translation_set_load($term->i18n_tsid);
+    $translation_set->get_translations();
+
+    $translation_set->remove_language($term->language);
+
+    // If there are no terms left in this translation set, delete the set.
+    // Otherwise update the set.
+    $translation_set->update_delete();
+  }
+  // Just in case there's any left over string we run it for all terms.
+  i18n_string_object_remove('taxonomy_term', $term);
+}
+
+/**
+ * Implements hook_taxonomy_vocabulary_insert()
+ */
+function i18n_taxonomy_taxonomy_vocabulary_insert($vocabulary) {
+  i18n_taxonomy_taxonomy_vocabulary_update($vocabulary);
+}
+
+/**
+ * Implements hook_taxonomy_vocabulary_update()
+ */
+function i18n_taxonomy_taxonomy_vocabulary_update($vocabulary) {
+  // Update language for related terms
+  switch (i18n_taxonomy_vocabulary_mode($vocabulary)) {
+    case I18N_MODE_LANGUAGE:
+      $update['language'] = $vocabulary->language;
+      break;
+    case I18N_MODE_NONE:
+      $update['language'] = LANGUAGE_NONE;
+      break;
+  }
+  if (isset($update)) {
+    db_update('taxonomy_term_data')
+      ->fields($update)
+      ->condition('vid', $vocabulary->vid)
+      ->execute();
+    drupal_set_message(t('Reset language for all terms.'));
+  }
+  // Update strings, always add translation if no language
+  if (!i18n_object_langcode($vocabulary)) {
+    i18n_string_object_update('taxonomy_vocabulary', $vocabulary);
+  }
+}
+
+/**
+ * Implements hook_taxonomy_vocabulary_delete()
+ */
+function i18n_taxonomy_taxonomy_vocabulary_delete($vocabulary) {
+  i18n_string_object_remove('taxonomy_vocabulary', $vocabulary);
+}
+
+/**
+ * Implements hook_taxonomy_term_presave()
+ */
+function i18n_taxonomy_taxonomy_term_presave($term) {
+  switch (i18n_taxonomy_vocabulary_mode($term->vid)) {
+    case I18N_MODE_LANGUAGE: // Predefined language for all terms
+      $term->language = taxonomy_vocabulary_load($term->vid)->language;
+      break;
+    case I18N_MODE_TRANSLATE: // Multilingual terms, translatable
+      if (!isset($term->language)) {
+         // The term may come from a node tags field, just if this is not a taxonomy form.
+         // Or from any other object we are editing. So we use 'context' language here.
+        $term->language = i18n_language_context()->language;
+      }
+      // Only for the case the term has no language, it may need to be removed from translation set
+      if (empty($term->language)) {
+        $term->i18n_tsid = 0;
+      }
+      break;
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter()
+ */
+function i18n_taxonomy_form_taxonomy_form_vocabulary_alter(&$form, &$form_state) {
+  if (!isset($form_state['confirm_delete'])) {
+    $vocabulary = $form_state['vocabulary'];
+    $i18n_mode = i18n_taxonomy_vocabulary_mode($vocabulary);
+    $langcode = i18n_object_langcode($vocabulary, LANGUAGE_NONE);
+    // Define the replacement names to add some logic to the translation mode options.
+    $form += i18n_translation_mode_element('taxonomy_vocabulary', $i18n_mode, $langcode);
+    if (user_access('translate interface')) {
+      $form['actions']['translate'] = array(
+        '#type' => 'submit',
+        '#name'   => 'save_translate',
+        '#value' => t('Save and translate'),
+        '#weight' => 5,
+        '#states' => array(
+          'invisible' => array(
+            // Hide the button if language mode is selected value needs to be a
+            // string so that the javascript-side matching works.
+            'input[name=i18n_mode]' => array('value' => (string)I18N_MODE_LANGUAGE),
+          )
+        )
+      );
+      // Make sure the delete buttons shows up last.
+      if (isset($form['actions']['delete'])) {
+        $form['actions']['delete']['#weight'] = 10;
+      }
+    }
+    $form['#validate'][] = 'i18n_taxonomy_form_vocabulary_validate';
+    $form['#submit'][] = 'i18n_taxonomy_form_vocabulary_submit';
+  }
+}
+
+/**
+ * Form submit callback to redirect when using the save and translate button.
+ */
+function i18n_taxonomy_form_vocabulary_submit($form, &$form_state) {
+  if ($form_state['triggering_element']['#name'] == 'save_translate') {
+    $form_state['redirect'] = 'admin/structure/taxonomy/' . $form_state['values']['machine_name'] . '/translate';
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter()
+ */
+function i18n_taxonomy_form_taxonomy_form_term_alter(&$form, &$form_state) {
+  // Check for confirmation forms
+  if (isset($form_state['confirm_delete']) || isset($form_state['confirm_parents'])) return;
+
+  $term = $form_state['term'];
+  $vocabulary = $form['#vocabulary'];
+
+  // Mark form so we can know later when saving the term it came from a taxonomy form
+  $form['i18n_taxonomy_form'] = array('#type' => 'value', '#value' => 1);
+
+  // Add language field or not depending on taxonomy mode.
+  switch (i18n_taxonomy_vocabulary_mode($vocabulary->vid)) {
+    case I18N_MODE_TRANSLATE:
+      $form['language'] = array(
+        '#description' => t('This term belongs to a multilingual vocabulary. You can set a language for it.'),
+      ) + i18n_element_language_select($term);
+
+      // If the term to be added will be a translation of a source term,
+      // set the default value of the option list to the target language and
+      // create a form element for storing the translation set of the source term.
+      if (empty($term->tid) && isset($_GET['translation']) && isset($_GET['target']) && ($source_term = taxonomy_term_load($_GET['translation'])) && ($target_language = i18n_language_object($_GET['target']))) {
+        // Set context language to target language.
+        i18n_language_context($target_language);
+
+        // Add the translation set to the form so we know the new term
+        // needs to be added to that set.
+        if (!empty($source_term->i18n_tsid)) {
+          $translation_set = i18n_taxonomy_translation_set_load($source_term->i18n_tsid);
+        }
+        else {
+          // No translation set yet, build a new one with the source term.
+          $translation_set = i18n_translation_set_create('taxonomy_term', $vocabulary->machine_name)
+          ->add_item($source_term);
+        }
+
+        $form['language']['#default_value'] = $target_language->language;
+        $form['language']['#disabled'] = TRUE;
+
+        drupal_set_title(t('%language translation of term %title', array('%language' => locale_language_name($_GET['target']), '%title' => $source_term->name)), PASS_THROUGH);
+      }
+      elseif (!empty($term->tid) && i18n_object_langcode($term)) {
+        // Set context language to term language.
+        i18n_language_context(i18n_language_object($term->language));
+        // If the current term is part of a translation set,
+        // remove all other languages of the option list.
+        if (!empty($term->i18n_tsid)) {
+          $translation_set = i18n_taxonomy_translation_set_load($term->i18n_tsid);
+          $translations = $translation_set->get_translations();
+          // If the number of translations equals 1, there's only a source translation.
+          if (count($translations) > 1) {
+            //unset($form['language']['#options'][LANGUAGE_NONE]);
+            foreach ($translations as $langcode => $translation) {
+              if ($translation->tid !== $term->tid) {
+                unset($form['language']['#options'][$langcode]);
+              }
+            }
+            $form['language']['#description'] = t('This term already belongs to a <a href="@term-translation">translation set</a>. Changing language to <i>Language neutral</i> will remove it from the set.', array('@term-translation' => url('taxonomy/term/' . $term->tid . '/translate')));
+          }
+        }
+      }
+      // If we've got a translation set, add it to the form.
+      if (!empty($translation_set)) {
+        $form['translation_set'] = array(
+          '#type' => 'value',
+          '#value' => $translation_set,
+        );
+      }
+      break;
+
+    case I18N_MODE_LANGUAGE:
+      // Set context language to vocabulary language and add value to the form.
+      i18n_language_context(i18n_language_object($vocabulary->language));
+      $form['language'] = array(
+        '#type' => 'value',
+        '#value' => $vocabulary->language
+      );
+      $form['identification']['language_info'] = array('#value' => t('All terms in this vocabulary have a fixed language: %language', array('%language' => i18n_language_name($vocabulary->language))));
+      break;
+
+    case I18N_MODE_LOCALIZE:
+      $form['language'] = array(
+        '#type' => 'value',
+        '#value' => LANGUAGE_NONE,
+      );
+      break;
+
+    case I18N_MODE_NONE:
+    default:
+      $form['language'] = array(
+        '#type' => 'value',
+        '#value' => LANGUAGE_NONE,
+      );
+      break;
+  }
+
+  if (user_access('translate interface') && i18n_taxonomy_vocabulary_mode($vocabulary->vid) & I18N_MODE_MULTIPLE) {
+    $form['actions']['translate'] = array(
+      '#type' => 'submit',
+      '#name'   => 'save_translate',
+      '#value' => t('Save and translate'),
+      '#weight' => 5,
+      '#states' => array(
+        'invisible' => array(
+          // Hide the button if term is language neutral.
+          'select[name=language]' => array('value' => LANGUAGE_NONE),
+        ),
+      ),
+    );
+    // Make sure the delete buttons shows up last.
+    if (isset($form['actions']['delete'])) {
+      $form['actions']['delete']['#weight'] = 10;
+    }
+    $form['#submit'][] = 'i18n_taxonomy_form_term_submit';
+  }
+}
+
+/**
+ * Form submit callback to redirect when using the save and translate button.
+ */
+function i18n_taxonomy_form_term_submit($form, &$form_state) {
+  if ($form_state['triggering_element']['#name'] == 'save_translate') {
+    // When using the edit link on the list terms, a destination param is
+    // added that needs to be unset to make the redirection work.
+    unset($_GET['destination']);
+    $form_state['redirect'] = 'taxonomy/term/' . $form_state['values']['tid'] . '/translate';
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * This is the place to add language fields to all forms.
+ *
+ * @ TO DO The vocabulary form needs some javascript.
+ */
+function i18n_taxonomy_form_alter(&$form, $form_state, $form_id) {
+  switch ($form_id) {
+    case 'taxonomy_overview_vocabularies':
+      $vocabularies = taxonomy_get_vocabularies();
+      foreach ($vocabularies as $vocabulary) {
+        if (i18n_object_langcode($vocabulary)) {
+          $form[$vocabulary->vid]['name']['#markup'] .= ' (' . i18n_language_name($vocabulary->language) . ')';
+        }
+      }
+      break;
+
+    case 'taxonomy_overview_terms':
+      // We check for vocabulary object first, because when confirming alphabetical ordering it uses the same form
+      if (!empty($form['#vocabulary']) && i18n_taxonomy_vocabulary_mode($form['#vocabulary']->vid) & I18N_MODE_TRANSLATE) {
+        foreach (element_children($form) as $key) {
+          if (isset($form[$key]['#term']) && ($lang = i18n_object_langcode($form[$key]['#term']))) {
+            $form[$key]['view']['#suffix'] = ' (' . i18n_language_name($lang) . ')';
+          }
+        }
+      }
+      break;
+
+    case 'search_form':
+      // Localize category selector in advanced search form.
+      if (!empty($form['advanced']) && !empty($form['advanced']['category'])) {
+        i18n_taxonomy_form_all_localize($form['advanced']['category']);
+      }
+      break;
+  }
+}
+
+/**
+ * Validate multilingual options for vocabulary form
+ */
+function i18n_taxonomy_form_vocabulary_validate($form, &$form_state) {
+  if ($form_state['values']['i18n_mode'] & I18N_MODE_LANGUAGE) {
+    if ($form_state['values']['language'] == LANGUAGE_NONE) {
+      form_set_error('language', t('If selecting "Set language to vocabulary" you need to set a language to this vocabulary. Either change the translation mode or select a language.'));
+    }
+  }
+  else {
+    $form_state['values']['language'] = LANGUAGE_NONE;
+  }
+}
+
+/**
+ * Localize a taxonomy_form_all() kind of control
+ *
+ * The options array is indexed by vocabulary name and then by term id, with tree structure
+ * We just need to localize vocabulary name and localizable terms. Multilingual vocabularies
+ * should have been taken care of by query rewriting.
+ **/
+function i18n_taxonomy_form_all_localize(&$item) {
+  $options = &$item['#options'];
+  foreach (taxonomy_get_vocabularies() as $vid => $vocabulary) {
+    if (!empty($options[$vocabulary->name])) {
+      // Localize vocabulary name if translated
+      $vname = i18n_taxonomy_vocabulary_name($vocabulary);
+      if ($vname != $vocabulary->name) {
+        $options[$vname] = $options[$vocabulary->name];
+        unset($options[$vocabulary->name]);
+      }
+      if (i18n_taxonomy_vocabulary_mode($vid) & I18N_MODE_LOCALIZE) {
+        $tree = taxonomy_get_tree($vid);
+        if ($tree && (count($tree) > 0)) {
+          foreach ($tree as $term) {
+            if (isset($options[$vname][$term->tid])) {
+              $options[$vname][$term->tid] = str_repeat('-', $term->depth) . i18n_taxonomy_term_name($term);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Translate an array of taxonomy terms.
+ *
+ * Translates all terms with language, just passing over terms without it.
+ * Filter out terms with a different language
+ *
+ * @param $taxonomy
+ *   Array of term objects or tids or multiple arrays or terms indexed by vid
+ * @param $langcode
+ *   Language code of target language
+ * @param $fullterms
+ *   Whether to return full $term objects, returns tids otherwise
+ * @return
+ *   Array with translated terms: tid -> $term
+ *   Array with vid and term array
+ */
+function i18n_taxonomy_translate_terms($taxonomy, $langcode, $fullterms = TRUE) {
+  $translation = array();
+  if (is_array($taxonomy) && $taxonomy) {
+    foreach ($taxonomy as $index => $tdata) {
+      if (is_array($tdata)) {
+        // Case 1: Index is vid, $tdata is an array of terms
+        $mode = i18n_taxonomy_vocabulary_mode($index);
+        // We translate just some vocabularies: translatable, fixed language
+        // Fixed language ones may have terms translated, though the UI doesn't support it
+        if ($mode & I18N_MODE_LANGUAGE || $mode & I18N_MODE_TRANSLATE) {
+          $translation[$index] = i18n_taxonomy_translate_terms($tdata, $langcode, $fullterms);
+        }
+        elseif ($fullterms) {
+          $translation[$index] = array_map('_i18n_taxonomy_filter_terms', $tdata);
+        }
+        else {
+          $translation[$index] = array_map('_i18n_taxonomy_filter_tids', $tdata);
+        }
+        continue;
+      }
+      elseif (is_object($tdata)) {
+        // Case 2: This is a term object
+        $term = $tdata;
+      }
+      elseif (is_numeric($tdata) && ($tid = (int)$tdata)) {
+        // Case 3: This is a term tid, load the full term
+        $term = taxonomy_term_load($tid);
+      }
+      // Translate the term if we got it
+      if (empty($term)) {
+        // Couldn't identify term, pass through whatever it is
+        $translation[$index] = $tdata;
+      }
+      elseif ($term->language && $term->language != $langcode) {
+        $translation_set = i18n_translation_set_load($term->i18n_tsid);
+        $translations = $translation_set->get_translations();
+
+        if ($translations && !empty($translations[$langcode])) {
+          $newterm = $translations[$langcode];
+          $translation[$newterm->tid] = $fullterms ? $newterm : $newterm->tid;
+        }
+      }
+      else {
+        // Term has no language. Should be ok.
+        $translation[$index] = $fullterms ? $term : $term->tid;
+      }
+    }
+  }
+  return $translation;
+}
+
+/**
+ * Localize taxonomy terms for localizable vocabularies.
+ *
+ * @param $terms
+ *   Array of term objects or term object.
+ * @return
+ *   Array of terms with the right ones localized.
+ */
+function i18n_taxonomy_localize_terms($terms) {
+  // If not localizable language just return. Performance optimizations.
+  if (!i18n_string_translate_langcode()) {
+    return $terms;
+  }
+  $object_info = i18n_object_info('taxonomy_term');
+  $list = is_array($terms) ? $terms : array($terms);
+  foreach ($list as $index => $term) {
+    if (i18n_taxonomy_vocabulary_mode($term->vid, I18N_MODE_LOCALIZE)) {
+      $localize[$index] = $term->tid;
+    }
+  }
+  // If multiple terms, preload all translations, then run object translation.
+  if (!empty($localize)) {
+    i18n_string_translation_search(array('taxonomy', 'term', $localize, '*'));
+    foreach ($localize as $index => $tid) {
+      $list[$index] = i18n_string_object_translate('taxonomy_term', $list[$index]);
+    }
+  }
+  // Return array or simple object, depending on incoming format.
+  return is_array($terms) ? $list : reset($list);
+}
+
+/**
+ * Taxonomy vocabulary settings.
+ *
+ * @param $vid
+ *   Vocabulary object or vocabulary id.
+ * @param $mode
+ *   Vocabulary mode to compare with.
+ *
+ */
+function i18n_taxonomy_vocabulary_mode($vid, $mode = NULL) {
+  $modes = &drupal_static(__FUNCTION__);
+  if (is_object($vid)) {
+    $vid_mode = i18n_object_field($vid, 'i18n_mode', I18N_MODE_NONE);
+    return isset($mode) ? $mode & $vid_mode : $vid_mode;
+  }
+  else {
+    if (!isset($modes[$vid])) {
+      $modes[$vid] = i18n_object_field(taxonomy_vocabulary_load($vid), 'i18n_mode', I18N_MODE_NONE);
+    }
+    return isset($mode) ? $mode & $modes[$vid] : $modes[$vid];
+  }
+}
+
+/**
+ * Get taxonomy tree for a given language
+ *
+ * @param $vid
+ *   Vocabulary id
+ * @param $lang
+ *   Language code
+ * @param $parent
+ *   Parent term id for the tree
+ */
+function i18n_taxonomy_get_tree($vid, $langcode, $parent = 0, $max_depth = NULL, $load_entities = FALSE) {
+  $children = &drupal_static(__FUNCTION__, array());
+  $parents = &drupal_static(__FUNCTION__ . ':parents', array());
+  $terms = &drupal_static(__FUNCTION__ . ':terms', array());
+
+  // We cache trees, so it's not CPU-intensive to call get_tree() on a term
+  // and its children, too.
+  if (!isset($children[$vid][$langcode])) {
+    $children[$vid][$langcode] = array();
+    $parents[$vid][$langcode] = array();
+    $terms[$vid][$langcode] = array();
+
+    $query = db_select('taxonomy_term_data', 't');
+    $query->join('taxonomy_term_hierarchy', 'h', 'h.tid = t.tid');
+    $result = $query
+      ->addTag('translatable')
+      ->addTag('term_access')
+      ->fields('t')
+      ->fields('h', array('parent'))
+      ->condition('t.vid', $vid)
+      ->condition('t.language', $langcode)
+      ->orderBy('t.weight')
+      ->orderBy('t.name')
+      ->execute();
+
+    foreach ($result as $term) {
+      $children[$vid][$langcode][$term->parent][] = $term->tid;
+      $parents[$vid][$langcode][$term->tid][] = $term->parent;
+      $terms[$vid][$langcode][$term->tid] = $term;
+    }
+  }
+
+  // Load full entities, if necessary. The entity controller statically
+  // caches the results.
+  if ($load_entities) {
+    $term_entities = taxonomy_term_load_multiple(array_keys($terms[$vid][$langcode]));
+  }
+
+  $max_depth = (!isset($max_depth)) ? count($children[$vid][$langcode]) : $max_depth;
+  $tree = array();
+
+  // Keeps track of the parents we have to process, the last entry is used
+  // for the next processing step.
+  $process_parents = array();
+  $process_parents[] = $parent;
+
+  // Loops over the parent terms and adds its children to the tree array.
+  // Uses a loop instead of a recursion, because it's more efficient.
+  while (count($process_parents)) {
+    $parent = array_pop($process_parents);
+    // The number of parents determines the current depth.
+    $depth = count($process_parents);
+    if ($max_depth > $depth && !empty($children[$vid][$langcode][$parent])) {
+      $has_children = FALSE;
+      $child = current($children[$vid][$langcode][$parent]);
+      do {
+        if (empty($child)) {
+          break;
+        }
+        $term = $load_entities ? $term_entities[$child] : $terms[$vid][$langcode][$child];
+        if (count($parents[$vid][$langcode][$term->tid]) > 1) {
+          // We have a term with multi parents here. Clone the term,
+          // so that the depth attribute remains correct.
+          $term = clone $term;
+        }
+        $term->depth = $depth;
+        unset($term->parent);
+        $term->parents = $parents[$vid][$langcode][$term->tid];
+        $tree[] = $term;
+        if (!empty($children[$vid][$langcode][$term->tid])) {
+          $has_children = TRUE;
+
+          // We have to continue with this parent later.
+          $process_parents[] = $parent;
+          // Use the current term as parent for the next iteration.
+          $process_parents[] = $term->tid;
+
+          // Reset pointers for child lists because we step in there more often
+          // with multi parents.
+          reset($children[$vid][$langcode][$term->tid]);
+          // Move pointer so that we get the correct term the next time.
+          next($children[$vid][$langcode][$parent]);
+          break;
+        }
+      } while ($child = next($children[$vid][$langcode][$parent]));
+
+      if (!$has_children) {
+        // We processed all terms in this hierarchy-level, reset pointer
+        // so that this function works the next time it gets called.
+        reset($children[$vid][$langcode][$parent]);
+      }
+    }
+  }
+
+  return $tree;
+}
+
+/**
+ * Recursive array filtering, convert all terms to 'tid'.
+ */
+function _i18n_taxonomy_filter_tids($tid) {
+  if (is_array($tid)) {
+    return array_map('_i18n_taxonomy_filter_tids', $tid);
+  }
+  else {
+    return is_object($tid) ? $tid->tid : (int)$tid;
+  }
+}
+
+/**
+ * Recursive array filtering, convert all terms to 'term object'
+ */
+function _i18n_taxonomy_filter_terms($term) {
+  if (is_array($term)) {
+    return array_map('_i18n_taxonomy_filter_terms', $term);
+  }
+  else {
+    return is_object($term) ? $term : taxonomy_term_load($term);
+  }
+}
+
+/**
+ * Load translation set. Menu loading callback.
+ */
+function i18n_taxonomy_translation_set_load($tsid) {
+  return i18n_translation_set_load($tsid, 'taxonomy_term');
+}
+
+/**
+ * Implements hook_field_uuid_load().
+ */
+function i18n_taxonomy_field_uuid_load($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  taxonomy_field_uuid_load($entity_type, $entity, $field, $instance, $langcode, $items);
+}
+
+/**
+ * Implements hook_field_uuid_presave().
+ */
+function i18n_taxonomy_field_uuid_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  taxonomy_field_uuid_presave($entity_type, $entity, $field, $instance, $langcode, $items);
+}
+/**
+ * Implements hook_entity_info_alter().
+ */
+function i18n_taxonomy_entity_info_alter(&$entity_info) {
+  if (isset($entity_info['taxonomy_term'])) {
+    // Core doesn't provide a label callback for taxonomy terms. By setting one
+    // we can use it to return the correct localized term name.
+    $entity_info['taxonomy_term']['label callback'] = 'i18n_taxonomy_taxonomy_term_label';
+
+    // Also let core know terms have languages, now.
+    $entity_info['taxonomy_term']['entity keys']['language'] = 'language';
+  }
+}
+
+/**
+ * Providing a hook_entity_info() 'label callback' to ensure modules that use
+ * entity_label() get the correct localized taxonomy term.
+ */
+function i18n_taxonomy_taxonomy_term_label($term, $entity_type) {
+  return i18n_taxonomy_term_name($term, i18n_language_interface()->language);
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function i18n_taxonomy_views_api() {
+  return array(
+    'api' => 3,
+  );
+}
+
+/**
+ * Implements hook_module_enabled().
+ *
+ * Updates options_list_callback for taxonomy term fields.
+ *
+ * @param $modules
+ */
+function i18n_taxonomy_modules_enabled($modules) {
+  $modules = drupal_map_assoc($modules);
+  if (isset($modules['i18n_taxonomy'])) {
+    foreach (field_info_fields() as $fieldname => $field) {
+      if ($field['type'] == 'taxonomy_term_reference') {
+        $field['settings']['options_list_callback'] = 'i18n_taxonomy_allowed_values';
+        field_update_field($field);
+      }
+    }
+  }
+}

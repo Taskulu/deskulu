@@ -1,0 +1,9 @@
+
+/**
+ * @file
+ * Administration menu color override for uid1.
+ */
+
+#admin-menu li.admin-menu-account > a {
+  background: #911 url(images/bkg-red.png) bottom left repeat-x;
+}

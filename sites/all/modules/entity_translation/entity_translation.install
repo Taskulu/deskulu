@@ -1,0 +1,448 @@
+<?php
+
+/**
+ * @file
+ * Installation functions for Entity Translation module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function entity_translation_schema() {
+  $schema = array();
+
+  $schema['entity_translation'] = array(
+    'description' => 'Table to track entity translations',
+    'fields' => array(
+      'entity_type' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The entity type this translation relates to',
+      ),
+      'entity_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'The entity id this translation relates to',
+      ),
+      'revision_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'The entity revision id this translation relates to',
+      ),
+      'language' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The target language for this translation.',
+      ),
+      'source' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The source language from which this translation was created.',
+      ),
+      'uid' => array(
+        'description' => 'The author of this translation.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'status' => array(
+        'description' => 'Boolean indicating whether the translation is published (visible to non-administrators).',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+      'translate' => array(
+        'description' => 'A boolean indicating whether this translation needs to be updated.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'created' => array(
+        'description' => 'The Unix timestamp when the translation was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'changed' => array(
+        'description' => 'The Unix timestamp when the translation was most recently saved.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('entity_type', 'entity_id', 'language'),
+  );
+
+  $schema['entity_translation_revision'] = array(
+    'description' => 'Table to track entity translation revisions',
+    'fields' => array(
+      'entity_type' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The entity type this translation revision relates to',
+      ),
+      'entity_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'The entity id this translation revision relates to',
+      ),
+      'revision_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'The entity revision id this translation relates to',
+      ),
+      'language' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The target language for this translation revision.',
+      ),
+      'source' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The source language from which this translation revision was created.',
+      ),
+      'uid' => array(
+        'description' => 'The author of this translation revision.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'status' => array(
+        'description' => 'Boolean indicating whether the translation revision is published (visible to non-administrators).',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+      'translate' => array(
+        'description' => 'A boolean indicating whether this translation revision needs to be updated.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'created' => array(
+        'description' => 'The Unix timestamp when the translation revision was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'changed' => array(
+        'description' => 'The Unix timestamp when the translation revision was most recently saved.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('entity_type', 'revision_id', 'language'),
+    'indexes'=> array('revision_id' => array('revision_id')),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function entity_translation_install() {
+  // entity_translation_form_alter() needs to run after locale_form_alter() and
+  // translation_menu(); entity_translation_menu_alter() needs to run after
+  // i18n_node_menu_alter().
+  db_update('system')
+    ->fields(array('weight' => 11))
+    ->condition('name', 'entity_translation')
+    ->execute();
+
+  // Enable translation for nodes.
+  variable_set('entity_translation_entity_types', array('node' => 'node'));
+
+  // Make translation use the content language type.
+  variable_set('translation_language_type', LANGUAGE_TYPE_CONTENT);
+
+  // Enable revision support for entity translation.
+  variable_set('entity_translation_revision_enabled', TRUE);
+}
+
+/**
+ * Grant 'edit $type original values' permission to existing roles.
+ */
+function _entity_translation_grant_edit_permissions() {
+  variable_set('entity_translation_workflow_enabled', TRUE);
+  $permissions = array();
+
+  // Nodes.
+  $permissions['node'][] = 'bypass node access';
+  foreach (node_permissions_get_configured_types() as $type) {
+    $permissions['node'][] = "edit own $type content";
+    $permissions['node'][] = "edit any $type content";
+  }
+
+  // Comments.
+  if (module_exists('comment')) {
+    $permissions['comment'][] = 'administer comments';
+    $permissions['comment'][] = 'edit own comments';
+  }
+
+  // Taxonomy terms.
+  if (module_exists('taxonomy')) {
+    $permissions['taxonomy_term'][] = 'administer taxonomy';
+    foreach (taxonomy_get_vocabularies() as $vocabulary) {
+      $permissions['taxonomy_term'][] = "edit terms in {$vocabulary->vid}";
+    }
+  }
+
+  $assignments = array();
+  foreach ($permissions as $entity_type => $permissions_filter) {
+    if (entity_translation_enabled($entity_type)) {
+      $permission = "edit $entity_type original values";
+      $assignments[] = _entity_translation_grant_permission($permission, $permissions_filter);
+      $permission = "edit $entity_type translation shared fields";
+      $assignments[] = _entity_translation_grant_permission($permission, $permissions_filter);
+    }
+  }
+  $assignments = '<ul><li>' . implode('</li><li>', $assignments) . '</li></ul>';
+
+  $t = get_t();
+  return $t('The following permissions have been assigned to existing roles: !assignments', array('!assignments' => $assignments));
+}
+
+/**
+ * Grant the given permission to all roles which already have any of the
+ * permissions specified in the $permissions_filter parameter.
+ *
+ * @param $permission
+ *   The new permission which to grant.
+ * @param $permissions_filter
+ *   List of permissions used for loading roles.
+ *
+ * @return
+ *   A message describing permission changes.
+ */
+function _entity_translation_grant_permission($permission, $permissions_filter = NULL) {
+  $roles = user_roles(FALSE, $permissions_filter);
+  foreach ($roles as $rid => $role) {
+    user_role_grant_permissions($rid, array($permission));
+  }
+  $t = get_t();
+  return $t('%permission was assigned to %roles', array(
+    '%permission' => $permission,
+    '%roles' => implode(', ', $roles)
+  ));
+}
+
+/**
+ * Implements hook_enable().
+ */
+function entity_translation_enable() {
+  // Re-activate entity translation for content types which had used it when
+  // the module was last disabled (if any), unless these have since been altered
+  // by the user to use a different translation option.
+  $entity_translation_types = variable_get('entity_translation_disabled_content_types', array());
+  foreach ($entity_translation_types as $index => $type) {
+    if (variable_get("language_content_type_$type", 0) == 0) {
+      variable_set("language_content_type_$type", ENTITY_TRANSLATION_ENABLED);
+    }
+    // We should show the warning only if we actually restored at least one
+    // content type.
+    else {
+      unset($entity_translation_types[$index]);
+    }
+  }
+  if ($entity_translation_types) {
+    drupal_set_message(t('All content types previously configured to use field translation are now using it again.'), 'warning');
+  }
+  variable_del('entity_translation_disabled_content_types');
+}
+
+/**
+ * Implements hook_disable().
+ */
+function entity_translation_disable() {
+  // Store record of which types are using entity translation, and set those
+  // types to not be translated. These content types will be reset to use entity
+  // translation again if the module is later re-enabled, unless they have been
+  // changed by the user in the meantime.
+  $entity_translation_types = array();
+  foreach (node_type_get_types() as $type => $object) {
+    if (variable_get("language_content_type_$type", 0) == ENTITY_TRANSLATION_ENABLED) {
+      $entity_translation_types[] = $type;
+      variable_set("language_content_type_$type", 0);
+    }
+  }
+  if ($entity_translation_types) {
+    variable_set('entity_translation_disabled_content_types', $entity_translation_types);
+    drupal_set_message(t('All content types configured to use field translation now have multilingual support disabled. This change will be reverted if the entity translation module is enabled again.'), 'warning');
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function entity_translation_uninstall() {
+  db_delete('variable')
+    ->condition('name', db_like('entity_translation_') . '%', 'LIKE')
+    ->execute();
+
+  variable_del('translation_language_type');
+  variable_del('locale_field_language_fallback');
+}
+
+/**
+ * Implements hook_update_N().
+ */
+function entity_translation_update_7001() {
+  db_update('system')
+    ->fields(array('weight' => 11))
+    ->condition('name', 'entity_translation')
+    ->execute();
+}
+
+/**
+ * Grant 'edit original values' and 'edit shared field' permissions to roles which have entity editing permissions.
+ */
+function entity_translation_update_7002() {
+  // Grant the 'edit original values' permission, so we don't break editing on
+  // existing sites.
+  return _entity_translation_grant_edit_permissions();
+}
+
+/**
+ * Configure node and comment language settings to the prior default behavior.
+ */
+function entity_translation_update_7003() {
+  module_load_include('inc', 'entity_translation', 'entity_translation.admin');
+  foreach (array_keys(entity_get_info()) as $entity_type) {
+    entity_translation_settings_init($entity_type);
+  }
+}
+
+/**
+ * Rebuild entity information to update the path scheme settings.
+ */
+function entity_translation_update_7004() {
+  entity_info_cache_clear();
+}
+
+/**
+ * Rebuild the class registry to pick up the translation handler factory class.
+ */
+function entity_translation_update_7005() {
+  registry_rebuild();
+}
+
+/**
+ * Add revision schema for entity translation metadata.
+ */
+function entity_translation_update_7006() {
+  // Create revision id column.
+  $spec = array(
+    'type' => 'int',
+    'unsigned' => TRUE,
+    // If we have existing data we cannot enforce this to be NOT NULL.
+    'not null' => FALSE,
+    'description' => 'The entity revision id this translation relates to',
+  );
+  db_add_field('entity_translation', 'revision_id', $spec);
+
+  // Create the entity translation revision schema.
+  $table = array(
+    'description' => 'Table to track entity translation revisions',
+    'fields' => array(
+      'entity_type' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The entity type this translation revision relates to',
+      ),
+      'entity_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'The entity id this translation revision relates to',
+      ),
+      'revision_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'The entity revision id this translation relates to',
+      ),
+      'language' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The target language for this translation revision.',
+      ),
+      'source' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The source language from which this translation revision was created.',
+      ),
+      'uid' => array(
+        'description' => 'The author of this translation revision.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'status' => array(
+        'description' => 'Boolean indicating whether the translation revision is published (visible to non-administrators).',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+      'translate' => array(
+        'description' => 'A boolean indicating whether this translation revision needs to be updated.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'created' => array(
+        'description' => 'The Unix timestamp when the translation revision was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'changed' => array(
+        'description' => 'The Unix timestamp when the translation revision was most recently saved.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('entity_type', 'revision_id', 'language'),
+    'indexes'=> array('revision_id' => array('revision_id')),
+  );
+  db_create_table('entity_translation_revision', $table);
+}
+
+/**
+ * Disable revision support on existing installations.
+ */
+function entity_translation_update_7007() {
+  // Revision support is not enabled by default on existing installations as
+  // making it work implies copying translation metadata to the
+  // {entity_translation_revision} table for all the existing translations.
+  // Since this process cannot be reliably implemented in an update function,
+  // we leave the choice of manually performing the upgrade to people with the
+  // required skills to do so. Be aware that enabling revision support on sites
+  // where data has not been manually migrated may cause translation metadata to
+  // be permanently lost or corrupted. See https://www.drupal.org/node/2396103.
+  variable_set('entity_translation_revision_enabled', FALSE);
+}

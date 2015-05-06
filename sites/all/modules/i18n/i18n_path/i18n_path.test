@@ -1,0 +1,88 @@
+<?php
+
+/**
+ * @file
+ * Test case for multilingual menus.
+ */
+class i18nPathTestCase extends Drupali18nTestCase {
+  public static function getInfo() {
+    return array(
+      'name' => 'Path translation',
+      'group' => 'Internationalization',
+      'description' => 'Path translation functions',
+    );
+  }
+
+  function setUp() {
+    parent::setUp('translation', 'i18n_path');
+    parent::setUpLanguages(array('administer site configuration'));
+  }
+
+  function checkTranslationLink($path, $language, $method = 'assertRaw') {
+    $this->{$method}($path, t('Found translation link. :language - :path', array(':language' => $language, ':path' => $path)));
+  }
+
+  function testPathTranslation() {
+    $this->setUpContentType(array('type' => 'page', 'mode' => TRANSLATION_ENABLED));
+
+    // Create 2 nodes in different languages.
+    $first_title = $this->randomName(10);
+    $first_body = $this->randomString(50);
+    $first_node = $this->createNode('page', $first_title, $first_body, $this->default_language);
+
+    $secondary_title = $this->randomName(10);
+    $secondary_body = $this->randomString(50);
+    $secondary_node = $this->createNode('page', $secondary_title, $secondary_body, $this->secondary_language);
+
+    $this->drupalGet('node/' . $first_node->nid);
+    $this->checkTranslationLink('node/' . $first_node->nid, $first_node->language);
+    $this->checkTranslationLink($this->secondary_language . '/node/' . $first_node->nid, $this->secondary_language, 'assertNoRaw');
+
+    $this->drupalGet('node/' . $secondary_node->nid);
+    $this->checkTranslationLink('node/' . $secondary_node->nid, $secondary_node->language);
+    $this->checkTranslationLink($this->secondary_language . '/node/' . $secondary_node->nid, $this->secondary_language);
+
+    $this->drupalGet('admin/config/regional/i18n_translation/path');
+    $this->clickLink(t('Add path translation'));
+
+    // create new translation set with two node links
+    $edit = array(
+      'title' => $this->randomName(10),
+      'translations[' . $this->default_language . ']' => 'node/' . $first_node->nid,
+      'translations[' . $this->secondary_language . ']' => 'node/' . $secondary_node->nid,
+    );
+    $this->drupalPost('admin/config/regional/i18n_translation/path/add', $edit, t('Save'));
+
+    $this->drupalGet('node/' . $first_node->nid);
+    $this->checkTranslationLink('node/' . $first_node->nid, $first_node->language);
+    $this->checkTranslationLink($this->secondary_language . '/node/' . $secondary_node->nid, $this->secondary_language);
+
+    $this->drupalGet('node/' . $secondary_node->nid);
+    $this->checkTranslationLink('node/' . $first_node->nid, $first_node->language);
+    $this->checkTranslationLink('node/' . $secondary_node->nid, $this->secondary_language);
+
+    // create new translation set with one node and one menu "token"
+    $edit = array(
+      'translations[' . $this->default_language . ']' => 'node/' . $first_node->nid,
+      'translations[' . $this->secondary_language . ']' => '<front>',
+    );
+    $this->drupalPost('admin/config/regional/i18n_translation/path/edit/1', $edit, t('Save'));
+
+    $this->drupalGet('node/' . $first_node->nid);
+    $this->checkTranslationLink('node/' . $first_node->nid, $first_node->language);
+    $this->checkTranslationLink('node/' . $secondary_node->nid, $this->secondary_language, 'assertNoLinkByHref');
+    $this->checkTranslationLink($this->secondary_language, $this->secondary_language);
+
+    // create new translation set with one node and an external menu link.
+    $url = 'http://' . $this->randomName(10) . '.' . $this->randomName(2);
+    $edit = array(
+      'translations[' . $this->default_language . ']' => 'node/' . $first_node->nid,
+      'translations[' . $this->secondary_language . ']' => $url,
+    );
+    $this->drupalPost('admin/config/regional/i18n_translation/path/edit/1', $edit, t('Save'));
+
+    $this->drupalGet('node/' . $first_node->nid);
+    $this->checkTranslationLink('node/' . $first_node->nid, $first_node->language);
+    $this->checkTranslationLink($url, $this->secondary_language);
+  }
+}

@@ -1,0 +1,64 @@
+.rate-widget-thumbs_up_down ul {
+  list-style: none;
+  overflow: hidden;
+}
+.rate-widget-thumbs_up_down ul li {
+  background-image: none;
+  padding: 0;
+  margin: 0;
+}
+.rate-widget-thumbs_up_down ul li {
+  width: 62px;
+  float: left;
+  list-style: none;
+}
+.rate-widget-thumbs_up_down ul li a {
+  display: block;
+  float: left;
+}
+.rate-widget-thumbs_up_down .percent {
+  float: left;
+}
+.rate-thumbs-up-down-btn-up {
+  display: inline-block;
+  background: url(thumbs.png) no-repeat 0 0;
+  width: 24px;
+  height: 24px;
+  text-indent: -9999px;
+}
+.rate-user .rate-thumbs-up-down-btn-up {
+  background: url(thumbs.png) no-repeat 0 -24px;
+  float: right;
+}
+.rate-user .rate-thumbs-up-down-btn-up.rate-voted {
+  background: url(thumbs.png) no-repeat 0 0;
+}
+.rate-widget-thumbs_up_down .thumb-up a {
+  float: right;
+}
+.rate-thumbs-up-down-btn-down {
+  display: inline-block;
+  background: url(thumbs.png) no-repeat 0 -48px;
+  width: 24px;
+  height: 24px;
+  text-indent: -9999px;
+}
+.rate-user .rate-thumbs-up-down-btn-down {
+  background: url(thumbs.png) no-repeat 0 -72px;
+}
+.rate-user .rate-thumbs-up-down-btn-down.rate-voted {
+  background: url(thumbs.png) no-repeat 0 -48px;
+}
+.rate-thumbs-up-down-rating-up {
+  display: inline-block;
+  width: 45px;
+  text-align: right;
+  padding-top: 3px;
+}
+.rate-thumbs-up-down-rating-down {
+  display: inline-block;
+  width: 45px;
+  text-align: left;
+  padding-top: 3px;
+}
+

@@ -1,0 +1,255 @@
+<?php
+/**
+ * @file
+ * Main module functions for mandrill_reports.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function mandrill_reports_menu() {
+  $items = array();
+  $items['admin/reports/mandrill'] = array(
+    'title' => 'Mandrill',
+    'page callback' => 'mandrill_reports_dashboard_page',
+    'access arguments' => array('view mandrill reports'),
+    'description' => 'View Mandrill dashboard.',
+  );
+  $items['admin/reports/mandrill/dashboard'] = array(
+    'title' => 'Dashboard',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+  $items['admin/reports/mandrill/summary'] = array(
+    'title' => 'Account summary',
+    'page callback' => 'mandrill_reports_summary_page',
+    'access arguments' => array('view mandrill reports'),
+    'description' => 'View account summary.',
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function mandrill_reports_permission() {
+  return array(
+    'view mandrill reports' => array(
+      'title' => t('View Mandrill reports'),
+      'description' => t('View all Mandrill reports.'),
+    ),
+  );
+}
+
+/**
+ * Return an associative array containing raw stats.
+ *
+ * @return array
+ *   Associative array containing report data.
+ */
+function mandrill_reports_data() {
+  if ($cache = cache_get('mandrill_report_data')) {
+    return $cache->data;
+  }
+
+  $data = array();
+  $api = mandrill_get_api_object();
+
+  if ($api) {
+    // Basic user info.
+    $data['user'] = $api->users->info();
+
+    // Tags.
+    $tags = $api->tags->getList();
+    foreach ($tags as $tag) {
+      if (!empty($tag['tag'])) {
+        $data['tags'][$tag['tag']] = $api->tags->info($tag['tag']);
+        $data['tags'][$tag['tag']]['time_series'] = $api->tags->timeSeries($tag['tag']);
+      }
+    }
+
+    // All time.
+    $data['all_time_series'] = $api->tags->allTimeSeries();
+
+    // Senders: data is not being used, and the API currently (3/12/13) behaves
+    // badly if you have a bad email address anywhere in your sender history, so
+    // commenting out for now:
+    $senders = $api->senders->getList();
+    foreach ($senders as $sender) {
+      try {
+        $data['senders'][$sender['address']] = $api->senders->info($sender['address']);
+        $data['senders'][$sender['address']]['time_series'] = $api->senders->timeSeries($sender['address']);
+      }
+      catch (Mandrill_Error $e) {
+        watchdog('mandrill', 'An error occurred requesting sender information from Mandrill for address %address. "%message"', array(
+          '%address' => $sender['address'],
+          '%message' => $e->getMessage(),
+        ), WATCHDOG_ERROR);
+      }
+    }
+
+    // Urls.
+    $urls = $api->urls->getList();
+    foreach ($urls as $url) {
+      // Api has been intermittently tacking on incomplete $url arrays,
+      // so we have to check validity first:
+      if (isset($url['url'])) {
+        $data['urls'][$url['url']] = $url;
+        $data['urls'][$url['url']]['time_series'] = $api->urls->timeSeries($url['url']);
+      }
+    }
+    cache_set('mandrill_report_data', $data, 'cache', CACHE_TEMPORARY);
+  }
+  else {
+    drupal_set_message(t('Please enter a Mandrill API key to use reports.'));
+    drupal_goto('admin/config/services/mandrill');
+  }
+  return $data;
+}
+
+/**
+ * Page callback for rendering stats.
+ *
+ * @return array
+ *   Render array.
+ */
+function mandrill_reports_dashboard_page() {
+  $data = mandrill_reports_data();
+  $settings = array();
+  // All time series chart data.
+  foreach ($data['all_time_series'] as $series) {
+    $settings['mandrill_reports']['volume'][] = array(
+      'date' => $series['time'],
+      'sent' => $series['sent'],
+      'bounced' => $series['hard_bounces'] + $series['soft_bounces'],
+      'rejected' => $series['rejects'],
+    );
+    $settings['mandrill_reports']['engagement'][] = array(
+      'date' => $series['time'],
+      'open_rate' => $series['sent'] == 0 ? 0 : $series['unique_opens'] / $series['sent'],
+      'click_rate' => $series['sent'] == 0 ? 0 : $series['unique_clicks'] / $series['sent'],
+    );
+  }
+
+  // Url table.
+  $rows = array();
+  $header = array(
+    t('URL'),
+    t('Delivered'),
+    t('Unique clicks'),
+    t('Total Clicks'),
+  );
+  foreach ($data['urls'] as $url) {
+    $percent = $url['sent'] == 0 ? 0 : number_format($url['unique_clicks'] / $url['sent'], 2) * 100;
+    $rows[] = array(
+      l($url['url'], $url['url']),
+      $url['sent'],
+      $url['unique_clicks'] . "({$percent}%)",
+      $url['clicks']);
+  }
+
+  $path = drupal_get_path('module', 'mandrill_reports');
+  $render = array(
+    '#attached' => array(
+      'js' => array(
+        array(
+          'data' => 'https://www.google.com/jsapi',
+          'type' => 'external',
+        ),
+        $path . '/mandrill_reports.js',
+        array(
+          'data' => $settings,
+          'type' => 'setting',
+        ),
+      ),
+    ),
+    'message' => array(
+      '#markup' => t(
+        'The following reports are based on Mandrill data from the last 30 days. For more comprehensive data, please visit your !dashboard. !cache to ensure the data is current.',
+        array(
+          '!dashboard' => l(t('Mandrill Dashboard'), 'https://mandrillapp.com/'),
+          '!cache' => l(t('Clear your cache'), 'admin/config/development/performance'),
+        )
+      ),
+    ),
+    'volume' => array(
+      '#prefix' => '<h2>' . t('Sending Volume') . '</h2>',
+      '#markup' => '<div id="mandrill-volume-chart"></div>',
+    ),
+    'engagement' => array(
+      '#prefix' => '<h2>' . t('Average Open and Click Rate') . '</h2>',
+      '#markup' => '<div id="mandrill-engage-chart"></div>',
+    ),
+    'urls' => array(
+      '#prefix' => '<h2>' . t('Tracked URLs') . '</h2>',
+      '#theme' => 'table',
+      '#header' => $header,
+      '#rows' => $rows,
+    ),
+  );
+
+  return $render;
+}
+
+/**
+ * Displays summary information for the active API user.
+ */
+function mandrill_reports_summary_page() {
+  $data = mandrill_reports_data();
+  $info = $data['user'];
+
+  $header = array(
+    t('Range'),
+    t('Sent'),
+    t('hard_bounces'),
+    t('soft_bounces'),
+    t('Rejects'),
+    t('Complaints'),
+    t('Unsubs'),
+    t('Opens'),
+    t('unique_opens'),
+    t('Clicks'),
+    t('unique_clicks'),
+  );
+
+  $rows = array();
+  foreach ($info['stats'] as $key => $stat) {
+    $rows[] = array(
+      str_replace('_', ' ', $key),
+      $stat['sent'],
+      $stat['hard_bounces'],
+      $stat['soft_bounces'],
+      $stat['rejects'],
+      $stat['complaints'],
+      $stat['unsubs'],
+      $stat['opens'],
+      $stat['unique_opens'],
+      $stat['clicks'],
+      $stat['unique_clicks'],
+    );
+  }
+
+  $render = array(
+    'info' => array(
+      '#theme' => 'table',
+      '#rows' => array(
+        array(t('Username'), $info['username']),
+        array(t('Reputation'), $info['reputation']),
+        array(t('Hourly quota'), $info['hourly_quota']),
+        array(t('Backlog'), $info['backlog']),
+      ),
+      '#header' => array(t('Attribute'), t('Value')),
+      '#caption' => t('Active API user information.'),
+    ),
+    'stats' => array(
+      '#theme' => 'table',
+      '#rows' => $rows,
+      '#header' => $header,
+      '#caption' => t("This table contains an aggregate summary of the account's sending stats."),
+    ),
+  );
+
+  return $render;
+}

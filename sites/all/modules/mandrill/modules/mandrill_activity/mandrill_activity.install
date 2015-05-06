@@ -1,0 +1,102 @@
+<?php
+/**
+ * @file
+ * Install hooks for mandrill_activity.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function mandrill_activity_schema() {
+
+  $schema['mandrill_activity_entity'] = array(
+    'description' => 'Mandrill activity enabled entities.',
+    'fields' => array(
+      'mandrill_activity_entity_id' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'Primary Key: Unique mandrill_activity_entity entity ID.',
+      ),
+      'name' => array(
+        'description' => 'The machine-readable name of this mandrill_activity_entity.',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+      ),
+      'label' => array(
+        'description' => 'The human-readable name of this mandrill_activity_entity.',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+      ),
+      'entity_type' => array(
+        'description' => 'The Drupal entity type (e.g. "node", "user").',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'bundle' => array(
+        'description' => 'The Drupal bundle (e.g. "page", "user")',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'entity_path' => array(
+        'description' => 'The path to view individual entities of the selected type.',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'email_property' => array(
+        'description' => 'The property that contains the email address to track',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'enabled' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+        'description' => 'Whether or not this Mandrill activity stream is enabled.',
+      ),
+      // Following fields are for supporting exportable status.
+      'locked' => array(
+        'description' => 'A boolean indicating whether the administrator may delete this mapping.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+      ),
+      'status' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        // Set the default to ENTITY_CUSTOM without using the constant as it is
+        // not safe to use it at this point.
+        'default' => 0x01,
+        'size' => 'tiny',
+        'description' => 'The exportable status of the entity.',
+      ),
+      'module' => array(
+        'description' => 'The name of the providing module if the entity has been defined in code.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+    ),
+    'primary key' => array('mandrill_activity_entity_id'),
+    'unique keys' => array(
+      'name' => array('name'),
+      'entity_type_bundle' => array(
+        'entity_type',
+        'bundle',
+      ),
+    ),
+  );
+
+  return $schema;
+}

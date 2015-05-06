@@ -1,0 +1,33 @@
+<?php
+/**
+ * @file
+ * Install/Uninstall code for the Better Exposed Filters module.
+ */
+
+/**
+ * Implements hook_disable.
+ */
+function better_exposed_filters_disable() {
+  // Check any views have their exposed form plugin set to BEF. If so, offer
+  // a warning about disabling the module.
+  $warnings = array();
+  foreach (views_get_all_views() as $view) {
+    foreach ($view->display as $display) {
+      if (!empty($display->display_options['exposed_form']['type']) && 'better_exposed_filters' == $display->display_options['exposed_form']['type']) {
+        $warnings[] = t('The %display_title display in the %view_name view. (<a href="@link" target="_blank">Update this display</a>)',
+          array(
+            '%display_title' => $display->display_title,
+            '%view_name' => $view->human_name,
+            '@link' => url('admin/structure/views/view/' . $view->name . '/edit/' . $display->id),
+          )
+        );
+      }
+    }
+  }
+
+  if (!empty($warnings)) {
+    $message = t('The following Views displays are using the Better Exposed Filters plugin, which is no longer enabled. It is recommended that you update these displays (links open in a new window) before removing the code associated with this module. Not doing so may cause unexpected results.');
+    $message .= '<ul><li>' . join('</li></li>', $warnings) . '</li></ul>';
+    drupal_set_message($message, 'warning');
+  }
+}

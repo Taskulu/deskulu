@@ -1,0 +1,584 @@
+<?php
+
+/**
+ * @file
+ * Integrates the Search API with the Facet API.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function search_api_facetapi_menu() {
+  // We need to handle our own menu paths for facets because we need a facet
+  // configuration page per index.
+  $first = TRUE;
+  foreach (facetapi_get_realm_info() as $realm_name => $realm) {
+    if ($first) {
+      $first = FALSE;
+      $items['admin/config/search/search_api/index/%search_api_index/facets'] = array(
+        'title'            => 'Facets',
+        'page callback'    => 'search_api_facetapi_settings',
+        'page arguments'   =>  array($realm_name, 5),
+        'weight'           => -1,
+        'access arguments' => array('administer search_api'),
+        'type'             => MENU_LOCAL_TASK,
+        'context'          => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+      );
+      $items['admin/config/search/search_api/index/%search_api_index/facets/' . $realm_name] = array(
+        'title'            => $realm['label'],
+        'type'             => MENU_DEFAULT_LOCAL_TASK,
+        'weight'           => $realm['weight'],
+      );
+    }
+    else {
+      $items['admin/config/search/search_api/index/%search_api_index/facets/' . $realm_name] = array(
+        'title'            => $realm['label'],
+        'page callback'    => 'search_api_facetapi_settings',
+        'page arguments'   => array($realm_name, 5),
+        'access arguments' => array('administer search_api'),
+        'type'             => MENU_LOCAL_TASK,
+        'context'          => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+        'weight'           => $realm['weight'],
+      );
+    }
+  }
+
+  return $items;
+}
+
+/**
+ * Implements hook_facetapi_searcher_info().
+ */
+function search_api_facetapi_facetapi_searcher_info() {
+  $info = array();
+  $indexes = search_api_index_load_multiple(FALSE);
+  foreach ($indexes as $index) {
+    if (_search_api_facetapi_index_support_feature($index)) {
+      $searcher_name = 'search_api@' . $index->machine_name;
+      $info[$searcher_name] = array(
+        'label' => t('Search service: @name', array('@name' => $index->name)),
+        'adapter' => 'search_api',
+        'instance' => $index->machine_name,
+        'types' => array($index->item_type),
+        'path' => '',
+        'supports facet missing' => TRUE,
+        'supports facet mincount' => TRUE,
+        'include default facets' => FALSE,
+      );
+      if (($entity_type = $index->getEntityType()) && $entity_type !== $index->item_type) {
+        $info[$searcher_name]['types'][] = $entity_type;
+      }
+    }
+  }
+  return $info;
+}
+
+/**
+ * Implements hook_facetapi_facet_info().
+ */
+function search_api_facetapi_facetapi_facet_info(array $searcher_info) {
+  $facet_info = array();
+  if ('search_api' == $searcher_info['adapter']) {
+    $index = search_api_index_load($searcher_info['instance']);
+    if (!empty($index->options['fields'])) {
+      $wrapper = $index->entityWrapper();
+      $bundle_key = NULL;
+      if ($index->getEntityType() && ($entity_info = entity_get_info($index->getEntityType())) && !empty($entity_info['bundle keys']['bundle'])) {
+        $bundle_key = $entity_info['bundle keys']['bundle'];
+      }
+
+      // Some type-specific settings. Allowing to set some additional callbacks
+      // (and other settings) in the map options allows for easier overriding by
+      // other modules.
+      $type_settings = array(
+        'taxonomy_term' => array(
+          'hierarchy callback' => 'search_api_facetapi_get_taxonomy_hierarchy',
+        ),
+        'date' => array(
+          'query type' => 'date',
+          'map options' => array(
+            'map callback' => 'search_api_facetapi_map_date',
+          ),
+        ),
+      );
+
+      // Iterate through the indexed fields to set the facetapi settings for
+      // each one.
+      foreach ($index->getFields() as $key => $field) {
+        $field['key'] = $key;
+        // Determine which, if any, of the field type-specific options will be
+        // used for this field.
+        $type = isset($field['entity_type']) ? $field['entity_type'] : $field['type'];
+        $type_settings += array($type => array());
+
+        $facet_info[$key] = $type_settings[$type] + array(
+          'label' => $field['name'],
+          'description' => t('Filter by @type.', array('@type' => $field['name'])),
+          'allowed operators' => array(
+            FACETAPI_OPERATOR_AND => TRUE,
+            FACETAPI_OPERATOR_OR => _search_api_facetapi_index_support_feature($index, 'search_api_facets_operator_or'),
+          ),
+          'dependency plugins' => array('role'),
+          'facet missing allowed' => TRUE,
+          'facet mincount allowed' => TRUE,
+          'map callback' => 'search_api_facetapi_facet_map_callback',
+          'map options' => array(),
+          'field type' => $type,
+        );
+        if ($type === 'date') {
+          $facet_info[$key]['description'] .= ' ' . t('(Caution: This may perform very poorly for large result sets.)');
+        }
+        $facet_info[$key]['map options'] += array(
+          'field' => $field,
+          'index id' => $index->machine_name,
+          'value callback' => '_search_api_facetapi_facet_create_label',
+        );
+        // Find out whether this property is a Field API field.
+        if (strpos($key, ':') === FALSE) {
+          if (isset($wrapper->$key)) {
+            $property_info = $wrapper->$key->info();
+            if (!empty($property_info['field'])) {
+              $facet_info[$key]['field api name'] = $key;
+            }
+          }
+        }
+
+        // Add bundle information, if applicable.
+        if ($bundle_key) {
+          if ($key === $bundle_key) {
+            // Set entity type this field contains bundle information for.
+            $facet_info[$key]['field api bundles'][] = $index->getEntityType();
+          }
+          else {
+            // Add "bundle" as possible dependency plugin.
+            $facet_info[$key]['dependency plugins'][] = 'bundle';
+          }
+        }
+      }
+    }
+  }
+  return $facet_info;
+}
+
+/**
+ * Implements hook_facetapi_adapters().
+ */
+function search_api_facetapi_facetapi_adapters() {
+  return array(
+    'search_api' => array(
+      'handler' => array(
+        'class' => 'SearchApiFacetapiAdapter',
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_facetapi_query_types().
+ */
+function search_api_facetapi_facetapi_query_types() {
+  return array(
+    'search_api_term' => array(
+      'handler' => array(
+        'class' => 'SearchApiFacetapiTerm',
+        'adapter' => 'search_api',
+      ),
+    ),
+    'search_api_date' => array(
+      'handler' => array(
+        'class' => 'SearchApiFacetapiDate',
+        'adapter' => 'search_api',
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_search_api_query_alter().
+ *
+ * Adds Facet API support to the query.
+ */
+function search_api_facetapi_search_api_query_alter($query) {
+  $index = $query->getIndex();
+  if ($index->server()->supportsFeature('search_api_facets')) {
+    // This is the main point of communication between the facet system and the
+    // search back-end - it makes the query respond to active facets.
+    $searcher = 'search_api@' . $index->machine_name;
+    $adapter = facetapi_adapter_load($searcher);
+    if ($adapter) {
+      $adapter->addActiveFilters($query);
+    }
+  }
+}
+
+/**
+ * Menu callback for the facet settings page.
+ */
+function search_api_facetapi_settings($realm_name, SearchApiIndex $index) {
+  if (!$index->enabled) {
+    return array('#markup' => t('Since this index is at the moment disabled, no facets can be activated.'));
+  }
+  if (!_search_api_facetapi_index_support_feature($index)) {
+    return array('#markup' => t('This index uses a server that does not support facet functionality.'));
+  }
+  $searcher_name = 'search_api@' . $index->machine_name;
+  module_load_include('inc', 'facetapi', 'facetapi.admin');
+  return drupal_get_form('facetapi_realm_settings_form', $searcher_name, $realm_name);
+}
+
+/**
+ * Checks whether a certain feature is supported for an index.
+ *
+ * @param SearchApiIndex $index
+ *   The search index which should be checked.
+ * @param string $feature
+ *   (optional) The feature to check for. Defaults to "search_api_facets".
+ *
+ * @return bool
+ *   TRUE if the feature is supported by the index's server (and the index is
+ *   currently enabled), FALSE otherwise.
+ */
+function _search_api_facetapi_index_support_feature(SearchApiIndex $index, $feature = 'search_api_facets') {
+  try {
+    $server = $index->server();
+    return $server && $server->supportsFeature($feature);
+  }
+  catch (SearchApiException $e) {
+    return FALSE;
+  }
+}
+
+/**
+ * Gets hierarchy information for taxonomy terms.
+ *
+ * Used as a hierarchy callback in search_api_facetapi_facetapi_facet_info().
+ *
+ * Internally just uses facetapi_get_taxonomy_hierarchy(), but makes sure that
+ * our special "!" value is not passed.
+ *
+ * @param array $values
+ *   An array containing the term IDs.
+ *
+ * @return array
+ *   An associative array mapping term IDs to parent IDs (where parents could be
+ *   found).
+ */
+function search_api_facetapi_get_taxonomy_hierarchy(array $values) {
+  $values = array_filter($values, 'is_numeric');
+  return $values ? facetapi_get_taxonomy_hierarchy($values) : array();
+}
+
+/**
+ * Map callback for all search_api facet fields.
+ *
+ * @param array $values
+ *   The values to map.
+ * @param array $options
+ *   An associative array containing:
+ *   - field: Field information, as stored in the index, but with an additional
+ *     "key" property set to the field's internal name.
+ *   - index id: The machine name of the index for this facet.
+ *   - map callback: (optional) A callback that will be called at the beginning,
+ *     which allows initial mapping of filters. Only values not mapped by that
+ *     callback will be processed by this method.
+ *   - value callback: A callback used to map single values and the limits of
+ *     ranges. The signature is the same as for this function, but all values
+ *     will be single values.
+ *   - missing label: (optional) The label used for the "missing" facet.
+ *
+ * @return array
+ *   An array mapping raw filter values to their labels.
+ */
+function search_api_facetapi_facet_map_callback(array $values, array $options = array()) {
+  $map = array();
+  // See if we have an additional map callback.
+  if (isset($options['map callback']) && is_callable($options['map callback'])) {
+    $map = call_user_func($options['map callback'], $values, $options);
+  }
+
+  // Then look at all unmapped values and save information for them.
+  $mappable_values = array();
+  $ranges = array();
+  foreach ($values as $value) {
+    $value = (string) $value;
+    if (isset($map[$value])) {
+      continue;
+    }
+    if ($value == '!') {
+      // The "missing" filter is usually always the same, but we allow an easy
+      // override via the "missing label" map option.
+      $map['!'] = isset($options['missing label']) ? $options['missing label'] : '(' . t('none') . ')';
+      continue;
+    }
+    $length = strlen($value);
+    if ($length > 5 && $value[0] == '[' && $value[$length - 1] == ']' && ($pos = strpos($value, ' TO '))) {
+      // This is a range filter.
+      $lower = trim(substr($value, 1, $pos));
+      $upper = trim(substr($value, $pos + 4, -1));
+      if ($lower != '*') {
+        $mappable_values[$lower] = TRUE;
+      }
+      if ($upper != '*') {
+        $mappable_values[$upper] = TRUE;
+      }
+      $ranges[$value] = array(
+        'lower' => $lower,
+        'upper' => $upper,
+      );
+    }
+    else {
+      // A normal, single-value filter.
+      $mappable_values[$value] = TRUE;
+    }
+  }
+
+  if ($mappable_values) {
+    $map += call_user_func($options['value callback'], array_keys($mappable_values), $options);
+  }
+
+  foreach ($ranges as $value => $range) {
+    $lower = isset($map[$range['lower']]) ? $map[$range['lower']] : $range['lower'];
+    $upper = isset($map[$range['upper']]) ? $map[$range['upper']] : $range['upper'];
+    if ($lower == '*' && $upper == '*') {
+      $map[$value] =  t('any');
+    }
+    elseif ($lower == '*') {
+      $map[$value] = "< $upper";
+    }
+    elseif ($upper == '*') {
+      $map[$value] = "> $lower";
+    }
+    else {
+      $map[$value] = "$lower – $upper";
+    }
+  }
+
+  return $map;
+}
+
+/**
+ * Creates a human-readable label for single facet filter values.
+ *
+ * @param array $values
+ *   The values for which labels should be returned.
+ * @param array $options
+ *   An associative array containing the following information about the facet:
+ *   - field: Field information, as stored in the index, but with an additional
+ *     "key" property set to the field's internal name.
+ *   - index id: The machine name of the index for this facet.
+ *   - map callback: (optional) A callback that will be called at the beginning,
+ *     which allows initial mapping of filters. Only values not mapped by that
+ *     callback will be processed by this method.
+ *   - value callback: A callback used to map single values and the limits of
+ *     ranges. The signature is the same as for this function, but all values
+ *     will be single values.
+ *   - missing label: (optional) The label used for the "missing" facet.
+ *
+ * @return array
+ *   An array mapping raw facet values to their labels.
+ */
+function _search_api_facetapi_facet_create_label(array $values, array $options) {
+  $field = $options['field'];
+  $map = array();
+  $n = count($values);
+
+  // For entities, we can simply use the entity labels.
+  if (isset($field['entity_type'])) {
+    $type = $field['entity_type'];
+    $entities = entity_load($type, $values);
+    foreach ($entities as $id => $entity) {
+      $label = entity_label($type, $entity);
+      if ($label !== FALSE) {
+        $map[$id] = $label;
+      }
+    }
+    if (count($map) == $n) {
+      return $map;
+    }
+  }
+
+  // Then, we check whether there is an options list for the field.
+  $index = search_api_index_load($options['index id']);
+  $wrapper = $index->entityWrapper();
+  $values = drupal_map_assoc($values);
+  foreach (explode(':', $field['key']) as $part) {
+    if (!isset($wrapper->$part)) {
+      $wrapper = NULL;
+      break;
+    }
+    $wrapper = $wrapper->$part;
+    while (($info = $wrapper->info()) && search_api_is_list_type($info['type'])) {
+      $wrapper = $wrapper[0];
+    }
+  }
+  if ($wrapper && ($options_list = $wrapper->optionsList('view'))) {
+    // We have no use for empty strings, as then the facet links would be
+    // invisible.
+    $map += array_intersect_key(array_filter($options_list, 'strlen'), $values);
+    if (count($map) == $n) {
+      return $map;
+    }
+  }
+
+  // As a "last resort" we try to create a label based on the field type, for
+  // all values that haven't got a mapping yet.
+  foreach (array_diff_key($values, $map) as $value) {
+    switch ($field['type']) {
+      case 'boolean':
+        $map[$value] = $value ? t('true') : t('false');
+        break;
+      case 'date':
+        $v = is_numeric($value) ? $value : strtotime($value);
+        $map[$value] = format_date($v, 'short');
+        break;
+      case 'duration':
+        $map[$value] = format_interval($value);
+        break;
+    }
+  }
+  return $map;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function search_api_facetapi_form_search_api_admin_index_fields_alter(&$form, &$form_state) {
+  $form['#submit'][] = 'search_api_facetapi_search_api_admin_index_fields_submit';
+}
+
+/**
+ * Form submission handler for search_api_admin_index_fields().
+ */
+function search_api_facetapi_search_api_admin_index_fields_submit($form, &$form_state) {
+  // Clears this searcher's cached facet definitions.
+  $cid = 'facetapi:facet_info:search_api@' . $form_state['index']->machine_name . ':';
+  cache_clear_all($cid, 'cache', TRUE);
+}
+
+/**
+ * Computes the granularity of a date facet filter.
+ *
+ * @param $filter
+ *   The filter value to examine.
+ *
+ * @return string|null
+ *   Either one of the FACETAPI_DATE_* constants corresponding to the
+ *   granularity of the filter, or NULL if it couldn't be computed.
+ */
+function search_api_facetapi_date_get_granularity($filter) {
+  // Granularity corresponds to number of dashes in filter value.
+  $units = array(
+    FACETAPI_DATE_YEAR,
+    FACETAPI_DATE_MONTH,
+    FACETAPI_DATE_DAY,
+    FACETAPI_DATE_HOUR,
+    FACETAPI_DATE_MINUTE,
+    FACETAPI_DATE_SECOND,
+  );
+  $count = substr_count($filter, '-');
+  return isset($units[$count]) ? $units[$count] : NULL;
+}
+
+/**
+ * Returns the date format used for a given granularity.
+ *
+ * @param $granularity
+ *   One of the FACETAPI_DATE_* constants.
+ *
+ * @return string
+ *   The date format used for the given granularity.
+ */
+function search_api_facetapi_date_get_granularity_format($granularity) {
+  $formats = array(
+    FACETAPI_DATE_YEAR => 'Y',
+    FACETAPI_DATE_MONTH => 'Y-m',
+    FACETAPI_DATE_DAY => 'Y-m-d',
+    FACETAPI_DATE_HOUR => 'Y-m-d-H',
+    FACETAPI_DATE_MINUTE => 'Y-m-d-H-i',
+    FACETAPI_DATE_SECOND => 'Y-m-d-H-i-s',
+  );
+  return $formats[$granularity];
+}
+
+/**
+ * Constructs labels for date facet filter values.
+ *
+ * @param array $values
+ *   The date facet filter values, as used in URL parameters.
+ * @param array $options
+ *   (optional) Options for creating the mapping. The following options are
+ *   recognized:
+ *   - format callback: A callback for creating a label for a timestamp. The
+ *     function signature is like search_api_facetapi_format_timestamp(),
+ *     receiving a timestamp and one of the FACETAPI_DATE_* constants as the
+ *     parameters and returning a human-readable label.
+ *
+ * @return array
+ *   An array of labels for the given facet filters.
+ */
+function search_api_facetapi_map_date(array $values, array $options = array()) {
+  $map = array();
+  foreach ($values as $value) {
+    // Ignore any filters passed directly from the server (range or missing). We
+    // always create filters starting with a year.
+    $value = "$value";
+    if (!$value || !ctype_digit($value[0])) {
+      continue;
+    }
+
+    // Get the granularity of the filter.
+    $granularity = search_api_facetapi_date_get_granularity($value);
+    if (!$granularity) {
+      continue;
+    }
+
+    // For years, the URL value is already the label.
+    if ($granularity == FACETAPI_DATE_YEAR) {
+      $map[$value] = $value;
+      continue;
+    }
+
+    // Otherwise, parse the timestamp from the known format and format it as a
+    // label.
+    $format = search_api_facetapi_date_get_granularity_format($granularity);
+    $date = DateTime::createFromFormat($format, $value);
+    if (!$date) {
+      continue;
+    }
+    $format_callback = 'search_api_facetapi_format_timestamp';
+    if (!empty($options['format callback']) && is_callable($options['format callback'])) {
+      $format_callback = $options['format callback'];
+    }
+    $map[$value] = call_user_func($format_callback, $date->format('U'), $granularity);
+  }
+  return $map;
+}
+
+/**
+ * Format a date according to the default timezone and the given precision.
+ *
+ * @param int $timestamp
+ *   An integer containing the Unix timestamp being formated.
+ * @param string $precision
+ *   A string containing the formatting precision. See the FACETAPI_DATE_*
+ *   constants for valid values.
+ *
+ * @return string
+ *   A human-readable representation of the timestamp.
+ */
+function search_api_facetapi_format_timestamp($timestamp, $precision = FACETAPI_DATE_YEAR) {
+  $formats = array(
+    FACETAPI_DATE_YEAR => 'Y',
+    FACETAPI_DATE_MONTH => 'F Y',
+    FACETAPI_DATE_DAY => 'F j, Y',
+    FACETAPI_DATE_HOUR => 'H:__',
+    FACETAPI_DATE_MINUTE => 'H:i',
+    FACETAPI_DATE_SECOND => 'H:i:s',
+  );
+
+  if (!isset($formats[$precision])) {
+    $precision = FACETAPI_DATE_YEAR;
+  }
+
+  return format_date($timestamp, 'custom', $formats[$precision]);
+}

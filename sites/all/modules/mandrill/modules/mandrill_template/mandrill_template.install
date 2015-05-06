@@ -1,0 +1,131 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the mandrill_template module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function mandrill_template_schema() {
+  $schema['mandrill_template_map'] = array(
+    'description' => 'The base table for the mandrill template module.',
+    'fields' => array(
+      'mandrill_template_map_entity_id' => array(
+        'description' => 'The primary identifier for a mandrill_template_map.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'name' => array(
+        'description' => 'The name of this mandrill_template_map',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'label' => array(
+        'description' => 'The label for this mandrill_template_map',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'mailsystem_key' => array(
+        'description' => 'The mailsystem_key that is using this mandrill_template_map.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'default' => '',
+      ),
+      'template_id' => array(
+        'description' => 'The unique identifier of the Mandrill Template this mapping uses.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'main_section' => array(
+        'description' => 'The name of the section where primary email content should go.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'author_uid' => array(
+        'description' => 'The uid of the user who created this mandrill_template_map.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'sections' => array(
+        'description' => 'An array of content sections for the template.',
+        'type' => 'blob',
+        'size' => 'big',
+        'not null' => TRUE,
+        'serialize' => TRUE,
+      ),
+      'created' => array(
+        'description' => 'The Unix timestamp when the mandrill_template_map was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'updated' => array(
+        'description' => 'The Unix timestamp when the mandrill_template_map was most recently saved.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      // Following fields are for supporting exportable status.
+      'status' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        // Set the default to ENTITY_CUSTOM without using the constant as it is
+        // not safe to use it at this point.
+        'default' => 0x01,
+        'size' => 'tiny',
+        'description' => 'The exportable status of the entity.',
+      ),
+      'module' => array(
+        'description' => 'The name of the providing module if the entity has been defined in code.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+    ),
+    'indexes' => array(
+      'mandrill_template_map_updated' => array('updated'),
+      'mandrill_template_map_created' => array('created'),
+      'mandrill_template_map_author' => array('author_uid'),
+    ),
+    'unique keys' => array(
+      'mandrill_template_map_entity_id' => array('mandrill_template_map_entity_id'),
+    ),
+    'foreign keys' => array(
+      'mandrill_template_map_author' => array(
+        'table' => 'users',
+        'columns' => array('author_uid' => 'uid'),
+      ),
+    ),
+    'primary key' => array('mandrill_template_map_entity_id'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Extends the mailsystem_key field to support longer template key names.
+ */
+function mandrill_template_update_7001() {
+  db_change_field('mandrill_template_map', 'mailsystem_key', 'mailsystem_key',
+    array(
+      'description' => 'The mailsystem_key that is using this mandrill_template_map.',
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => FALSE,
+      'default' => '',
+    )
+  );
+}

@@ -1,0 +1,30 @@
+<?php
+
+/**
+ * @file
+ * Test case for multilingual forums.
+ */
+class i18nForumTestCase extends Drupali18nTestCase {
+  public static function getInfo() {
+    return array(
+      'name' => 'Multilingual forum',
+      'group' => 'Internationalization',
+      'description' => 'Tests multilingual forum',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp('translation', 'i18n_select', 'i18n_forum');
+    parent::setUpLanguages();
+    parent::setUpContentTranslation();
+  }
+
+  /**
+   * Tests i18n_select integration.
+   */
+  public function testI18nSelectTest() {
+    // @TODO: improve test. its just a quick test against the PDO exception
+    // @see http://drupal.org/node/1437932
+    $this->i18nGet($this->default_language, 'forum');
+  }
+}

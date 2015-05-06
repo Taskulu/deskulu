@@ -1,0 +1,748 @@
+<?php
+
+/**
+ * CKEditor - The text editor for the Internet - http://ckeditor.com
+ * Copyright (c) 2003-2013, CKSource - Frederico Knabben. All rights reserved.
+ *
+ * == BEGIN LICENSE ==
+ *
+ * Licensed under the terms of any of the following licenses of your
+ * choice:
+ *
+ *  - GNU General Public License Version 2 or later (the "GPL")
+ *    http://www.gnu.org/licenses/gpl.html
+ *
+ *  - GNU Lesser General Public License Version 2.1 or later (the "LGPL")
+ *    http://www.gnu.org/licenses/lgpl.html
+ *
+ *  - Mozilla Public License Version 1.1 or later (the "MPL")
+ *    http://www.mozilla.org/MPL/MPL-1.1.html
+ *
+ * == END LICENSE ==
+ *
+ * @file
+ * CKEditor Module for Drupal 7.x
+ *
+ * This module allows Drupal to replace textarea fields with CKEditor.
+ *
+ * CKEditor is an online rich text editor that can be embedded inside web pages.
+ * It is a WYSIWYG (What You See Is What You Get) editor which means that the
+ * text edited in it looks as similar as possible to the results end users will
+ * see after the document gets published. It brings to the Web popular editing
+ * features found in desktop word processors such as Microsoft Word and
+ * OpenOffice.org Writer. CKEditor is truly lightweight and does not require any
+ * kind of installation on the client computer.
+ */
+/**
+ * The name of the simplified toolbar that should be forced.
+ * Make sure that this toolbar is defined in ckeditor.config.js or fckconfig.js.
+ */
+define('CKEDITOR_FORCE_SIMPLE_TOOLBAR_NAME', 'DrupalBasic');
+define('CKEDITOR_ENTERMODE_P', 1);
+define('CKEDITOR_ENTERMODE_BR', 2);
+define('CKEDITOR_ENTERMODE_DIV', 3);
+
+global $_ckeditor_configuration;
+global $_ckeditor_ids;
+
+module_load_include('inc', 'ckeditor', 'includes/ckeditor.user');
+
+$_ckeditor_configuration = array();
+$_ckeditor_ids = array();
+
+/**
+ * Implementation of hook_menu().
+ */
+function ckeditor_menu() {
+  $items = array();
+
+  $items['ckeditor/xss'] = array(
+    'title' => 'XSS Filter',
+    'description' => 'XSS Filter.',
+    'page callback' => 'ckeditor_filter_xss',
+    'file' => 'includes/ckeditor.page.inc',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['ckeditor/disable/wysiwyg/%'] = array(
+    'title' => 'Disable the WYSIWYG module',
+    'description' => 'Disable WYSIWYG module.',
+    'page callback' => 'ckeditor_disable_wysiwyg',
+    'page arguments' => array(3),
+    'file' => 'includes/ckeditor.admin.inc',
+    'access arguments' => array('administer ckeditor'),
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['admin/config/content/ckeditor'] = array(
+    'title' => 'CKEditor',
+    'description' => 'Configure the rich text editor.',
+    'page callback' => 'ckeditor_admin_main',
+    'file' => 'includes/ckeditor.admin.inc',
+    'access arguments' => array('administer ckeditor'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  $items['admin/config/content/ckeditor/skinframe'] = array(
+    'title' => 'Change skin of CKEditor',
+    'description' => 'Configure skin for CKEditor.',
+    'page callback' => 'ckeditor_skinframe',
+    'file' => 'includes/ckeditor.admin.inc',
+    'access arguments' => array('administer ckeditor'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['admin/config/content/ckeditor/add'] = array(
+    'title' => 'Add a new CKEditor profile',
+    'description' => 'Configure the rich text editor.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ckeditor_admin_profile_form', 'add'),
+    'file' => 'includes/ckeditor.admin.inc',
+    'access arguments' => array('administer ckeditor'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['admin/config/content/ckeditor/clone/%ckeditor_profile'] = array(
+    'title' => 'Clone the CKEditor profile',
+    'description' => 'Configure the rich text editor.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ckeditor_admin_profile_clone_form', 'clone', 5),
+    'file' => 'includes/ckeditor.admin.inc',
+    'access arguments' => array('administer ckeditor'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['admin/config/content/ckeditor/edit/%ckeditor_profile'] = array(
+    'title' => 'Edit the CKEditor profile',
+    'description' => 'Configure the rich text editor.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ckeditor_admin_profile_form', 'edit', 5),
+    'file' => 'includes/ckeditor.admin.inc',
+    'access arguments' => array('administer ckeditor'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['admin/config/content/ckeditor/delete/%ckeditor_profile'] = array(
+    'title' => 'Delete the CKEditor profile',
+    'description' => 'Configure the rich text editor.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ckeditor_admin_profile_delete_form', 5),
+    'file' => 'includes/ckeditor.admin.inc',
+    'access arguments' => array('administer ckeditor'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['admin/config/content/ckeditor/addg'] = array(
+    'title' => 'Add the CKEditor Global profile',
+    'description' => 'Configure the rich text editor.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ckeditor_admin_global_profile_form', 'add'),
+    'file' => 'includes/ckeditor.admin.inc',
+    'access arguments' => array('administer ckeditor'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['admin/config/content/ckeditor/editg'] = array(
+    'title' => 'Edit the CKEditor Global profile',
+    'description' => 'Configure the rich text editor.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ckeditor_admin_global_profile_form', 'edit'),
+    'file' => 'includes/ckeditor.admin.inc',
+    'access arguments' => array('administer ckeditor'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_permission().
+ *
+ * People -> Permissions
+ */
+function ckeditor_permission() {
+  $arr = array();
+  $arr['administer ckeditor'] = array(
+    'title' => t('Administer CKEditor access'),
+    'description' => t('Allow users to change CKEditor settings.')
+  );
+
+  $arr['customize ckeditor'] = array(
+    'title' => t('Customize CKEditor appearance'),
+    'description' => t('Allow users to customize CKEditor appearance.')
+  );
+
+  if (file_exists(ckfinder_path('local'))) {
+    $arr['allow CKFinder file uploads'] = array(
+      'title' => t('CKFinder access'),
+      'description' => t('Allow users to use CKFinder.')
+    );
+  }
+  return $arr;
+}
+
+/**
+ * Implementation of hook_help().
+ *
+ * This function delegates the execution to ckeditor_help_delegate() in includes/ckeditor.page.inc to
+ * lower the amount of code in ckeditor.module.
+ */
+function ckeditor_help($path, $arg) {
+  module_load_include('inc', 'ckeditor', 'includes/ckeditor.page');
+  return module_invoke('ckeditor', 'help_delegate', $path, $arg);
+}
+
+/**
+ * Check CKEditor version
+ */
+function ckeditor_get_version($main_version = FALSE) {
+  static $ckeditor_version = FALSE;
+
+  if ($ckeditor_version !== FALSE) {
+    if (!$main_version) {
+      return $ckeditor_version;
+    }
+    $version = explode('.', $ckeditor_version);
+    return trim($version[0]);
+  }
+
+  $editor_path = ckeditor_path('local', TRUE);
+  if ($editor_path == '<URL>') {
+    $url = ckeditor_path('url', TRUE);
+    $matches = array();
+    if (preg_match("|cdn.ckeditor.com/(\d(\.\d+)+.*)/|i", $url, $matches)) {
+      $ckeditor_version = $matches[1];
+      return $matches[1];
+    }
+    return $ckeditor_version = NULL;
+  }
+
+  $jspath = $editor_path . '/ckeditor.js';
+
+  $configcontents = @file_get_contents($jspath);
+  if (!$configcontents) {
+    return $ckeditor_version = NULL;
+  }
+  $matches = array();
+  if (preg_match('#,version:[\'\"]{1}(.*?)[\'\"]{1},#', $configcontents, $matches)) {
+    $ckeditor_version = $matches[1];
+    if ($ckeditor_version == '%VERSION%') {
+      $ckeditor_version = '4.0.0';
+    }
+    if (!$main_version) {
+      return $ckeditor_version;
+    }
+    $version = explode('.', $ckeditor_version);
+    return trim($version[0]);
+  }
+  return $ckeditor_version = NULL;
+}
+
+/**
+ * Implements hook_page_build().
+ */
+function ckeditor_page_build(&$page) {
+  // Add our CSS file that adds common needed classes, such as align-left,
+  // align-right, underline, indent, etc.
+  $page['page_bottom']['ckeditor']['#attached']['css'] = array(
+    drupal_get_path('module', 'ckeditor') . '/css/ckeditor.css' => array(
+      'every_page' => TRUE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for user_profile_form().
+ */
+function ckeditor_form_user_profile_form_alter(&$form, &$form_state) {
+  if ($form['#user_category'] == 'account') {
+    ckeditor_user_customize($form, $form_state, 'user_profile_form');
+  }
+}
+
+/**
+ * Implementation of hook_element_info_alter().
+ *
+ * Replace the textarea with CKEditor using a callback function (ckeditor_pre_render_text_format).
+ */
+function ckeditor_element_info_alter(&$types) {
+  $types['text_format']['#pre_render'][] = 'ckeditor_pre_render_text_format';
+}
+
+/**
+ * This function creates the HTML objects required for CKEditor.
+ *
+ * @param $element
+ *   A fully populated form element to add the editor to.
+ * @return
+ *   The same $element with extra CKEditor markup and initialization.
+ */
+function ckeditor_pre_render_text_format($element) {
+  static $init = FALSE;
+  if (!isset($element['#format'])) {
+    return $element;
+  }
+
+  module_load_include('inc', 'ckeditor', 'includes/ckeditor.lib');
+  if ($init === FALSE) {
+    $input_formats = ckeditor_profiles_compile();
+    drupal_add_js(array('ckeditor' => array('input_formats' => $input_formats, 'plugins' => array())), 'setting');
+    $init = TRUE;
+  }
+
+  if (isset($element['value'])) {
+    if (!isset($element['format'])) {
+      return $element;
+    }
+    if (isset($element['summary'])) {
+      $element['value'] = ckeditor_load_by_field($element['value'], $element['format']['format'], TRUE, $element['summary']['#id']);
+      $element['summary'] = ckeditor_load_by_field($element['summary'], $element['format']['format'], FALSE);
+    }
+    else {
+      $element['value'] = ckeditor_load_by_field($element['value'], $element['format']['format']);
+    }
+  }
+  else {
+    $element = ckeditor_load_by_field($element, $element['#format']);
+  }
+
+  return $element;
+}
+
+/**
+ * Load all profiles. Just load one profile if $name is passed in.
+ */
+function ckeditor_profile_load($name = '', $clear = FALSE, $check_access = TRUE) {
+  static $profiles = array();
+  global $user;
+
+  if (empty($profiles) || $clear === TRUE) {
+    $result = db_select('ckeditor_settings', 's')->fields('s')->execute();
+    foreach ($result as $data) {
+      $data->settings = unserialize($data->settings);
+      $data->input_formats = array();
+
+      $profiles[$data->name] = $data;
+    }
+    if ($check_access === FALSE) {
+      // don't check if user has access to filter formats, needed for exporting as feature with drush
+      $input_formats = filter_formats();
+    } else {
+      $input_formats = filter_formats($user);
+    }
+    $result = db_select('ckeditor_input_format', 'f')->fields('f')->execute();
+    foreach ($result as $data) {
+      if (isset($input_formats[$data->format])) {
+        $profiles[$data->name]->input_formats[$data->format] = $input_formats[$data->format]->name;
+      }
+    }
+  }
+
+  return ($name ? (isset($profiles[urldecode($name)]) ? $profiles[urldecode($name)] : FALSE) : $profiles);
+}
+
+/**
+ * Generate base path of the Drupal installation.
+ *
+ * @return
+ *   Path of the Drupal installation.
+ */
+function ckeditor_base_path($mode = 'relative') {
+  if ($mode == 'local') {
+    return $cke_base_local_path = '.';
+  }
+  return rtrim(base_path(), '/');
+}
+
+/**
+ * Generate module path of the CKEditor module.
+ *
+ * @return
+ *   Path of CKEditor module.
+ */
+function ckeditor_module_path($mode = 'relative') {
+  switch ($mode) {
+    default:
+    case 'relative':
+      return ckeditor_base_path('relative') . '/' . drupal_get_path('module', 'ckeditor');
+    case 'local':
+      return ckeditor_base_path('local') . '/' . drupal_get_path('module', 'ckeditor');
+    case 'url':
+      return drupal_get_path('module', 'ckeditor');
+  }
+}
+
+/**
+ * Generate library path of the Drupal installation.
+ *
+ * @return
+ *   Path of library in the Drupal installation.
+ */
+function ckeditor_library_path($mode = 'relative') {
+  $lib_path = 'sites/all/libraries';
+
+  if (function_exists('libraries_get_path')) {
+    $path = libraries_get_path('ckeditor');
+    if ($path !== FALSE) {
+      $lib_path = drupal_substr($path, 0, strlen($path) - 9);
+    }
+  }
+  switch ($mode) {
+    default:
+    case 'relative':
+      return ckeditor_base_path('relative') . '/' . $lib_path;
+    case 'local':
+      return ckeditor_base_path('local') . '/' . $lib_path;
+    case 'url':
+      return $lib_path;
+  }
+}
+
+/**
+ * Read the CKEditor path from the Global profile.
+ *
+ * @return
+ *   Path to CKEditor folder.
+ */
+function ckeditor_path($mode = 'relative', $refresh = FALSE) {
+  static $cke_static;
+
+  if (!isset($cke_static)) {
+    $cke_static = array();
+  }
+
+  if ($refresh || !isset($cke_static[$mode])) {
+    $global_profile = ckeditor_profile_load('CKEditor Global Profile', $refresh);
+    switch ($mode) {
+      default:
+      case 'relative':
+        if ($global_profile && isset($global_profile->settings['ckeditor_path'])) {
+          // http:// OR https:// OR //
+          if (preg_match("|^(http(s)?:)?//|i", $global_profile->settings['ckeditor_path'])) {
+            return '<URL>';
+          }
+          $cke_path = $global_profile->settings['ckeditor_path'];
+          $cke_path = strtr($cke_path, array("%b" => ckeditor_base_path('relative'), "%m" => ckeditor_module_path('relative'), "%l" => ckeditor_library_path('relative')));
+          $cke_path = str_replace('\\', '/', $cke_path);
+          $cke_path = str_replace('//', '/', $cke_path);
+          return $cke_static[$mode] = $cke_path;
+        }
+        return $cke_static[$mode] = ckeditor_module_path('relative') . '/ckeditor';
+      case 'local':
+        if ($global_profile) {
+          if (!empty($global_profile->settings['ckeditor_local_path'])) {
+            return $cke_static[$mode] = $global_profile->settings['ckeditor_local_path'];
+          }
+          if (isset($global_profile->settings['ckeditor_path'])) {
+            // http:// OR https:// OR //
+            if (preg_match("|^(http(s)?:)?//|i", $global_profile->settings['ckeditor_path'])) {
+              return '<URL>';
+            }
+            $cke_local_path = $global_profile->settings['ckeditor_path'];
+            $cke_local_path = strtr($cke_local_path, array("%b" => ckeditor_base_path('local'), "%m" => ckeditor_module_path('local'), "%l" => ckeditor_library_path('local')));
+            return $cke_static[$mode] = $cke_local_path;
+          }
+        }
+        return $cke_static[$mode] = ckeditor_module_path('local') . '/ckeditor';
+      case 'url':
+        if ($global_profile && isset($global_profile->settings['ckeditor_path'])) {
+          // http:// OR https:// OR //
+          if (preg_match("|^(http(s)?:)?//|i", $global_profile->settings['ckeditor_path'])) {
+            $cke_path = $global_profile->settings['ckeditor_path'];
+          }
+          else {
+            $cke_path = $global_profile->settings['ckeditor_path'];
+            $cke_path = strtr($cke_path, array("%m" => ckeditor_module_path('url'), "%l" => ckeditor_library_path('url')));
+            $cke_path = str_replace('\\', '/', $cke_path);
+            $cke_path = str_replace('//', '/', $cke_path);
+            //In D7 base path in URL mode is not needed, so we need to remove it with trailing slash (if exists)
+            $cke_path = str_replace(array("%b/", "%b"), '', $cke_path);
+          }
+          return $cke_static[$mode] = $cke_path;
+        }
+        return $cke_static[$mode] = ckeditor_module_path('url') . '/ckeditor';
+    }
+  }
+  return $cke_static[$mode];
+}
+
+/**
+ * Read the CKEditor plugins path from the Global profile.
+ *
+ * @return
+ *   Path to CKEditor plugins folder.
+ */
+function ckeditor_plugins_path($mode = 'relative', $refresh = FALSE) {
+  static $cke_static;
+
+  if (!isset($cke_static)) {
+    $cke_static = array();
+  }
+
+  if ($refresh || !isset($cke_static[$mode])) {
+    $global_profile = ckeditor_profile_load('CKEditor Global Profile', $refresh);
+    switch ($mode) {
+      default:
+      case 'relative':
+        if ($global_profile && isset($global_profile->settings['ckeditor_plugins_path'])) {
+          $cke_plugins_path = $global_profile->settings['ckeditor_plugins_path'];
+          $cke_plugins_path = strtr($cke_plugins_path, array("%b" => ckeditor_base_path('relative'), "%m" => ckeditor_module_path('relative'), "%l" => ckeditor_library_path('relative')));
+          $cke_plugins_path = str_replace('\\', '/', $cke_plugins_path);
+          $cke_plugins_path = str_replace('//', '/', $cke_plugins_path);
+          $cke_plugins_path = rtrim($cke_plugins_path, ' \/');
+          return $cke_static[$mode] = $cke_plugins_path;
+        }
+        return $cke_static[$mode] = ckeditor_module_path('relative') . '/plugins';
+      case 'local':
+        if ($global_profile) {
+          if (!empty($global_profile->settings['ckeditor_plugins_local_path'])) {
+            return $cke_static[$mode] = $global_profile->settings['ckeditor_plugins_local_path'];
+          }
+          if (isset($global_profile->settings['ckeditor_plugins_path'])) {
+            $cke_plugins_local_path = $global_profile->settings['ckeditor_plugins_path'];
+            $cke_plugins_local_path = strtr($cke_plugins_local_path, array("%b" => ckeditor_base_path('local'), "%m" => ckeditor_module_path('local'), "%l" => ckeditor_library_path('local')));
+            return $cke_static[$mode] = $cke_plugins_local_path;
+          }
+        }
+        return $cke_static[$mode] = ckeditor_module_path('local') . '/plugins';
+      case 'url':
+        if ($global_profile && isset($global_profile->settings['ckeditor_plugins_path'])) {
+          $cke_plugins_path = $global_profile->settings['ckeditor_plugins_path'];
+          $cke_plugins_path = strtr($cke_plugins_path, array("%m" => ckeditor_module_path('url'), "%l" => ckeditor_library_path('url')));
+          $cke_plugins_path = str_replace('\\', '/', $cke_plugins_path);
+          $cke_plugins_path = str_replace('//', '/', $cke_plugins_path);
+          $cke_plugins_path = rtrim($cke_plugins_path, ' \/');
+          //In D7 base path in URL mode is not needed, so we need to remove it with trailing slash (if exists)
+          $cke_plugins_path = str_replace(array("%b/", "%b"), '', $cke_plugins_path);
+          return $cke_static[$mode] = $cke_plugins_path;
+        }
+        return $cke_static[$mode] = ckeditor_module_path('url') . '/plugins';
+    }
+  }
+  return $cke_static[$mode];
+}
+
+/**
+ * Read the CKFinder path from the Global profile.
+ *
+ * @return
+ *   Path to CKFinder folder.
+ */
+function ckfinder_path($mode = 'relative', $refresh = FALSE) {
+ static $cke_static;
+
+  if (!isset($cke_static)) {
+    $cke_static = array();
+  }
+
+  if ($refresh || !isset($cke_static[$mode])) {
+    $global_profile = ckeditor_profile_load('CKEditor Global Profile', $refresh);
+    switch ($mode) {
+      default:
+      case 'relative':
+        if ($global_profile && isset($global_profile->settings['ckfinder_path'])) {
+          $ckfinder_path = $global_profile->settings['ckfinder_path'];
+          $ckfinder_path = strtr($ckfinder_path, array("%b" => ckeditor_base_path('relative'), "%m" => ckeditor_module_path('relative'), "%l" => ckeditor_library_path('relative')));
+          $ckfinder_path = str_replace('\\', '/', $ckfinder_path);
+          $ckfinder_path = str_replace('//', '/', $ckfinder_path);
+          return $cke_static[$mode] = $ckfinder_path;
+        }
+        return $cke_static[$mode] = ckeditor_module_path('relative') . '/ckfinder';
+      case 'local':
+        if ($global_profile) {
+          if (!empty($global_profile->settings['ckfinder_local_path'])) {
+            return $cke_static[$mode] = $global_profile->settings['ckfinder_local_path'];
+          }
+          if (isset($global_profile->settings['ckfinder_path'])) {
+            $ckfinder_path = $global_profile->settings['ckfinder_path'];
+            $ckfinder_path = strtr($ckfinder_path, array("%b" => ckeditor_base_path('local'), "%m" => ckeditor_module_path('local'), "%l" => ckeditor_library_path('local')));
+            return $cke_static[$mode] = $ckfinder_path;
+          }
+        }
+        return $cke_static[$mode] = ckeditor_module_path('local') . '/ckfinder';
+      case 'url':
+        if ($global_profile && isset($global_profile->settings['ckfinder_path'])) {
+          $ckfinder_path = $global_profile->settings['ckfinder_path'];
+          $ckfinder_path = strtr($ckfinder_path, array("%m" => ckeditor_module_path('url'), "%l" => ckeditor_library_path('url')));
+          $ckfinder_path = str_replace('\\', '/', $cke_plugins_path);
+          $ckfinder_path = str_replace('//', '/', $cke_plugins_path);
+          //In D7 base path in URL mode is not needed, so we need to remove it with trailing slash (if exists)
+          $ckfinder_path = str_replace(array("%b/", "%b"), '', $ckfinder_path);
+          return $cke_static[$mode] = $ckfinder_path;
+        }
+        return $cke_static[$mode] = ckeditor_module_path('url') . '/ckfinder';
+    }
+  }
+  return $cke_static[$mode];
+}
+
+/**
+ * Implementation of hook_features_api().
+ *
+ * Allow exporting of CKEditor profiles by the Features module.
+ */
+function ckeditor_features_api() {
+  return array(
+    'ckeditor_profile' => array(
+      'name' => t('CKEditor profiles'),
+      'feature_source' => TRUE,
+      'default_hook' => 'ckeditor_profile_defaults',
+      'default_file' => FEATURES_DEFAULTS_INCLUDED,
+      'file' => drupal_get_path('module', 'ckeditor') . '/includes/ckeditor.features.inc',
+    )
+  );
+}
+
+/**
+ * Implementation of hook_file_download().
+ * Support for private downloads.
+ * CKEditor does not implement any kind of potection on private files.
+ */
+function ckeditor_file_download($uri) {
+  if ($path = file_create_url($uri)) {
+    $result = db_query("SELECT f.* FROM {file_managed} f WHERE uri = :uri", array(':uri' => $uri));
+    foreach ($result as $record) {
+      return NULL;
+    }
+    //No info in DB? Probably a file uploaded with FCKeditor / CKFinder
+    $global_profile = ckeditor_profile_load("CKEditor Global Profile");
+    //Assume that files inside of ckeditor directory belong to the CKEditor. If private directory is set, let the decision about protection to the user.
+    $private_dir_db = $private_dir = isset($global_profile->settings['private_dir']) ? trim($global_profile->settings['private_dir'], '\/') : '';
+    $private_dir_db = str_replace(array('\\%u', '\\%n'), array('', ''), $private_dir_db);
+    $private_dir = preg_quote($private_dir, '#');
+    $private_dir = strtr($private_dir, array('%u' => '(\d+)', '%n' => '([\x80-\xF7 \w@.-]+)')); // regex for %n taken from user_validate_name() in user.module
+    $private_dir = trim($private_dir, '\/');
+
+    $regex = '#^' . preg_quote('private://', '#') . $private_dir . '#';
+
+    if (!strstr($uri, 'private://') && !strstr($uri, 'public://')) {
+      $path = 'private://' . $uri;
+    }
+    else {
+      $path = $uri;
+    }
+    //check if CKEditor's "Enable access to files located in the private folder" option is disabled or enabled
+    $allow_download_private_files = FALSE;
+    if (isset($global_profile->settings['ckeditor_allow_download_private_files']) && $global_profile->settings['ckeditor_allow_download_private_files'] === 't') {
+      $allow_download_private_files = TRUE;
+    }
+    //denied access to file if private upload is set and CKEditor's "Enable access to files located in the private folder" option is disabled
+    if ($allow_download_private_files == FALSE)
+      return NULL;
+    //check if file can be served by comparing regex and path to file
+    if (preg_match($regex, $path)) {
+      $info = image_get_info($uri);
+      return array('Content-Type' => $info['mime_type']);
+    }
+  }
+}
+
+/**
+ * Implementation of hook_modules_enabled().
+ *
+ * Enable disabled plugins by hook_modules_disabled().
+ */
+function ckeditor_modules_enabled($modules) {
+  module_load_include('inc', 'ckeditor', 'includes/ckeditor.lib');
+  if (in_array('libraries', $modules)) {
+    // Check and update path to CKEditor in the global profile
+    _ckeditor_requirements_isinstalled();
+  }
+  $profiles_list = ckeditor_profile_input_formats();
+  $plugins_list = ckeditor_load_plugins();
+  foreach ($profiles_list AS $_profile => $_inputs) {
+    $changed = FALSE;
+    $profile = ckeditor_profile_load($_profile);
+    if (!isset($profile->settings['loadPlugins'])) continue;
+    foreach (array_keys((array) $profile->settings['loadPlugins']) as $plugin_name) {
+      if (isset($profile->settings['loadPlugins'][$plugin_name]['active']) && $profile->settings['loadPlugins'][$plugin_name]['active'] == 0 && array_key_exists($plugin_name, $plugins_list)) {
+        $profile->settings['loadPlugins'][$plugin_name]['active'] = 1;
+        $changed = TRUE;
+      }
+    }
+    if ($changed === TRUE) {
+      db_update('ckeditor_settings')
+          ->fields(array(
+            'settings' => serialize($profile->settings)
+          ))
+          ->condition('name', $profile->name, '=')
+          ->execute();
+    }
+  }
+}
+
+/**
+ * Implementation of hook_modules_disabled().
+ *
+ * Disable enabled plugins in CKEditor profiles added by disabled modules.
+ */
+function ckeditor_modules_disabled($modules) {
+  module_load_include('inc', 'ckeditor', 'includes/ckeditor.lib');
+  $profiles_list = ckeditor_profile_input_formats();
+  $plugins_list = ckeditor_load_plugins();
+  foreach ($profiles_list AS $_profile => $_inputs) {
+    $changed = FALSE;
+    $profile = ckeditor_profile_load($_profile);
+    if (!isset($profile->settings['loadPlugins'])) continue;
+    foreach (array_keys((array) $profile->settings['loadPlugins']) as $plugin_name) {
+      if (!array_key_exists($plugin_name, $plugins_list)) {
+        $profile->settings['loadPlugins'][$plugin_name]['active'] = 0;
+        $changed = TRUE;
+      }
+    }
+    if ($changed === TRUE) {
+      db_update('ckeditor_settings')
+          ->fields(array(
+            'settings' => serialize($profile->settings)
+          ))
+          ->condition('name', $profile->name, '=')
+          ->execute();
+    }
+  }
+}
+
+/**
+ * Implementation of hook_modules_uninstalled().
+ *
+ * Remove enabled plugins in CKEditor profiles added by uninstalled modules.
+ */
+function ckeditor_modules_uninstalled($modules) {
+  module_load_include('inc', 'ckeditor', 'includes/ckeditor.lib');
+  $profiles_list = ckeditor_profile_input_formats();
+  $plugins_list = ckeditor_load_plugins();
+  foreach ($profiles_list AS $_profile => $_inputs) {
+    $changed = FALSE;
+    $profile = ckeditor_profile_load($_profile);
+    if (!isset($profile->settings['loadPlugins'])) continue;
+    foreach (array_keys((array) $profile->settings['loadPlugins']) as $plugin_name) {
+      if (!array_key_exists($plugin_name, $plugins_list)) {
+        unset($profile->settings['loadPlugins'][$plugin_name]);
+        $changed = TRUE;
+      }
+    }
+    if ($changed === TRUE) {
+      db_update('ckeditor_settings')
+          ->fields(array(
+            'settings' => serialize($profile->settings)
+          ))
+          ->condition('name', $profile->name, '=')
+          ->execute();
+    }
+  }
+}
+
+
+/**
+ * Implements hook_field_extra_fields().
+ */
+function ckeditor_field_extra_fields() {
+  $fields['user']['user']['form']['ckeditor'] = array(
+    'label' => t('Rich text editor settings'),
+    'description' => t('Rich text editor settings'),
+    'weight' => 10,
+  );
+  return $fields;
+}
+

@@ -1,0 +1,20 @@
+name = Variable
+description = Variable Information and basic variable API
+package = Variable
+core = 7.x
+
+files[] = includes/forum.variable.inc
+files[] = includes/locale.variable.inc
+files[] = includes/menu.variable.inc
+files[] = includes/node.variable.inc
+files[] = includes/system.variable.inc
+files[] = includes/taxonomy.variable.inc
+files[] = includes/translation.variable.inc
+files[] = includes/user.variable.inc
+files[] = variable.test
+; Information added by Drupal.org packaging script on 2014-04-23
+version = "7.x-2.5"
+core = "7.x"
+project = "variable"
+datestamp = "1398250128"
+

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<source_data>
+  <item>
+    <id>3</id>
+    <title>Simple example</title>
+    <body>This is pretty straight-forward.</body>
+    <date>05/12/2011 19:43</date>
+    <date_range>
+      <from>06/13/2011 6:32pm</from>
+      <to>07/23/2011 10:32am</to>
+    </date_range>
+    <datestamp>07/22/2011 12:13</datestamp>
+    <datestamp_range>
+      <from>8/1/2011 00:00</from>
+      <to>9/1/2011 00:00</to>
+    </datestamp_range>
+    <datetime>11/18/2011 06:00</datetime>
+    <datetime_range>
+      <from>10/30/2011 19:43</from>
+      <to>12/31/2011 23:59</to>
+      <timezone>America/Chicago</timezone>
+    </datetime_range>
+    <date_repeat>
+      <date>11/25/2011 9:01</date>
+      <rule>RRULE:FREQ=WEEKLY;INTERVAL=2;UNTIL=20120512T040000Z;WKST=MO
+EXDATE:20111223</rule>
+    </date_repeat>
+  </item>
+  <item>
+    <id>8</id>
+    <title>Example with multi-value fields</title>
+    <body>This is not as straight-forward.</body>
+    <date>06/21/2012 15:32</date>
+    <date>12/02/2012 11:08</date>
+    <date_range>
+      <from>02/03/2004 1:15am</from>
+      <to>03/04/2005 10:11pm</to>
+    </date_range>
+    <date_range>
+      <from>09/01/2014 5:21pm</from>
+      <to>12/23/2015 00:01</to>
+    </date_range>
+    <datestamp>07/22/2011 12:13</datestamp>
+    <datestamp_range>
+      <from>8/1/2011 00:00</from>
+      <to>9/1/2011 00:00</to>
+    </datestamp_range>
+    <datetime>11/18/2011 06:00</datetime>
+    <datetime_range>
+      <from>10/30/2011 19:43</from>
+      <to>12/31/2011 23:59</to>
+      <timezone>America/Chicago</timezone>
+    </datetime_range>
+    <date_repeat>
+      <date>11/25/2011 9:01</date>
+      <rule>RRULE:FREQ=WEEKLY;INTERVAL=2;UNTIL=20120512T040000Z;WKST=MO
+EXDATE:20111223</rule>
+    </date_repeat>
+  </item>
+</source_data>

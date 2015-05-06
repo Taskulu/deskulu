@@ -1,0 +1,67 @@
+<?php
+
+/**
+ * @file
+ * Integrates the Search API with Views.
+ */
+
+/**
+ * Implements hook_views_api().
+ */
+function search_api_views_views_api() {
+  return array(
+    'api' => '3.0-alpha1',
+  );
+}
+
+/**
+ * Implements hook_search_api_index_insert().
+ */
+function search_api_views_search_api_index_insert() {
+  // Make the new index available for views.
+  views_invalidate_cache();
+}
+
+/**
+ * Implements hook_search_api_index_update().
+ */
+function search_api_views_search_api_index_update(SearchApiIndex $index) {
+  // Check whether index was disabled.
+  if (!$index->enabled && $index->original->enabled) {
+    _search_api_views_index_unavailable($index);
+  }
+
+  // Check whether the indexed fields changed.
+  $old_fields = $index->original->options + array('fields' => array());
+  $old_fields = $old_fields['fields'];
+  $new_fields = $index->options + array('fields' => array());
+  $new_fields = $new_fields['fields'];
+  if ($old_fields != $new_fields) {
+    views_invalidate_cache();
+  }
+}
+
+/**
+ * Implements hook_search_api_index_delete().
+ */
+function search_api_views_search_api_index_delete(SearchApiIndex $index) {
+  _search_api_views_index_unavailable($index);
+}
+
+/**
+ * Function for reacting to a disabled or deleted search index.
+ */
+function _search_api_views_index_unavailable(SearchApiIndex $index) {
+  $names = array();
+  $table = 'search_api_index_' . $index->machine_name;
+  foreach (views_get_all_views() as $name => $view) {
+    if (empty($view->disabled) && $view->base_table == $table) {
+      $names[] = $name;
+      // @todo: if ($index_deleted) $view->delete()?
+    }
+  }
+  if ($names) {
+    views_invalidate_cache();
+    drupal_set_message(t('The following views were using the index %name: @views. You should disable or delete them.', array('%name' => $index->name, '@views' => implode(', ', $names))), 'warning');
+  }
+}

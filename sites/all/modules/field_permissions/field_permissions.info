@@ -1,0 +1,15 @@
+name = Field Permissions
+description = Set field-level permissions to create, update or view fields.
+package = Fields
+core = 7.x
+files[] = field_permissions.module
+files[] = field_permissions.admin.inc
+files[] = field_permissions.test
+configure = admin/reports/fields/permissions
+
+; Information added by drupal.org packaging script on 2012-01-25
+version = "7.x-1.0-beta2"
+core = "7.x"
+project = "field_permissions"
+datestamp = "1327510549"
+

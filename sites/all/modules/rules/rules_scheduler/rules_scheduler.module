@@ -1,0 +1,214 @@
+<?php
+
+/**
+ * @file
+ * Rules scheduler module.
+ */
+
+define('RULES_SCHEDULER_PATH', 'admin/config/workflow/rules/schedule');
+
+/**
+ * Implements hook_cron().
+ */
+function rules_scheduler_cron() {
+  if (rules_scheduler_queue_tasks()) {
+    // hook_exit() is not invoked for cron runs, so register it as shutdown
+    // callback for logging the rules log to the watchdog.
+    drupal_register_shutdown_function('rules_exit');
+    // Clear the log before running tasks via the queue to avoid logging
+    // unrelated logs from previous cron-operations.
+    RulesLog::logger()->clear();
+  }
+}
+
+/**
+ * Implements hook_cron_queue_info().
+ */
+function rules_scheduler_cron_queue_info() {
+  $queues['rules_scheduler_tasks'] = array(
+    'worker callback' => 'rules_scheduler_run_task',
+    'time' => 15,
+  );
+  return $queues;
+}
+
+/**
+ * Queue worker callback for running a single task.
+ *
+ * @param array $task
+ *   The task to process.
+ */
+function rules_scheduler_run_task(array $task) {
+  try {
+    // BC support for tasks that have been already queued, before update
+    // rules_scheduler_update_7204() ran.
+    if (isset($task['state'])) {
+      $task['data'] = $task['state'];
+    }
+    rules_scheduler_task_handler($task)->runTask();
+  }
+  catch (RulesEvaluationException $e) {
+    rules_log($e->msg, $e->args, $e->severity);
+    rules_log('Unable to execute task with identifier %id scheduled on date %date.', array('%id' => $task['identifier'], '%date' => format_date($task['date'])), RulesLog::ERROR);
+  }
+}
+
+/**
+ * Returns the task handler for a given task.
+ *
+ * @param array $task
+ *   A task (queue item) array.
+ *
+ * @throws RulesEvaluationException
+ *   If the task handler class is missing.
+ *
+ * @return RulesSchedulerTaskHandlerInterface
+ *   The task handler.
+ */
+function rules_scheduler_task_handler(array $task) {
+  $class = !empty($task['handler']) ? $task['handler'] : 'RulesSchedulerDefaultTaskHandler';
+  if (!class_exists($class)) {
+    throw new RulesEvaluationException('Missing task handler implementation %class.', array('%class' => $class), NULL, RulesLog::ERROR);
+  }
+  return new $class($task);
+}
+
+/**
+ * Implements hook_rules_ui_menu_alter().
+ *
+ * Adds a menu item for the 'schedule' operation.
+ */
+function rules_scheduler_rules_ui_menu_alter(&$items, $base_path, $base_count) {
+  $items[$base_path . '/manage/%rules_config/schedule'] = array(
+    'title callback' => 'rules_get_title',
+    'title arguments' => array('Schedule !plugin "!label"', $base_count + 1),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('rules_scheduler_schedule_form', $base_count + 1, $base_path),
+    'access callback' => 'rules_config_access',
+    'access arguments' => array('update', $base_count + 1),
+    'file' => 'rules_scheduler.admin.inc',
+    'file path' => drupal_get_path('module', 'rules_scheduler'),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function rules_scheduler_menu() {
+  $items = array();
+  $items[RULES_SCHEDULER_PATH] = array(
+    'title' => 'Schedule',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'rules_scheduler_schedule_page',
+    'access arguments' => array('administer rules'),
+    'file' => 'rules_scheduler.admin.inc',
+  );
+  $items[RULES_SCHEDULER_PATH .'/%rules_scheduler_task/delete'] = array(
+    'title' => 'Delete a scheduled task',
+    'type' => MENU_CALLBACK,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('rules_scheduler_delete_task', 5),
+    'access arguments' => array('administer rules'),
+    'file' => 'rules_scheduler.admin.inc',
+  );
+  return $items;
+}
+
+/**
+ * Load a task by a given task ID.
+ */
+function rules_scheduler_task_load($tid) {
+  $result = db_select('rules_scheduler', 'r')
+    ->fields('r')
+    ->condition('tid', (int) $tid)
+    ->execute();
+  return $result->fetchAssoc();
+}
+
+/**
+ * Delete a task by a given task ID.
+ */
+function rules_scheduler_task_delete($tid) {
+  db_delete('rules_scheduler')
+    ->condition('tid', $tid)
+    ->execute();
+}
+
+/**
+ * Schedule a task to be executed later on.
+ *
+ * @param $task
+ *   An array representing the task with the following keys:
+ *   - config: The machine readable name of the to be scheduled component.
+ *   - date: Timestamp when the component should be executed.
+ *   - state: (deprecated) Rules evaluation state to use for scheduling.
+ *   - data: Any additional data to store with the task.
+ *   - handler: The name of the task handler class.
+ *   - identifier: User provided string to identify the task per scheduled
+ *   configuration.
+ */
+function rules_scheduler_schedule_task($task) {
+  // Map the deprecated 'state' property into 'data'.
+  if (isset($task['state'])) {
+    $task['data'] = $task['state'];
+    unset($task['state']);
+  }
+  if (!empty($task['identifier'])) {
+    // If there is a task with the same identifier and component, we replace it.
+    db_delete('rules_scheduler')
+      ->condition('config', $task['config'])
+      ->condition('identifier', $task['identifier'])
+      ->execute();
+  }
+  drupal_write_record('rules_scheduler', $task);
+}
+
+/**
+ * Queue tasks that are ready for execution.
+ *
+ * @return boolean
+ *   Returns TRUE if any queue items where created, otherwise FALSE.
+ */
+function rules_scheduler_queue_tasks() {
+  $items_created = FALSE;
+  // Limit adding tasks to 1000 per cron run.
+  $result = db_select('rules_scheduler', 'r', array('fetch' => PDO::FETCH_ASSOC))
+    ->fields('r')
+    ->condition('date', time(), '<=')
+    ->orderBy('date')
+    ->range(0, 1000)
+    ->execute();
+
+  $queue = DrupalQueue::get('rules_scheduler_tasks');
+  foreach ($result as $task) {
+    // Add the task to the queue and remove the entry afterwards.
+    if ($queue->createItem($task)) {
+      $items_created = TRUE;
+      rules_scheduler_task_handler($task)->afterTaskQueued();
+    }
+  }
+  return $items_created;
+}
+
+/**
+ * Implements hook_rules_config_delete().
+ */
+function rules_scheduler_rules_config_delete($rules_config) {
+  // Only react on real delete, not revert.
+  if (!$rules_config->hasStatus(ENTITY_IN_CODE)) {
+    // Delete all tasks scheduled for this config.
+    db_delete('rules_scheduler')
+      ->condition('config', $rules_config->name)
+      ->execute();
+  }
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function rules_scheduler_views_api() {
+  return array(
+    'api' => '3.0-alpha1',
+    'path' => drupal_get_path('module', 'rules_scheduler') .'/includes',
+  );
+}

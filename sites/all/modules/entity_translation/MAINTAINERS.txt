@@ -1,0 +1,38 @@
+
+Entity translation is built and maintained by the Drupal project community.
+Everyone is encouraged to submit issues and changes (patches) to improve it, and
+to contribute in other ways -- see http://drupal.org/contribute to find out how.
+
+Project maintainers
+-------------------
+
+The Entity translation maintainers oversee the development of the project as a
+whole. The project maintainers for Entity translation are:
+
+- Francesco Placella 'plach' <http://drupal.org/user/183211>
+- Daniel F. Kudwien 'sun' <http://drupal.org/user/54136>
+
+
+Component maintainers
+---------------------
+
+The Entity translation component maintainers oversee the development of its
+subsystems. This role maps pretty closely to the one of core maintainer for the
+Drupal core project (see http://drupal.org/contribute/core-maintainers for more
+information on their responsibilities), with the exception that here component
+maintainers are granted commit access for their specific subsystems. See
+http://drupal.org/node/363367 to find out how to become a component maintainer.
+Current component maintainers for Entity translation:
+
+Base system
+- Francesco Placella 'plach' <http://drupal.org/user/183211>
+- Benedikt Forchhammer 'bforchhammer' <http://drupal.org/user/216396>
+
+Menu integration
+- Benedikt Forchhammer 'bforchhammer' <http://drupal.org/user/216396>
+
+Views integration
+- Fabian Sörqvist 'fabsor' <http://drupal.org/user/255704>
+
+Node translation upgrade
+- Francesco Placella 'plach' <http://drupal.org/user/183211>

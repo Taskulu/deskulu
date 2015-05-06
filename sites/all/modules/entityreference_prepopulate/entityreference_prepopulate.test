@@ -1,0 +1,362 @@
+<?php
+
+class EntityReferenceOgContextTestCase extends DrupalWebTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'OG-context integration',
+      'description' => 'Test the OG-context integration, which allows prepopulating by the group context.',
+      'group' => 'Entity reference prepopulate',
+      'dependencies' => array('og'),
+    );
+  }
+
+  function setUp() {
+    parent::setUp('og_context', 'entityreference_prepopulate_test');
+
+    $this->user1 = $this->drupalCreateUser();
+    $this->user2 = $this->drupalCreateUser(array('bypass node access', 'administer group'));
+
+    $type = $this->drupalCreateContentType();
+    $this->group_type = $type->type;
+    og_create_field(OG_GROUP_FIELD, 'node', $this->group_type);
+
+    $type = $this->drupalCreateContentType();
+    $this->group_content_type = $type->type;
+
+    $og_field = og_fields_info(OG_AUDIENCE_FIELD);
+    // Enable the prepopulate behavior.
+    $og_field['instance']['settings']['behaviors']['prepopulate'] = array(
+      'status' => TRUE,
+      'action' => 'none',
+      'fallback' => 'none',
+      'skip_perm' => FALSE,
+      'providers' => array(
+        'url' => TRUE,
+        'og_context' => TRUE,
+      ),
+    );
+    og_create_field(OG_AUDIENCE_FIELD, 'node', $this->group_content_type, $og_field);
+  }
+
+  /**
+   * Test the OG-context integration.
+   */
+  function testPrepopulate() {
+    $settings = array(
+      'type' => $this->group_type,
+      'uid' => $this->user1->uid,
+    );
+    $settings[OG_GROUP_FIELD][LANGUAGE_NONE][0]['value'] = 1;
+    $group1 = $this->drupalCreateNode($settings);
+
+    og_group('node', $group1, array('entity_type' => 'user', 'entity' => $this->user2));
+
+    $this->drupalLogin($this->user2);
+    $this->drupalGet('node/add/' . str_replace('_', '-', $this->group_content_type));
+    $this->assertNoOptionSelected('edit-og-group-ref-und-0-default', 1, 'Group-audience fields is not selected.');
+
+    // Set the OG-context();
+    // See entityreference_prepopulate_test_init().
+    $options = array(
+      'query' => array(
+        'gid' => $group1->nid,
+      ),
+    );
+
+    $this->drupalGet('node/add/' . str_replace('_', '-', $this->group_content_type), $options);
+    $this->assertOptionSelected('edit-og-group-ref-und-0-default', 1, 'Group-audience fields is selected.');
+  }
+}
+
+
+class EntityReferenceReferenceRemain extends DrupalWebTestCase {
+  public $user;
+  public $node1;
+  public $node2;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Prepopulate settings',
+      'description' => 'Verify the reference between entity is remaining when saving the node.',
+      'group' => 'Entity reference prepopulate',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp(array('entityreference', 'entityreference_prepopulate'));
+
+    $content_type = $this->drupalCreateContentType();
+    $field = array(
+      'field_name' => 'node_ref',
+      'type' => 'entityreference',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+      'field_name' => 'node_ref',
+      'entity_type' => 'node',
+      'label' => 'Node ref',
+      'bundle' => $content_type->type,
+      'settings' => array(
+        'behaviors' => array(
+          'prepopulate' => array(
+            'status' => TRUE,
+            'action' => 'none',
+            'fallback' => 'none',
+          )
+        ),
+      ),
+    );
+    field_create_instance($instance);
+
+    $this->user = $this->drupalCreateUser(array('bypass node access'));
+
+    // Creating two nodes - referencing node and referenced node.
+    $this->node1 = $this->drupalCreateNode(array(
+      'title' => 'Referencing node',
+      'type' => $content_type->type,
+    ));
+
+    $this->node2 = $this->drupalCreateNode(array(
+      'title' => 'Referenced node',
+      'type' => $content_type->type,
+    ));
+
+    // Reference the first node to the second node.
+    $wrapper = entity_metadata_wrapper('node', $this->node1->nid);
+    $wrapper->node_ref->set($this->node2->nid);
+    $wrapper->save();
+  }
+
+  /**
+   * Set various settings of the entity reference prepopulate settings.
+   */
+  function testScenarioReference() {
+    $this->drupalLogin($this->user);
+
+    // Verify the basic prepopulate option.
+    $options = array('query' => array('node_ref' => $this->node2->nid));
+    $edit = array('title' => 'Referencing node');
+
+    $this->drupalPost('node/add/' . $this->node1->type, $edit, t('Save'), $options);
+    $this->assertText('Referenced node', 'The reference has been created');
+
+    // Disable the field.
+    $this->changeInstanceSettings(array('action' => 'disable'));
+
+    $this->drupalGet('node/add/' . $this->node1->type, $options);
+
+    $xpath = $this->xpath('//input[@id="edit-node-ref-und-0-target-id" and @disabled="disabled" and @value="Referenced node (' . $this->node2->nid . ')"]');
+    $this->assertTrue(!empty($xpath), 'The field is disabled and default value is set to the node 2.');
+
+    $this->drupalPost('node/add/' . $this->node1->type, $edit, t('Save'), $options);
+    $this->assertText('Referenced node', 'The reference has been created');
+
+    // Hide the field.
+    $this->changeInstanceSettings(array('action' => 'hide'));
+
+    $xpath = $this->xpath('//input[@id="edit-node-ref-und-0-target-id"]');
+    $this->assertTrue(empty($xpath), 'The field is not visible to the user.');
+
+    $this->drupalPost('node/add/' . $this->node1->type, $edit, t('Save'), $options);
+    $this->assertText('Referenced node', 'The reference has been created');
+
+    // Set an error when the prepopulated value is missing.
+    $this->changeInstanceSettings(array('fallback' => 'form_error'));
+
+    $this->drupalGet('node/add/' . $this->node1->type);
+    $this->assertText('Field Node ref must be populated via URL.', 'The error of the missing  prepopulated value has been set.');
+
+    // Redirect when there is the prepopulated field is missing.
+    $this->changeInstanceSettings(array('fallback' => 'redirect'));
+
+    $this->drupalGet('node/add/' . $this->node1->type);
+    $this->assertTrue($this->getUrl() == url('<front>', array('absolute' => TRUE)), 'The redirect of due to non prepoulated value.');
+
+    // Verify the basic edit.
+    $this->changeInstanceSettings(array(
+      'action' => 'hide',
+      'action_on_edit' => FALSE,
+    ));
+    $this->drupalGet('node/' . $this->node1->nid . '/edit');
+
+    $xpath = $this->xpath('//input[@id="edit-node-ref-und-0-target-id"]');
+    $this->assertTrue(!empty($xpath), "The node reference is visible to the user.");
+
+    $this->drupalPost('node/' . $this->node1->nid . '/edit', array('title' => 'Referencing node'), t('Save'));
+    $this->verifyReferenceRemain();
+
+    // Hide the field when editing.
+    $this->changeInstanceSettings(array(
+      'action' => 'hide',
+      'action_on_edit' => TRUE,
+    ));
+
+    $this->drupalGet('node/' . $this->node1->nid . '/edit');
+    $xpath = $this->xpath('//input[@id="edit-node-ref-und-0-target-id"]');
+    $this->assertTrue(empty($xpath), "The node reference is invisible to the user.");
+
+    $this->drupalPost('node/' . $this->node1->nid . '/edit', array('title' => 'Referencing node'), t('Save'), $options);
+    $this->verifyReferenceRemain();
+
+    // Disable the field.
+    $this->changeInstanceSettings(array('action' => 'disable'));
+
+    $this->drupalGet('node/' . $this->node1->nid . '/edit');
+    $xpath = $this->xpath('//input[@id="edit-node-ref-und-0-target-id" and @disabled="disabled" and @value="Referenced node (' . $this->node2->nid . ')"]');
+    $this->assertTrue(!empty($xpath), 'The field is disabled and default value is set to the node 2.');
+
+    $this->drupalPost('node/' . $this->node1->nid . '/edit', array('title' => 'Referencing node'), t('Save'));
+    $this->verifyReferenceRemain();
+  }
+
+  /**
+   * Change the settings of the instance.
+   */
+  private function changeInstanceSettings($settings) {
+    $instance = field_info_instance('node', 'node_ref', $this->node1->type);
+    $old_settings = $instance['settings']['behaviors']['prepopulate'];
+    $instance['settings']['behaviors']['prepopulate'] = $settings + $old_settings;
+    field_update_instance($instance);
+  }
+
+  /**
+   * Verify the node reference remained.
+   */
+  private function verifyReferenceRemain() {
+    // Loading a fresh node object from the DB.
+    $node = node_load($this->node1->nid, NULL, TRUE);
+    $wrapper = entity_metadata_wrapper('node', $node);
+    $this->assertTrue($wrapper->node_ref->getIdentifier() == $this->node2->nid, 'The reference from node 1 to node 2 remained.');
+  }
+}
+
+
+class EntityReferenceProvidersTestCase extends DrupalWebTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Providers',
+      'description' => 'Test the providers functionality.',
+      'group' => 'Entity reference prepopulate',
+      'dependencies' => array('og'),
+    );
+  }
+
+  function setUp() {
+    parent::setUp('og_context', 'entityreference_prepopulate_test');
+
+    $this->user1 = $this->drupalCreateUser(array('bypass node access', 'administer group'));
+    $this->drupalLogin($this->user1);
+
+    $type = $this->drupalCreateContentType();
+    $this->group_type = $type->type;
+    og_create_field(OG_GROUP_FIELD, 'node', $this->group_type);
+
+    $type = $this->drupalCreateContentType();
+    $this->group_content_type = $type->type;
+
+    $og_field = og_fields_info(OG_AUDIENCE_FIELD);
+    // Enable the prepopulate behavior.
+    $og_field['instance']['settings']['behaviors']['prepopulate'] = array(
+      'status' => TRUE,
+      'action' => 'none',
+      'fallback' => 'none',
+      'skip_perm' => FALSE,
+    );
+    og_create_field(OG_AUDIENCE_FIELD, 'node', $this->group_content_type, $og_field);
+
+    $settings = array(
+      'type' => $this->group_type,
+      'uid' => $this->user1->uid,
+      'title' => $this->randomName(),
+    );
+    $settings[OG_GROUP_FIELD][LANGUAGE_NONE][0]['value'] = 1;
+    $this->group1 = $this->drupalCreateNode($settings);
+
+    $settings['title'] = $this->randomName();
+    $this->group2 = $this->drupalCreateNode($settings);
+  }
+
+  /**
+   * Test the providers functionality.
+   */
+  function testProvidres() {
+    $nid1 = $this->group1->nid;
+    $nid2 = $this->group2->nid;
+
+    $path = 'node/add/' . str_replace('_', '-', $this->group_content_type);
+    $options = array(
+      'query' => array(
+        OG_AUDIENCE_FIELD => $nid1,
+        // Set the OG context. See entityreference_prepopulate_init().
+        'gid' => $nid2,
+      )
+    );
+
+    $instance = field_info_instance('node', OG_AUDIENCE_FIELD, $this->group_content_type);
+
+    $scenarios = array(
+      array(
+        'message' => 'No providers set - defaults to URL.',
+        'providers' => array(),
+        'result' => $nid1,
+      ),
+      array(
+        'message' => 'URL provider only.',
+        'providers' => array(
+          'url' => TRUE,
+        ),
+        'result' => $nid1,
+      ),
+      array(
+        'message' => 'OG Context provider only.',
+        'providers' => array(
+          'og_context' => TRUE,
+        ),
+        'result' => $nid2,
+      ),
+      array(
+        'message' => 'URL provider, and then OG Context provider.',
+        'providers' => array(
+          'url' => TRUE,
+          'og_context' => TRUE,
+        ),
+        'result' => $nid1,
+      ),
+      array(
+        'message' => 'OG Context provider, and then URL provider.',
+        'providers' => array(
+          'og_context' => TRUE,
+          'url' => TRUE,
+        ),
+        'result' => $nid2,
+      ),
+      array(
+        'message' => 'Invalid provider.',
+        'providers' => array(
+          'invalid' => TRUE,
+        ),
+        'result' => FALSE,
+      ),
+    );
+
+    foreach ($scenarios as $scenario) {
+      $instance['settings']['behaviors']['prepopulate']['providers'] = $scenario['providers'];
+      field_update_instance($instance);
+
+      $this->drupalGet($path, $options);
+
+      if ($scenario['result']) {
+        $this->assertOptionSelected('edit-og-group-ref-und-0-default', $scenario['result'], $scenario['message']);
+      }
+      else {
+        $this->assertNoOptionSelected('edit-og-group-ref-und-0-default', $nid1, $scenario['message']);
+        $this->assertNoOptionSelected('edit-og-group-ref-und-0-default', $nid2, $scenario['message']);
+      }
+
+    }
+  }
+}

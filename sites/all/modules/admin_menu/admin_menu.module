@@ -1,0 +1,852 @@
+<?php
+
+/**
+ * @file
+ * Render an administrative menu as a dropdown menu at the top of the window.
+ */
+
+/**
+ * Implements hook_help().
+ */
+function admin_menu_help($path, $arg) {
+  switch ($path) {
+    case 'admin/config/administration/admin_menu':
+      return '<p>' . t('The administration menu module provides a dropdown menu arranged for one- or two-click access to most administrative tasks and other common destinations (to users with the proper permissions). Use the settings below to customize the appearance of the menu.') . '</p>';
+
+    case 'admin/help#admin_menu':
+      $output = '';
+      $output .= '<p>' . t('The administration menu module provides a dropdown menu arranged for one- or two-click access to most administrative tasks and other common destinations (to users with the proper permissions). Administration menu also displays the number of anonymous and authenticated users, and allows modules to add their own custom menu items. Integration with the menu varies from module to module; the contributed module <a href="@drupal">Devel</a>, for instance, makes strong use of the administration menu module to provide quick access to development tools.', array('@drupal' => 'http://drupal.org/project/devel')) . '</p>';
+      $output .= '<p>' . t('The administration menu <a href="@settings">settings page</a> allows you to modify some elements of the menu\'s behavior and appearance. Since the appearance of the menu is dependent on your site theme, substantial customizations require modifications to your site\'s theme and CSS files. See the advanced module README.txt file for more information on theme and CSS customizations.', array('@settings' => url('admin/config/administration/admin_menu'))) . '</p>';
+      $output .= '<p>' . t('The menu items displayed in the administration menu depend upon the actual permissions of the viewer. First, the administration menu is only displayed to users in roles with the <em>Access administration menu</em> (admin_menu module) permission. Second, a user must be a member of a role with the <em>Access administration pages</em> (system module) permission to view administrative links. And, third, only currently permitted links are displayed; for example, if a user is not a member of a role with the permissions <em>Administer permissions</em> (user module) and <em>Administer users</em> (user module), the <em>User management</em> menu item is not displayed.') . '</p>';
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function admin_menu_permission() {
+  return array(
+    'access administration menu' => array(
+      'title' => t('Access administration menu'),
+      'description' => t('Display the administration menu at the top of each page.'),
+    ),
+    'flush caches' => array(
+      'title' => t('Flush caches'),
+      'description' => t('Access links to flush caches in the administration menu.'),
+    ),
+    'display drupal links' => array(
+      'title' => t('Display Drupal links'),
+      'description' => t('Provide Drupal.org links in the administration menu.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function admin_menu_theme() {
+  return array(
+    'admin_menu_links' => array(
+      'render element' => 'elements',
+    ),
+    'admin_menu_icon' => array(
+      'variables' => array('src' => NULL, 'alt' => NULL),
+      'file' => 'admin_menu.inc',
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function admin_menu_menu() {
+  // AJAX callback.
+  // @see http://drupal.org/project/js
+  $items['js/admin_menu/cache'] = array(
+    'page callback' => 'admin_menu_js_cache',
+    'delivery callback' => 'admin_menu_deliver',
+    'access arguments' => array('access administration menu'),
+    'type' => MENU_CALLBACK,
+  );
+  // Module settings.
+  $items['admin/config/administration'] = array(
+    'title' => 'Administration',
+    'description' => 'Administration tools.',
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('access administration pages'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+  $items['admin/config/administration/admin_menu'] = array(
+    'title' => 'Administration menu',
+    'description' => 'Adjust administration menu settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('admin_menu_theme_settings'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'admin_menu.inc',
+  );
+  // Menu link callbacks.
+  $items['admin_menu/flush-cache'] = array(
+    'page callback' => 'admin_menu_flush_cache',
+    'access arguments' => array('flush caches'),
+    'type' => MENU_CALLBACK,
+    'file' => 'admin_menu.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function admin_menu_menu_alter(&$items) {
+  // Flush client-side caches whenever the menu is rebuilt.
+  admin_menu_flush_caches();
+}
+
+/**
+ * Implements hook_menu_link_insert().
+ */
+function admin_menu_menu_link_insert($link) {
+  // Flush all of our caches to pick up the link.
+  admin_menu_flush_caches();
+}
+
+/**
+ * Implements hook_menu_link_update().
+ */
+function admin_menu_menu_link_update($link) {
+  // Flush all of our caches to pick up the link.
+  admin_menu_flush_caches();
+}
+
+/**
+ * Implements hook_menu_link_delete().
+ */
+function admin_menu_menu_link_delete($link) {
+  // Flush all of our caches to pick up the link.
+  admin_menu_flush_caches();
+}
+
+/**
+ * Implements hook_system_info_alter().
+ *
+ * Indicate that the 'page_bottom' region (in which the administration menu
+ * is displayed) is an overlay supplemental region that should be refreshed
+ * whenever its content is updated.
+ *
+ * @see toolbar_system_info_alter()
+ */
+function admin_menu_system_info_alter(&$info, $file, $type) {
+  if ($type == 'theme') {
+    $info['overlay_supplemental_regions'][] = 'page_bottom';
+  }
+}
+
+/**
+ * Implements hook_page_build().
+ */
+function admin_menu_page_build(&$page) {
+  if (!user_access('access administration menu') || admin_menu_suppress(FALSE)) {
+    return;
+  }
+  // Performance: Skip this entirely for AJAX requests.
+  if (strpos($_GET['q'], 'js/') === 0) {
+    return;
+  }
+  global $user, $language;
+  $path = drupal_get_path('module', 'admin_menu');
+
+  $page['page_bottom']['admin_menu'] = array(
+    '#attached' => array(),
+  );
+  $attached = &$page['page_bottom']['admin_menu']['#attached'];
+  $options = array('every_page' => TRUE);
+
+  $attached['css'][$path . '/admin_menu.css'] = $options;
+  if ($user->uid == 1) {
+    $attached['css'][$path . '/admin_menu.uid1.css'] = $options;
+  }
+  // Previous versions used the 'defer' attribute to increase browser rendering
+  // performance. At least starting with Firefox 3.6, deferred .js files are
+  // loaded, but Drupal.behaviors are not contained in the DOM when drupal.js
+  // executes Drupal.attachBehaviors().
+  $attached['js'][$path . '/admin_menu.js'] = $options;
+
+  // Destination query strings are applied via JS.
+  $settings['destination'] = drupal_http_build_query(drupal_get_destination());
+
+  // Determine whether we need to show all components and disable all caches.
+  $complete = FALSE;
+  if (current_path() == 'admin/config/administration/admin_menu' && $_SERVER['REQUEST_METHOD'] == 'GET') {
+    $complete = TRUE;
+  }
+
+  // If the client supports JavaScript and we have a cached menu for the current
+  // user, only output the hash for the client-side HTTP cache callback URL.
+  $cid = 'admin_menu:' . $user->uid . ':' . session_id() . ':' . $language->language;
+  if (!$complete && !empty($_COOKIE['has_js']) && ($hash = admin_menu_cache_get($cid))) {
+    $settings['hash'] = $hash;
+    // The base path to use for cache requests depends on whether clean URLs
+    // are enabled, whether Drupal runs in a sub-directory, and on the language
+    // system configuration. url() already provides us the proper path and also
+    // invokes potentially existing custom_url_rewrite() functions, which may
+    // add further required components to the URL to provide context. Due to
+    // those components, and since url('') returns only base_path() when clean
+    // URLs are disabled, we need to use a replacement token as path.  Yuck.
+    $settings['basePath'] = url('admin_menu');
+  }
+  // Otherwise, add the full menu to the page.
+  else {
+    $page['page_bottom']['admin_menu']['#markup'] = admin_menu_output($complete);
+  }
+
+  $replacements = module_invoke_all('admin_menu_replacements', $complete);
+  if (!empty($replacements)) {
+    $settings['replacements'] = $replacements;
+  }
+
+  if ($setting = variable_get('admin_menu_margin_top', 1)) {
+    $settings['margin_top'] = $setting;
+    // @todo Drupal.behaviors.adminMenuMarginTop is obsolete, but
+    //   hook_page_build() does not allow to set a CSS class on the body yet.
+    // @see http://drupal.org/node/1473548, http://drupal.org/node/1194528
+    //$page['#attributes']['class'][] = 'admin-menu';
+  }
+  if ($setting = variable_get('admin_menu_position_fixed', 1)) {
+    $settings['position_fixed'] = $setting;
+
+    // In fixed positioning, supply a callback function for tableheader.js to
+    // allow it to determine the top viewport offset.
+    // @see admin_menu.js, toolbar.js
+    $attached['js'][] = array(
+      'data' => array('tableHeaderOffset' => 'Drupal.admin.height'),
+      'type' => 'setting',
+    );
+  }
+  if ($setting = variable_get('admin_menu_tweak_tabs', 0)) {
+    $settings['tweak_tabs'] = $setting;
+  }
+  if ($_GET['q'] == 'admin/modules' || strpos($_GET['q'], 'admin/modules/list') === 0) {
+    $settings['tweak_modules'] = variable_get('admin_menu_tweak_modules', 0);
+  }
+  if ($_GET['q'] == 'admin/people/permissions' || $_GET['q'] == 'admin/people/permissions/list') {
+    $settings['tweak_permissions'] = variable_get('admin_menu_tweak_permissions', 0);
+  }
+
+  $attached['js'][] = array(
+    'data' => array('admin_menu' => $settings),
+    'type' => 'setting',
+  );
+}
+
+/**
+ * Suppress display of administration menu.
+ *
+ * This function should be called from within another module's page callback
+ * (preferably using module_invoke()) when the menu should not be displayed.
+ * This is useful for modules that implement popup pages or other special
+ * pages where the menu would be distracting or break the layout.
+ *
+ * @param $set
+ *   Defaults to TRUE. If called before hook_footer(), the menu will not be
+ *   displayed. If FALSE is passed, the suppression state is returned.
+ */
+function admin_menu_suppress($set = TRUE) {
+  static $suppress = FALSE;
+  // drupal_add_js() must only be invoked once.
+  if (!empty($set) && $suppress === FALSE) {
+    $suppress = TRUE;
+    drupal_add_js(array('admin_menu' => array('suppress' => 1)), 'setting');
+  }
+  return $suppress;
+}
+
+/**
+ * Implements hook_js().
+ */
+function admin_menu_js() {
+  return array(
+    'cache' => array(
+      'callback' => 'admin_menu_js_cache',
+      'includes' => array('common', 'theme', 'unicode'),
+      'dependencies' => array('devel', 'filter', 'user'),
+    ),
+  );
+}
+
+/**
+ * Retrieve a client-side cache hash from cache.
+ *
+ * The hash cache is consulted more than once per request; we therefore cache
+ * the results statically to avoid multiple database requests.
+ *
+ * This should only be used for client-side cache hashes. Use cache_menu for
+ * administration menu content.
+ *
+ * @param $cid
+ *   The cache ID of the data to retrieve.
+ */
+function admin_menu_cache_get($cid) {
+  $cache = &drupal_static(__FUNCTION__, array());
+
+  if (!variable_get('admin_menu_cache_client', TRUE)) {
+    return FALSE;
+  }
+  if (!array_key_exists($cid, $cache)) {
+    $cache[$cid] = cache_get($cid, 'cache_admin_menu');
+    if ($cache[$cid] && isset($cache[$cid]->data)) {
+      $cache[$cid] = $cache[$cid]->data;
+    }
+  }
+
+  return $cache[$cid];
+}
+
+/**
+ * Store a client-side cache hash in persistent cache.
+ *
+ * This should only be used for client-side cache hashes. Use cache_menu for
+ * administration menu content.
+ *
+ * @param $cid
+ *   The cache ID of the data to retrieve.
+ */
+function admin_menu_cache_set($cid, $data) {
+  if (variable_get('admin_menu_cache_client', TRUE)) {
+    cache_set($cid, $data, 'cache_admin_menu');
+  }
+}
+
+/**
+ * Menu callback; Output administration menu for HTTP caching via AJAX request.
+ *
+ * @see admin_menu_deliver()
+ */
+function admin_menu_js_cache() {
+  global $conf;
+
+  // Suppress Devel module.
+  $GLOBALS['devel_shutdown'] = FALSE;
+
+  // Enforce page caching.
+  $conf['cache'] = 1;
+  drupal_page_is_cacheable(TRUE);
+
+  // If we have a cache, serve it.
+  // @see _drupal_bootstrap_page_cache()
+  $cache = drupal_page_get_cache();
+  if (is_object($cache)) {
+    header('X-Drupal-Cache: HIT');
+    // Restore the metadata cached with the page.
+    $_GET['q'] = $cache->data['path'];
+    date_default_timezone_set(drupal_get_user_timezone());
+
+    drupal_serve_page_from_cache($cache);
+
+    // We are done.
+    exit;
+  }
+
+  // Otherwise, create a new page response (that will be cached).
+  header('X-Drupal-Cache: MISS');
+
+  // The Expires HTTP header is the heart of the client-side HTTP caching. The
+  // additional server-side page cache only takes effect when the client
+  // accesses the callback URL again (e.g., after clearing the browser cache or
+  // when force-reloading a Drupal page).
+  $max_age = 3600 * 24 * 365;
+  drupal_add_http_header('Expires', gmdate(DATE_RFC1123, REQUEST_TIME + $max_age));
+  drupal_add_http_header('Cache-Control', 'private, max-age=' . $max_age);
+
+  // Retrieve and return the rendered menu.
+  return admin_menu_output();
+}
+
+/**
+ * Delivery callback for client-side HTTP caching.
+ *
+ * @see admin_menu_js_cache()
+ */
+function admin_menu_deliver($page_callback_result) {
+  drupal_add_http_header('Content-Type', 'text/html; charset=utf-8');
+
+  // Send appropriate language header for browsers.
+  global $language;
+  drupal_add_http_header('Content-Language', $language->language);
+
+  // The page callback is always admin_menu_js_cache(), which always returns a
+  // string, and is only accessed when the user actually has access to it.
+  // Therefore, we do not care for the other possible page callback results.
+  print $page_callback_result;
+
+  // Perform end-of-request tasks. The page cache is created here.
+  drupal_page_footer();
+}
+
+/**
+ * Implements hook_admin_menu_replacements().
+ */
+function admin_menu_admin_menu_replacements($complete) {
+  $items = array();
+  // If the complete menu is output, then it is uncached and will contain the
+  // current counts already.
+  if (!$complete) {
+    // Check whether the users count component is enabled.
+    $components = variable_get('admin_menu_components', array());
+    if (!empty($components['admin_menu.users']) && ($user_count = admin_menu_get_user_count())) {
+      // Replace the counters in the cached menu output with current counts.
+      $items['.admin-menu-users a'] = $user_count;
+    }
+  }
+  return $items;
+}
+
+/**
+ * Return count of online anonymous/authenticated users.
+ *
+ * @see user_block(), user.module
+ */
+function admin_menu_get_user_count() {
+  $interval   = REQUEST_TIME - variable_get('user_block_seconds_online', 900);
+  $count_anon = admin_menu_session_count($interval, TRUE);
+  $count_auth = admin_menu_session_count($interval, FALSE);
+
+  return t('@count-anon / @count-auth', array('@count-anon' => $count_anon, '@count-auth' => $count_auth));
+}
+
+/**
+ * Counts how many users are active on the site.
+ *
+ * Counts how many users have sessions which have been active since the
+ * specified time. Can count either anonymous sessions or authenticated
+ * sessions.
+ *
+ * @param $timestamp
+ *   A Unix timestamp. Users who have been active since this time will be
+ *   counted. The default is 0, which counts all existing sessions.
+ * @param $anonymous
+ *   TRUE counts only anonymous users. FALSE counts only authenticated users.
+ *
+ * @return
+ *   The number of users with sessions.
+ *
+ * @todo There are mostly no anonymous sessions anymore. Split this into a
+ *   separate module providing proper user statistics.
+ */
+function admin_menu_session_count($timestamp = 0, $anonymous = TRUE) {
+  $query = db_select('sessions');
+  $query->addExpression('COUNT(sid)', 'count');
+  $query->condition('timestamp', $timestamp, '>=');
+  $query->condition('uid', 0, $anonymous ? '=' : '>');
+  return $query->execute()->fetchField();
+}
+
+/**
+ * Build the administration menu output.
+ *
+ * @param bool $complete
+ *   (optional) Whether to build to the complete menu including all components
+ *   and ignore the cache. Defaults to FALSE. Internally used for the settings
+ *   page.
+ */
+function admin_menu_output($complete = FALSE) {
+  global $user, $language;
+
+  $cache_server_enabled = !$complete && variable_get('admin_menu_cache_server', TRUE);
+  $cid = 'admin_menu:' . $user->uid . ':' . session_id() . ':' . $language->language;
+
+  // Try to load and output administration menu from server-side cache.
+  // @todo Duplicates the page cache? Page cache ID contains the hash that is
+  //   generated at the bottom of this function, which is based on $content,
+  //   but logically identical to the $cid. Investigate whether not only the
+  //   cache_menu but also the cache_admin_menu could be dropped; the
+  //   client-side HTTP cache hash check could be based on a cid lookup in
+  //   cache_page instead? (i.e., one cache to rule them all) However,
+  //   cache_page is cleared very often.
+  if ($cache_server_enabled) {
+    $cache = cache_get($cid, 'cache_menu');
+    if ($cache && isset($cache->data)) {
+      $content = $cache->data;
+    }
+  }
+
+  // Rebuild the output.
+  if (!isset($content)) {
+    // Retrieve enabled components to display and make them available for others.
+    $components = variable_get('admin_menu_components', array());
+    $components += array(
+      'admin_menu.menu' => TRUE,
+      'admin_menu.icon' => TRUE,
+      'admin_menu.account' => TRUE,
+    );
+    $content['#components'] = $components;
+    $content['#complete'] = $complete;
+
+    // Add site name as CSS class for development/staging theming purposes. We
+    // leverage the cookie domain instead of HTTP_HOST to account for many (but
+    // not all) multi-domain setups (e.g. language-based sub-domains).
+    $classes = 'admin-menu-site' . drupal_strtolower(preg_replace('/[^a-zA-Z0-9-]/', '-', $GLOBALS['cookie_domain']));
+    // Displace overlay.
+    // @see Drupal.overlay.create
+    // @see toolbar_preprocess_toolbar()
+    if (module_exists('overlay')) {
+      $classes .= ' overlay-displace-top';
+    }
+    // @todo Always output container to harden JS-less support.
+    $content['#prefix'] = '<div id="admin-menu" class="' . $classes . '"><div id="admin-menu-wrapper">';
+    $content['#suffix'] = '</div></div>';
+
+    // Load menu builder functions.
+    module_load_include('inc', 'admin_menu');
+
+    // @todo Move the below callbacks into hook_admin_menu_build()
+    //   implementations (and $module.admin_menu.inc).
+
+    // Add administration menu.
+    if (!empty($components['admin_menu.menu']) || $complete) {
+      $content['menu'] = admin_menu_links_menu(admin_menu_tree('management'));
+      $content['menu']['#theme'] = 'admin_menu_links';
+      $content['menu']['#wrapper_attributes']['id'] = 'admin-menu-menu';
+      // Ensure the menu tree is rendered between the icon and user links.
+      $content['menu']['#weight'] = 0;
+    }
+
+    // Add menu additions.
+    if (!empty($components['admin_menu.icon']) || $complete) {
+      $content['icon'] = admin_menu_links_icon();
+    }
+    if (!empty($components['admin_menu.account']) || $complete) {
+      $content['account'] = admin_menu_links_account();
+    }
+    if (!empty($components['admin_menu.users']) || $complete) {
+      $content['users'] = admin_menu_links_users();
+    }
+    if (!empty($components['admin_menu.search']) || $complete) {
+      $content['search'] = admin_menu_links_search();
+    }
+
+    // Allow modules to enhance the menu.
+    // Uses '_output' suffix for consistency with the alter hook (see below).
+    foreach (module_implements('admin_menu_output_build') as $module) {
+      $function = $module . '_admin_menu_output_build';
+      $function($content);
+    }
+
+    // Allow modules to alter the output.
+    // The '_output' suffix is required to prevent hook implementation function
+    // name clashes with the contributed Admin module.
+    drupal_alter('admin_menu_output', $content);
+
+    $content = drupal_render($content);
+
+    // Cache the menu for this user.
+    if ($cache_server_enabled) {
+      cache_set($cid, $content, 'cache_menu');
+    }
+  }
+
+  // Store the new hash for this user.
+  if (!empty($_COOKIE['has_js']) && !$complete) {
+    admin_menu_cache_set($cid, md5($content));
+  }
+
+  return $content;
+}
+
+/**
+ * Implements hook_admin_menu_output_build().
+ */
+function admin_menu_admin_menu_output_build(&$content) {
+  if (!isset($content['menu'])) {
+    return;
+  }
+
+  // Unassign weights for categories below Configuration.
+  // An alphabetical order is more natural for a dropdown menu.
+  if (isset($content['menu']['admin/config'])) {
+    foreach (element_children($content['menu']['admin/config']) as $key) {
+      $content['menu']['admin/config'][$key]['#weight_original'] = $content['menu']['admin/config'][$key]['#weight'];
+      unset($content['menu']['admin/config'][$key]['#weight']);
+    }
+  }
+
+  // Retrieve the "Add content" link tree.
+  $link = db_query("SELECT * FROM {menu_links} WHERE router_path = 'node/add' AND module = 'system'")->fetchAssoc();
+  $conditions = array();
+  for ($i = 1; $i < MENU_MAX_DEPTH; $i++) {
+    if (!empty($link["p$i"])) {
+      $conditions["p$i"] = $link["p$i"];
+    }
+  }
+  $tree = menu_build_tree($link['menu_name'], array(
+    'conditions' => $conditions,
+    'min_depth' => $link['depth'],
+  ));
+  $links = admin_menu_links_menu($tree);
+  if (!empty($links)) {
+    // If the user has access to the top-level "Content" category, insert the
+    // "Add content" link tree there.
+    if (isset($content['menu']['admin/content'])) {
+      $content['menu']['admin/content'] += $links;
+    }
+    // Otherwise make insert "Add content" as top-level category.
+    else {
+      $key = key($links);
+      $links[$key]['#weight'] = -100;
+      $content['menu'] += $links;
+    }
+  }
+}
+
+/**
+ * Implements hook_admin_menu_output_alter().
+ */
+function admin_menu_admin_menu_output_alter(&$content) {
+  foreach ($content['menu'] as $key => $link) {
+    // Move local tasks on 'admin' into icon menu.
+    if ($key == 'admin/tasks' || $key == 'admin/index') {
+      $content['icon']['icon'][$key] = $link;
+      unset($content['menu'][$key]);
+    }
+  }
+}
+
+/**
+ * Render a themed list of links.
+ *
+ * @param $variables
+ *   - elements: A renderable array of links using the following keys:
+ *     - #attributes: Optional array of attributes for the list item, processed
+ *       via drupal_attributes().
+ *     - #title: Title of the link, passed to l().
+ *     - #href: Optional path of the link, passed to l(). When omitted, the
+ *       element's '#title' is rendered without link.
+ *     - #description: Optional alternative text for the link, passed to l().
+ *     - #options: Optional alternative text for the link, passed to l().
+ *     The array key of each child element itself is passed as path for l().
+ */
+function theme_admin_menu_links($variables) {
+  $destination = &drupal_static('admin_menu_destination');
+  $elements = $variables['elements'];
+
+  if (!isset($destination)) {
+    $destination = drupal_get_destination();
+    $destination = $destination['destination'];
+  }
+
+  // The majority of items in the menu are sorted already, but since modules
+  // may add or change arbitrary items anywhere, there is no way around sorting
+  // everything again. element_sort() is not sufficient here, as it
+  // intentionally retains the order of elements having the same #weight,
+  // whereas menu links are supposed to be ordered by #weight and #title.
+  uasort($elements, 'admin_menu_element_sort');
+  $elements['#sorted'] = TRUE;
+
+  $output = '';
+  foreach (element_children($elements) as $path) {
+    // Early-return nothing if user does not have access.
+    if (isset($elements[$path]['#access']) && !$elements[$path]['#access']) {
+      continue;
+    }
+    $elements[$path] += array(
+      '#attributes' => array(),
+      '#options' => array(),
+    );
+    // Render children to determine whether this link is expandable.
+    if (isset($elements[$path]['#type']) || isset($elements[$path]['#theme']) || isset($elements[$path]['#pre_render'])) {
+      $elements[$path]['#children'] = drupal_render($elements[$path]);
+    }
+    else {
+      $elements[$path]['#children'] = theme('admin_menu_links', array('elements' => $elements[$path]));
+      if (!empty($elements[$path]['#children'])) {
+        $elements[$path]['#attributes']['class'][] = 'expandable';
+      }
+      if (isset($elements[$path]['#attributes']['class'])) {
+        $elements[$path]['#attributes']['class'] = $elements[$path]['#attributes']['class'];
+      }
+    }
+
+    $link = '';
+    // Handle menu links.
+    if (isset($elements[$path]['#href'])) {
+      // Strip destination query string from href attribute and apply a CSS class
+      // for our JavaScript behavior instead.
+      if (isset($elements[$path]['#options']['query']['destination']) && $elements[$path]['#options']['query']['destination'] == $destination) {
+        unset($elements[$path]['#options']['query']['destination']);
+        $elements[$path]['#options']['attributes']['class'][] = 'admin-menu-destination';
+      }
+
+      $link = l($elements[$path]['#title'], $elements[$path]['#href'], $elements[$path]['#options']);
+    }
+    // Handle plain text items, but do not interfere with menu additions.
+    elseif (!isset($elements[$path]['#type']) && isset($elements[$path]['#title'])) {
+      if (!empty($elements[$path]['#options']['html'])) {
+        $title = $elements[$path]['#title'];
+      }
+      else {
+        $title = check_plain($elements[$path]['#title']);
+      }
+      $attributes = '';
+      if (isset($elements[$path]['#options']['attributes'])) {
+        $attributes = drupal_attributes($elements[$path]['#options']['attributes']);
+      }
+      $link = '<span' . $attributes . '>' . $title . '</span>';
+    }
+
+    $output .= '<li' . drupal_attributes($elements[$path]['#attributes']) . '>';
+    $output .= $link . $elements[$path]['#children'];
+    $output .= '</li>';
+  }
+  // @todo #attributes probably required for UL, but already used for LI.
+  // @todo Use $element['#children'] here instead.
+  if ($output) {
+    $elements['#wrapper_attributes']['class'][] = 'dropdown';
+    $attributes = drupal_attributes($elements['#wrapper_attributes']);
+    $output = "\n" . '<ul' . $attributes . '>' . $output . '</ul>';
+  }
+  return $output;
+}
+
+/**
+ * Function used by uasort to sort structured arrays by #weight AND #title.
+ */
+function admin_menu_element_sort($a, $b) {
+  // @see element_sort()
+  $a_weight = isset($a['#weight']) ? $a['#weight'] : 0;
+  $b_weight = isset($b['#weight']) ? $b['#weight'] : 0;
+  if ($a_weight == $b_weight) {
+    // @see element_sort_by_title()
+    $a_title = isset($a['#title']) ? $a['#title'] : '';
+    $b_title = isset($b['#title']) ? $b['#title'] : '';
+    return strnatcasecmp($a_title, $b_title);
+  }
+  return ($a_weight < $b_weight) ? -1 : 1;
+}
+
+/**
+ * Implements hook_translated_menu_link_alter().
+ *
+ * Here is where we make changes to links that need dynamic information such
+ * as the current page path or the number of users.
+ */
+function admin_menu_translated_menu_link_alter(&$item, $map) {
+  global $user, $base_url;
+  static $access_all;
+
+  if ($item['menu_name'] != 'admin_menu') {
+    return;
+  }
+
+  // Check whether additional development output is enabled.
+  if (!isset($access_all)) {
+    $access_all = variable_get('admin_menu_show_all', 0) && module_exists('devel');
+  }
+  // Prepare links that would not be displayed normally.
+  if ($access_all && !$item['access']) {
+    $item['access'] = TRUE;
+    // Prepare for http://drupal.org/node/266596
+    if (!isset($item['localized_options'])) {
+      _menu_item_localize($item, $map, TRUE);
+    }
+  }
+
+  // Don't waste cycles altering items that are not visible
+  if (!$item['access']) {
+    return;
+  }
+
+  // Add developer information to all links, if enabled.
+  if ($extra = variable_get('admin_menu_display', 0)) {
+    $item['title'] .= ' ' . $extra[0] . ': ' . $item[$extra];
+  }
+}
+
+/**
+ * Implements hook_flush_caches().
+ *
+ * Flushes client-side caches.
+ *
+ * @param int $uid
+ *   (optional) A user ID to limit the cache flush to.
+ */
+function admin_menu_flush_caches($uid = NULL) {
+  // A call to menu_rebuild() will trigger potentially thousands of calls into
+  // menu_link_save(), for which admin_menu has to implement the corresponding
+  // CRUD hooks, in order to take up any menu link changes, since any menu link
+  // change could affect the admin menu (which essentially is an aggregate) and
+  // since there is no other way to get notified about stale caches. The cache
+  // only needs to be flushed once though, so we prevent a ton of needless
+  // subsequent calls with this static.
+  // @see http://drupal.org/node/918538
+  $was_flushed = &drupal_static(__FUNCTION__, array());
+  // $uid can be NULL. PHP automatically converts that into '' (empty string),
+  // which is different to uid 0 (zero).
+  if (isset($was_flushed[$uid])) {
+    return;
+  }
+  $was_flushed[$uid] = TRUE;
+
+  $cid = 'admin_menu:';
+  if (isset($uid)) {
+    $cid .= $uid . ':';
+  }
+  // Flush cached output of admin_menu.
+  cache_clear_all($cid, 'cache_menu', TRUE);
+  // Flush client-side cache hashes.
+  drupal_static_reset('admin_menu_cache_get');
+  // db_table_exists() required for SimpleTest.
+  if (db_table_exists('cache_admin_menu')) {
+    cache_clear_all(isset($uid) ? $cid : '*', 'cache_admin_menu', TRUE);
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function admin_menu_form_alter(&$form, &$form_state, $form_id) {
+  $global_flush_ids = array(
+    'admin_menu_theme_settings' => 1,
+    // Update links for clean/non-clean URLs.
+    'system_clean_url_settings' => 1,
+    // Incorporate changed user permissions.
+    'user_admin_permissions' => 1,
+    // Removing a role potentially means less permissions.
+    'user_admin_role_delete_confirm' => 1,
+    // User name and roles may be changed on the user account form.
+    'user_profile_form' => 1,
+  );
+  if (isset($global_flush_ids[$form_id])) {
+    $form['#submit'][] = 'admin_menu_form_alter_flush_cache_submit';
+
+    // Optionally limit the cache flush to a certain user ID.
+    $form_state['admin_menu_uid'] = NULL;
+    if ($form_id == 'user_profile_form') {
+      $form_state['admin_menu_uid'] = $form_state['user']->uid;
+    }
+  }
+
+  // UX: Add a confirmation to the permissions form to ask the user whether to
+  // auto-enable the 'access administration menu' permission along with
+  // 'access administration pages'.
+  if ($form_id == 'user_admin_permissions') {
+    $form['#attached']['js'][] = drupal_get_path('module', 'admin_menu') . '/admin_menu.admin.js';
+  }
+}
+
+/**
+ * Form submission handler to flush Administration menu caches.
+ */
+function admin_menu_form_alter_flush_cache_submit($form, &$form_state) {
+  admin_menu_flush_caches($form_state['admin_menu_uid']);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Extends Devel module with Administration menu developer settings.
+ */
+function admin_menu_form_devel_admin_settings_alter(&$form, &$form_state) {
+  form_load_include($form_state, 'inc', 'admin_menu');
+  _admin_menu_form_devel_admin_settings_alter($form, $form_state);
+}

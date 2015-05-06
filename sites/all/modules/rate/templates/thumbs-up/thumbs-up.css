@@ -1,0 +1,8 @@
+.rate-thumbs-up-btn-up {
+  display: inline-block;
+  background: url(../thumbs-up-down/thumbs.png) no-repeat 0 0;
+  width: 24px;
+  height: 24px;
+  text-indent: -9999px;
+}
+

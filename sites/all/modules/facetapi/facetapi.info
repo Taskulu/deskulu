@@ -1,0 +1,26 @@
+name = Facet API
+description = An abstracted facet API that can be used by various search backends.
+dependencies[] = ctools
+package = Search Toolkit
+core = 7.x
+files[] = plugins/facetapi/adapter.inc
+files[] = plugins/facetapi/dependency.inc
+files[] = plugins/facetapi/dependency_bundle.inc
+files[] = plugins/facetapi/dependency_role.inc
+files[] = plugins/facetapi/empty_behavior.inc
+files[] = plugins/facetapi/empty_behavior_text.inc
+files[] = plugins/facetapi/filter.inc
+files[] = plugins/facetapi/query_type.inc
+files[] = plugins/facetapi/url_processor.inc
+files[] = plugins/facetapi/url_processor_standard.inc
+files[] = plugins/facetapi/widget.inc
+files[] = plugins/facetapi/widget_links.inc
+files[] = tests/facetapi_test.plugins.inc
+files[] = tests/facetapi.test
+
+; Information added by Drupal.org packaging script on 2014-07-18
+version = "7.x-1.5"
+core = "7.x"
+project = "facetapi"
+datestamp = "1405685332"
+

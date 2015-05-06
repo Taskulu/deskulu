@@ -1,0 +1,12 @@
+name = Font Squirrel API
+description = @font-your-face provider with Font Squirrel fonts.
+dependencies[] = fontyourface
+package = @font-your-face
+core = 7.x
+php = 5.2.0
+; Information added by drupal.org packaging script on 2013-04-29
+version = "7.x-2.8"
+core = "7.x"
+project = "fontyourface"
+datestamp = "1367195415"
+

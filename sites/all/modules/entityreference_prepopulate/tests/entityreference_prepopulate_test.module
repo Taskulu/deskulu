@@ -1,0 +1,18 @@
+<?php
+
+/**
+ * @file
+ * Test module for Entity reference prepopulate.
+ */
+
+/**
+ * Implements hook_init().
+ */
+function entityreference_prepopulate_test_init() {
+  if (empty($_GET['gid'])) {
+    return;
+  }
+
+  $node = node_load($_GET['gid']);
+  og_context('node', $node);
+}

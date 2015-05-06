@@ -1,0 +1,83 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the text module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function i18n_translation_install() {
+
+}
+
+/**
+ * Implements hook_schema().
+ */
+function i18n_translation_schema() {
+  $schema['i18n_translation_set'] = array(
+    'description' => 'Translation set.',
+    'fields' => array(
+      'tsid' => array(
+        'description' => 'The primary identifier for a translation set.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'title' => array(
+        'description' => 'The title of this translation set, always treated as non-markup plain text.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'type' => array(
+        'description' => 'Object type or entity type.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => ''
+      ),
+      'bundle' => array(
+        'description' => 'Optional bundle for entity translation sets.',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => ''
+      ),
+      'master_id' => array(
+        'description' => 'The master object/entity id (the others will be synchronized with this one).',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'status' => array(
+        'description' => 'Status of this translation set. TBD.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+      'created' => array(
+        'description' => 'The Unix timestamp when the set was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'changed' => array(
+        'description' => 'The Unix timestamp when the set was most recently saved.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'indexes' => array(
+      'entity_bundle' => array('type', 'bundle'),
+    ),
+    'primary key' => array('tsid'),
+  );
+
+  return $schema;
+}
+

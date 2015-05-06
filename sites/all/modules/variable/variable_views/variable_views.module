@@ -1,0 +1,41 @@
+<?php
+/**
+ * @file
+ * Variable views module.
+ *
+ * Provides variable values as views default arguments.
+ *
+ * @todo Full views integration for variable table.
+ */
+
+/**
+ * Implements hook_views_api().
+ */
+function variable_views_views_api() {
+  return array(
+    'api' => '3.0',
+    //'path' => drupal_get_path('module', 'variable_views') . '/includes',
+  );
+}
+
+/**
+ * Implements hook_views_plugins()
+ */
+function variable_views_views_plugins() {
+  $plugins = array (
+    'argument default' => array(
+      'variable' => array(
+        'title' => t('Variable value'),
+        'handler' => 'views_plugin_argument_default_variable',
+      ),
+    ),
+  );
+  return $plugins;
+}
+
+/**
+ * Variable list for the argument.
+ */
+function _variable_views_variable_list() {
+  return variable_list(variable_children(array_keys(variable_get_info())));
+}

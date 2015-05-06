@@ -1,0 +1,262 @@
+<?php
+
+/**
+ * @file
+ * This is the main script for the Field Permissions module. It merely contains
+ * the implementation of hooks invoked by Drupal core and CCK.
+ * All common functions are externalized into several scripts that are included
+ * on demand to save memory consumption during normal site operation.
+ */
+
+/**
+ * Indicates that a field does not have any access control.
+ */
+define('FIELD_PERMISSIONS_PUBLIC', 0);
+
+/**
+ * Indicates that a field is private.
+ *
+ * Private fields are never displayed, and are only editable by the author (and
+ * by site administrators with the 'access private fields' permission).
+ */
+define('FIELD_PERMISSIONS_PRIVATE', 1);
+
+/**
+ * Indicates that a field has custom permissions.
+ */
+define('FIELD_PERMISSIONS_CUSTOM', 2);
+
+/**
+ * Implements hook_help().
+ */
+function field_permissions_help($path, $arg) {
+  switch ($path) {
+    // Main module help for the Field Permissions module.
+    case 'admin/help#field_permissions':
+      return '<p>' . t('Set field-level permissions to edit or view CCK fields in any node, edit field during node creation, and edit or view permissions for nodes owned by the current user.') . '</p>';
+
+    // Help for the Field Permissions overview page.
+    case 'admin/reports/fields/permissions':
+      return '<p>' . t('Report and troubleshoot field permissions.') . '</p>';
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function field_permissions_menu() {
+  $items['admin/reports/fields/list'] = array(
+    'title' => 'List',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+  $items['admin/reports/fields/permissions'] = array(
+    'title' => 'Permissions',
+    'description' => 'Report and troubleshoot field permissions.',
+    'page callback' => 'field_permissions_overview',
+    'access arguments' => array('administer field permissions'),
+    'file' => 'field_permissions.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 0,
+  );
+  return $items;
+}
+
+/**
+ * Implementation of hook_permission().
+ */
+function field_permissions_permission() {
+  module_load_include('inc', 'field_permissions', 'field_permissions.admin');
+  return _field_permissions_permission();
+}
+
+/**
+ * Implements of hook_form_FORM_ID_alter().
+ */
+function field_permissions_form_field_ui_field_edit_form_alter(&$form, &$form_state, $form_id) {
+  // Injects the Field Permissions settings on the Edit field tab.
+  form_load_include($form_state, 'inc', 'field_permissions', 'field_permissions.admin');
+  return _field_permissions_field_settings_form_alter($form, $form_state, $form_id);
+}
+
+/**
+ * Implementation of hook_field_access().
+ *
+ * @param $op
+ *   The operation to be performed. Possible values:
+ *   - 'edit'
+ *   - 'view'
+ * @param $field
+ *   The field on which the operation is to be performed.
+ * @param $entity_type
+ *   The type of entity; e.g. 'node' or 'user'.
+ * @param $entity
+ *   The entity on which the operation is to be performed.
+ * @param $account
+ *   The account to check.
+ *
+ * @return
+ *   FALSE if the operation is not allowed.
+ *   Note when field_access() is invoked, access is granted unless one
+ *   implementation of hook_field_access() explicitly returns FALSE.
+ *
+ * @see field_access()
+ */
+function field_permissions_field_access($op, $field, $entity_type, $entity, $account) {
+  // Ignore the request if permissions have not been enabled for this field.
+  if (!isset($field['field_permissions']['type']) || $field['field_permissions']['type'] == FIELD_PERMISSIONS_PUBLIC) {
+    return;
+  }
+  // If the field is private, then only the author (and administrators with the
+  // 'access private fields' permissions) can view and edit it.
+  elseif ($field['field_permissions']['type'] == FIELD_PERMISSIONS_PRIVATE) {
+    if (isset($entity)) {
+      return _field_permissions_entity_is_owned_by_account($entity, $account) || user_access('access private fields', $account);
+    }
+    // If the entity does not exist, we must check if there is access to any
+    // entity; see comments in field_permissions_empty_entity_access(). In this
+    // case that will always be true, since private fields are always editable
+    // by their authors and in theory any user account can be the author of
+    // some entity on the site.
+    else {
+      return TRUE;
+    }
+  }
+  // Otherwise, check access by permission.
+  elseif ($field['field_permissions']['type'] == FIELD_PERMISSIONS_CUSTOM) {
+    if (!isset($entity)) {
+      return field_permissions_empty_entity_access($op, $field['field_name'], $account);
+    }
+    elseif ($op == 'view') {
+      return _field_permissions_field_view_access($field['field_name'], $entity_type, $entity, $account);
+    }
+    elseif ($op == 'edit') {
+      return _field_permissions_field_edit_access($field['field_name'], $entity_type, $entity, $account);
+    }
+  }
+}
+
+/**
+ * Determines custom field permissions access when the entity is unknown.
+ *
+ * When a module calls field_access() without providing an entity (which the
+ * API allows it to do), it is doing so in order to check generic access to the
+ * field. Therefore, we should only deny access if we know that there is no
+ * entity anywhere on the site for which the user has access to the provided
+ * field.
+ *
+ * For example, Views calls field_access('view') without providing the entity,
+ * in order to determine if the field can be included in the query itself. So
+ * we only want to return FALSE if we know that there are no entities for which
+ * access will be granted. Later on, Views will invoke field_access('view')
+ * again, indirectly, when rendering the fields using field_view_field(), and
+ * at that point the entity will be passed along so we can do our normal checks
+ * on it.
+ *
+ * As another example, the FileField Sources module uses field_access('edit')
+ * as a menu access callback for the IMCE file browser and does not pass along
+ * the entity. So we must return TRUE here if there is any entity for which the
+ * user is allowed to edit the field (otherwise the user would not have access
+ * to the IMCE file browser interface when editing the fields they do have
+ * permission to edit).
+ *
+ * @param $op
+ *   The operation to be performed ('view' or 'edit').
+ * @param $field_name
+ *   The name of the field whose access is being checked.
+ * @param $account
+ *   The user account whose access is being checked.
+ *
+ * @return
+ *   TRUE if access should be allowed, or FALSE if it shouln't.
+ */
+function field_permissions_empty_entity_access($op, $field_name, $account) {
+  $all_permissions['view'] = array(
+    'view ' . $field_name,
+    'view own ' . $field_name,
+  );
+  $all_permissions['edit'] = array(
+    'create ' . $field_name,
+    'edit ' . $field_name,
+    'edit own ' . $field_name,
+  );
+
+  // If there's any scenario where the user might have permission to perform
+  // the operation on the field, return TRUE.
+  if (isset($all_permissions[$op])) {
+    foreach ($all_permissions[$op] as $permission) {
+      if (user_access($permission, $account)) {
+        return TRUE;
+      }
+    }
+  }
+
+  return FALSE;
+}
+
+/**
+ * Implementation of hook_field_access('view').
+ */
+function _field_permissions_field_view_access($field_name, $entity_type, $entity, $account) {
+  // Check if user has access to view this field in any entity.
+  if (user_access('view ' . $field_name, $account)) {
+    return TRUE;
+  }
+
+  // If the user has permission to view entities that they own, return TRUE if
+  // they own this entity or FALSE if they don't.
+  if (user_access('view own ' . $field_name, $account)) {
+    return _field_permissions_entity_is_owned_by_account($entity, $account);
+  }
+
+  return FALSE;
+}
+
+/**
+ * Implementation of hook_field_access('edit').
+ */
+function _field_permissions_field_edit_access($field_name, $entity_type, $entity, $account) {
+  // If this is a new entity, check if the user has access to edit the field on
+  // entity creation.
+  if (isset($entity->is_new)) {
+    // Some entities provide an "is_new" property. If that is present, respect
+    // whatever it's set to.
+    $is_new = $entity->is_new;
+  }
+  else {
+    // Otherwise, try to find out if the entity is new by checking its ID. Note
+    // that checking empty() rather than !isset() is important here, to deal
+    // with the case of entities that store "0" as their ID while the final
+    // entity is in the process of being created (user accounts are a good
+    // example of this).
+    list($id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
+    $is_new = empty($id);
+  }
+  if ($is_new) {
+    return user_access('create ' . $field_name, $account);
+  }
+
+  // Check if user has access to edit this field in any entity.
+  if (user_access('edit ' . $field_name, $account)) {
+    return TRUE;
+  }
+
+  // If the user has permission to edit entities that they own, return TRUE if
+  // they own this entity or FALSE if they don't.
+  if (user_access('edit own ' . $field_name, $account)) {
+    return _field_permissions_entity_is_owned_by_account($entity, $account);
+  }
+
+  return FALSE;
+}
+
+/**
+ * Returns TRUE if an entity is owned by a user account, FALSE otherwise.
+ */
+function _field_permissions_entity_is_owned_by_account($entity, $account) {
+  // Try to get the uid of the entity owner from the entity itself. If it's not
+  // set (for example, if the entity type does not store a uid or does not have
+  // a concept of "ownership"), we need to assume that the provided user
+  // account does not own it.
+  return isset($entity->uid) && $entity->uid == $account->uid;
+}
