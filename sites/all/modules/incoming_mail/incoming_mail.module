@@ -79,7 +79,7 @@ function incoming_mail_create_ticket() {
     }
     if ($event == 'incoming_mail_ticket_new') {
       watchdog('incoming_mail', 'received new ticket, invoking rules');
-      rules_invoke_event('incoming_mail_ticket_new', check_plain($msg['subject']), $body, $files, $msg['from_name'], $msg['from_email']);
+      rules_invoke_event('incoming_mail_ticket_new', $msg['subject'], $body, $files, $msg['from_name'], $msg['from_email']);
     }
     elseif ($event == 'incoming_mail_ticket_reply') {
       rules_invoke_event('incoming_mail_ticket_reply', $ticket, $body, $files, $msg['from_name'], $msg['from_email']);
