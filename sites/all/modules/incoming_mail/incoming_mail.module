@@ -109,14 +109,14 @@ function incoming_mail_file_download($uri) {
 /**
  * Implements hook_node_presave().
  */
-function incoming_mail_node_presave($node) {
-  if (empty($node->field_security_token[LANGUAGE_NONE][0]['value'])) {
-    $node->field_security_token[LANGUAGE_NONE][0]['value'] = str_random();
-  }
-  if (empty($node->field_ticket_status[LANGUAGE_NONE][0]['tid'])) {
-    $node->field_ticket_status[LANGUAGE_NONE][0]['tid'] = TICKET_OPEN_STATUS_TID;
-  }
-}
+//function incoming_mail_node_presave($node) {
+//  if (empty($node->field_security_token[LANGUAGE_NONE][0]['value'])) {
+//    $node->field_security_token[LANGUAGE_NONE][0]['value'] = str_random();
+//  }
+//  if (empty($node->field_ticket_status[LANGUAGE_NONE][0]['tid'])) {
+//    $node->field_ticket_status[LANGUAGE_NONE][0]['tid'] = TICKET_OPEN_STATUS_TID;
+//  }
+//}
 
 /**
  * Get rid of email reply quotes.

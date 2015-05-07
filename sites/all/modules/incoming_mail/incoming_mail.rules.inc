@@ -107,6 +107,16 @@ function incoming_mail_rules_action_info() {
         ),
       ),
     ),
+    'incoming_mail_generate_random_string' => array(
+      'label' => t('Generate random string'),
+      'group' => t('Strings'),
+      'provides' => array(
+        'random_string' => array(
+          'type' => 'text',
+          'label' => t('Random string')
+        ),
+      ),
+    ),
   );
 
   return $actions;
@@ -141,7 +151,11 @@ function incoming_mail_get_user_by_email($email, $name = '') {
     );
     $account = user_save('', $fields);
     watchdog('incoming_mail', 'user: <pre>@u</pre>', ['@u' => var_export($account)]);
-//    drupal_mail('user', 'register_no_approval_required', $email, NULL, array('account' => $account), variable_get('site_mail', 'support@taskulu.com'));
+    drupal_mail('user', 'register_no_approval_required', $email, NULL, array('account' => $account), variable_get('site_mail', 'support@taskulu.com'));
     return array('user' => $account);
   }
+}
+
+function incoming_mail_generate_random_string() {
+  return array('random_string' => str_random());
 }
