@@ -137,6 +137,11 @@ $node = menu_get_object('node');
             ?>
           </div>
           <?php print render($comments); ?>
+          <?php
+          if (user_is_anonymous()):
+          ?>
+          <div class="reply-link"><?php echo t('Please !login to post a comment', ['!login' => l(t('Login'), 'user/login')]); ?></div>
+          <?php endif; ?>
         </div>
       </div>
     </section>
