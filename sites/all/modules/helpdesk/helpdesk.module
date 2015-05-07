@@ -53,21 +53,6 @@ function helpdesk_node_load($nodes, $types) {
 }
 
 /**
- * Implements hook_node_view
- */
-//function helpdesk_node_view($node, $view_mode, $langcode) {
-//  if ($node->type != 'ticket') {
-//    return;
-//  }
-//
-//  $node->content['files'] = array(
-//    '#type' => 'item',
-//    '#title' => t('files: '),
-//    '#markup' => var_export($node->files, 1),
-//  );
-//}
-
-/**
  * Implements hook_entity_property_info_alter().
  */
 function helpdesk_entity_property_info_alter(&$info) {

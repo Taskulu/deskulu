@@ -34,7 +34,7 @@ function incoming_mail_create_ticket() {
   foreach ($data as $datum) {
     $files = array();
     $msg = $datum[0]['msg'];
-    if ($msg['email'] == 'support@taskulu.com') {
+    if ($msg['email'] == 'support@mail.taskulu.com' || $msg['email'] == 'support@taskulu.com') {
       $event = 'incoming_mail_ticket_new';
     }
     elseif (preg_match('/ticket-(\d+)-(.+)@mail\.taskulu\.com/', $msg['email'], $matches)) {
