@@ -108,11 +108,34 @@ function incoming_mail_create_file($file_info) {
  * Implements hook_file_download().
  */
 function incoming_mail_file_download($uri) {
-  // make sure only agents and ticket owner can access the file.
-  // https://api.drupal.org/api/drupal/modules%21system%21system.api.php/function/hook_file_download/7
+  $q = new EntityFieldQuery();
+  $res = $q->entityCondition('entity_type', 'file')
+    ->propertyCondition('uri', $uri)
+    ->execute();
+  if (!empty($res['file'])) {
+    $fid = key($res['file']);
+    $q = new EntityFieldQuery();
+    $res = $q->entityCondition('entity_type', 'node')
+      ->entityCondition('bundle', 'ticket')
+      ->fieldCondition('field_files', 'fid', $fid)
+      ->execute();
+    if (!empty($res['node'])) {
+      $nid = key($res['node']);
+      $node = node_load($nid);
+      global $user;
+      if ($node->uid == $user->uid || in_array('agent', $user->roles) ||
+        ((!empty($_GET['uid'])
+          && !empty($_GET['token'])
+          && $node->uid == $_GET['uid']
+          && $node->field_security_token[LANGUAGE_NONE][0]['value'] == $_GET['token']))) {
+        $file = file_load($fid);
+        return file_get_content_headers($file);
+      }
+      return -1;
+    }
+  }
+  return NULL;
 }
-
-
 
 /**
  * Get rid of email reply quotes.

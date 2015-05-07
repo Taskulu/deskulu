@@ -523,3 +523,34 @@ function helpdesk_form_alter(&$form, &$form_state, $form_id) {
     $form['language']['#access'] = false;
   }
 }
+
+/**
+ * Implements hook_file_url_alter().
+ */
+function helpdesk_file_url_alter(&$uri) {
+  $scheme = file_uri_scheme($uri);
+  if ($scheme == 'private' && !empty($_GET['uid']) && !empty($_GET['token'])) {
+    $path = 'system/files/' . file_uri_target($uri);
+    $uri = url($path, array(
+      'query' => array(
+        'uid' => $_GET['uid'],
+        'token' => $_GET['token'],
+      ),
+      'absolute' => true,
+    ));
+  }
+}
+
+/**
+ * Implements hook_field_access().
+ */
+function helpdesk_field_access($op, $field, $entity_type, $entity, $account) {
+  if ($op == 'view' && $entity_type == 'node' && $entity->type == 'ticket' && $field['field_name'] == 'field_files') {
+    if (user_is_anonymous() && !empty($_GET['uid']) && !empty($_GET['token'])) {
+      return $entity->uid == $_GET['uid'] && $entity->field_security_token[LANGUAGE_NONE][0]['value'] == $_GET['token'];
+    }
+    elseif (user_is_logged_in()) {
+      return $entity->uid == $account->uid || in_array('agent', $account->roles);
+    }
+  }
+}
