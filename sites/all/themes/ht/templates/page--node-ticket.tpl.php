@@ -72,6 +72,7 @@
  *
  * @ingroup themeable
  */
+$node = menu_get_object('node');
 ?>
 <header id="navbar" role="banner" class="<?php print $navbar_classes; ?>">
   <div class="container">
@@ -130,8 +131,8 @@
           <div class="conversation-msg">
             <h3 class="ticket-title"><?php print $title; ?></h3>
             <?php
-            $comments = $page['content']['system_main']['nodes'][1]['comments'];
-            unset($page['content']['system_main']['nodes'][1]['comments']);
+            $comments = $page['content']['system_main']['nodes'][$node->nid]['comments'];
+            unset($page['content']['system_main']['nodes'][$node->nid]['comments']);
             print render($page['content']);
             ?>
           </div>
