@@ -163,8 +163,13 @@ function str_random($length = 32) {
  * Strip tags from the email body.
  */
 function incoming_mail_strip_tags($body) {
-  $body = preg_replace('/(?s)<(script|style|link)[^>]*>.*?</\1>/', '', $body);
-  return strip_tags($body, '<br><br/><b><i><p><img><ul><li><ol><a><em><strong><blockquote><code><dl><dd><dt>');
+  $doc = new DOMDocument('1.0', 'UTF-8');
+  $doc->loadHTML('<?xml encoding="UTF-8">' . $body);
+  $doc->encoding='UTF-8';
+  incoming_mail_remove_element_by_tag_name('script', $doc);
+  incoming_mail_remove_element_by_tag_name('style', $doc);
+  incoming_mail_remove_element_by_tag_name('link', $doc);
+  return strip_tags(html_entity_decode($doc->saveHtml()), '<br><br/><b><i><p><img><ul><li><ol><a><em><strong><blockquote><code><dl><dd><dt>');
 }
 
 /**
