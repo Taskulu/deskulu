@@ -1,0 +1,35 @@
+<?php
+
+/**
+ * @file
+ *   Install, uninstall and update functions for localization client.
+ */
+ 
+/**
+ * Update for new l10n_client_server default value.
+ */
+function l10n_client_update_7001() {
+  $server_setting = variable_get('l10n_client_server', NULL);
+  if (!variable_get('l10n_client_use_server', FALSE) && empty($server_setting) && !is_null($server_setting)) {
+    // User saved empty translation server setting, and has sharing disabled now.
+    // Drop the setting to fall back on the new localize.drupal.org default.
+    // User will get new default when she enables sharing.
+    variable_del('l10n_client_server');
+  }
+}
+
+/**
+ * Clear the menu cache.
+ */
+function l10n_client_update_7002() {
+  // Clear the menu cache
+  menu_cache_clear_all();
+}
+
+  /**
+ * Implements hook_uninstall().
+ */
+function l10n_client_uninstall() {
+  variable_del('l10n_client_server');
+  variable_del('l10n_client_use_server');
+}

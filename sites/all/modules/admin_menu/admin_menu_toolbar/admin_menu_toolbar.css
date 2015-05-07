@@ -64,7 +64,7 @@ body div#toolbar.toolbar {
   text-indent: -9999px;
 }
 #admin-menu > div > .dropdown > li > a {
-  border-right: 0;
+  border-right: 0; /* RTL */
   margin-bottom: 4px;
   padding: 2px 10px 3px;
 }

@@ -1,0 +1,35 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function l10n_client_test_menu() {
+  $items = array();
+
+  // AJAX callback path for strings.
+  $items['l10n-client-test/xmlrpc.php'] = array(
+    'title' => 'Mock server XMLRPC interface',
+    'page callback' => 'l10n_client_test_mock_save',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Mocks the save and prints a response as done by l10n_server.
+ */
+function l10n_client_test_mock_save() {
+  variable_set('l10n_client_test_mock_request', file_get_contents('php://input'));
+  print '<?xml version="1.0"?>
+<methodResponse>
+  <params>
+  <param>
+    <value><struct>
+  <member><name>status</name><value><boolean>1</boolean></value></member>
+  <member><name>sid</name><value><string>387</string></value></member>
+</struct></value>
+  </param>
+  </params>
+</methodResponse>';
+}

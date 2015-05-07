@@ -42,13 +42,13 @@
 /* Second-level lists */
 #admin-menu .dropdown li ul {
   left: auto;
-  right: -999em;
+  right: auto;
 }
 
 /* Third-and-above-level lists */
 #admin-menu .dropdown li li.expandable ul {
-  margin-left: 0;
-  margin-right: 160px;
+  margin-left: 0 !important;
+  margin-right: 160px !important;
 }
 
 /* Lists nested under hovered list items */

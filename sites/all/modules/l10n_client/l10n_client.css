@@ -1,0 +1,243 @@
+/**
+ * width percentages add to 99% rather than 100% to prevent float
+ * overflows from occurring in an unnamed browser that can't decide
+ * how it wants to round.
+ */
+
+/* l10n_client container */
+#l10n-client {
+  text-align: left;
+  z-index: 499; /* This will appear under the overlay */
+  line-height: 1em;
+  color: #000;
+  background: #fff;
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  overflow: hidden;
+}
+.l10n-client-maximized {
+  width: 100%;
+}
+
+* html #l10n-client {
+  position: static;
+}
+
+#l10n-client-string-select .string-list,
+#l10n-client-string-editor .source,
+#l10n-client-string-editor .editor {
+  height: 20em;
+}
+
+#l10n-client .labels {
+  overflow: hidden;
+  position: relative;
+  height: 2em;
+  color: #fff;
+  background: #37a;
+}
+#l10n-client .labels .label {
+  display: none;
+}
+/* Panel toggle button (span) */
+#l10n-client .labels .toggle {
+  cursor: pointer;
+  display: block;
+  right: 0;
+  padding: 0 .75em;
+  height: 2em;
+  line-height: 2em;
+  text-transform: uppercase;
+  text-align: center;
+}
+.l10n-client-maximized .labels .toggle {
+  position: absolute;
+  background: #000;
+}
+
+/* Panel labels */
+#l10n-client h2 {
+  border-left: 1px solid #fff;
+  height: 1em;
+  line-height: 1em;
+  padding: .5em;
+  margin: 0;
+  font-size: 1em;
+  text-transform: uppercase;
+}
+
+#l10n-client .strings h2 {
+  border: 0;
+}
+
+/* 25 + 37 + 37 = 99 */
+#l10n-client .strings {
+  width: 25%;
+  float: left;
+}
+#l10n-client .source {
+  width: 37%;
+  float: left;
+}
+#l10n-client .translation {
+  width: 37%;
+  float: left;
+}
+
+/* Translatable string list */
+#l10n-client-string-select {
+  display: none;
+  float: left;
+  width: 25%;
+}
+#l10n-client .string-list {
+  height: 17em;
+  overflow: auto;
+  list-style: none none;
+  margin: 0;
+  padding: 0;
+}
+#l10n-client .string-list li {
+  font-size: .9em;
+  min-height: 2em;
+  line-height: 1.5em;
+  cursor: default;
+  background: transparent;
+  list-style: none none;
+  border-bottom: 1px solid #ddd;
+  padding: .25em .5em;
+  margin: 0;
+}
+
+/* Green for translated */
+#l10n-client .string-list li.translated {
+  border-bottom-color: #9c3;
+  background: #cf6;
+  color: #360;
+}
+#l10n-client .string-list li.translated:hover {
+  background: #df8;
+}
+#l10n-client .string-list li.translated:active {
+  background: #9c3;
+}
+#l10n-client .string-list li.hidden {
+  display: none;
+}
+
+/* Gray + Blue hover for untranslated */
+#l10n-client .string-list li.untranslated {
+}
+#l10n-client .string-list li.untranslated:hover {
+  background: #ace;
+}
+#l10n-client .string-list li.untranslated:active {
+  background: #8ac;
+}
+
+/* Selected string is indicated by bold text */
+#l10n-client .string-list li.active {
+  font-weight: bold;
+}
+
+#l10n-client #l10n-client-search-form {
+  background: #eee;
+  text-align: center;
+  height: 2em;
+  line-height: 2em;
+  margin: 0;
+  padding: .5em .5em;
+}
+#l10n-client #l10n-client-search-form .form-item,
+#l10n-client #l10n-client-search-form input.form-text,
+#l10n-client #l10n-client-search-form #search-filter-go,
+#l10n-client #l10n-client-search-form #l10n-client-search-filter-clear {
+  display: inline;
+  vertical-align: middle;
+}
+#l10n-client #l10n-client-search-form .form-item {
+  margin: 0;
+  padding: 0;
+}
+#l10n-client #l10n-client-search-form input.form-text {
+  width: 80%;
+}
+#l10n-client #l10n-client-search-form #l10n-client-search-filter-clear {
+  width: 10%;
+  margin: 0;
+}
+
+#l10n-client-string-editor {
+  display: none;
+  float: left;
+  width: 74%;
+}
+#l10n-client-string-editor .source {
+  overflow: hidden;
+  width: 50%;
+  float: left;
+}
+#l10n-client-string-editor .source .source-text {
+  line-height: 1.5em;
+  background: #eee;
+  height: 15em;
+  padding: 1em;
+  margin: 1em 1em 0.5em;
+  overflow: auto;
+}
+
+#l10n-client-string-editor .context {
+  line-height: 1em;
+  height: 1em;
+  font-size: 0.8em;
+  margin: 0.5em 1em 1em 1em;
+  padding: 0 1em 0 1em;
+}
+
+#l10n-client-string-editor .translation {
+  overflow: hidden;
+  width: 49%;
+  float: right;
+}
+
+#l10n-client-form {
+  padding: 0;
+}
+#l10n-client-form .form-textarea {
+  height: 13em;
+  font-size: 1em;
+  line-height: 1.25em;
+  width: 95%;
+}
+#l10n-client-form .form-submit {
+  margin-top: 0;
+}
+
+#l10n-client-data {
+  display: none;
+}
+
+.l10n-client-feedback {
+  background-color: #DF8;
+  padding: 5px;
+  font-style: italic;
+  margin-bottom: 10px;
+}
+.l10n-client-feedback.message-warning {
+  background-color: #FD8;
+}
+.l10n-client-feedback.message-error {
+  background-color: #F00;
+  color: #fff;
+}
+#l10n-client .l10n-client-minimized {
+  height: 2em;
+  overflow: hidden;
+}
+#l10n-client .l10n-client-maximized {
+  height: 22em;
+}
+#l10n-client .toggle-expanded {
+  border-bottom: 22em solid #fff;
+}

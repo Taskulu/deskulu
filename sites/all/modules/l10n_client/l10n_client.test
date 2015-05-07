@@ -1,0 +1,137 @@
+<?php
+
+/**
+ * @file
+ * Tests for localization client translation submission.
+ */
+
+/**
+ * Tests translation submission.
+ */
+class L10nSubmitTranslationTestCase extends DrupalWebTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'localization client test',
+      'description' => 'Test the submission of translation suggestions.',
+      'group' => 'Localization client',
+    );
+  }
+
+  protected function setUp() {
+    parent::setUp('l10n_client', 'l10n_client_test');
+  }
+
+  /**
+   * Test if submitted translations are saved correctly.
+   */
+  function testTranslationSubmission() {
+    // Enable usage of remote server and set the url to the l10n_server.
+    variable_set('l10n_client_server', url('l10n-client-test', array('absolute' => TRUE)));
+    variable_set('l10n_client_use_server', TRUE);
+
+    // Enable the german language.
+    locale_add_language('de');
+    db_update('languages')
+      ->fields(array('plurals' => 2))
+      ->condition('language',  'de')
+      ->execute();
+
+    // Enable URL detection method.
+    variable_set('language_negotiation_language', array (
+      'locale-url' => array(
+        'callbacks' => array(
+          'language' => 'locale_language_from_url',
+          'switcher' => 'locale_language_switcher_url',
+          'url_rewrite' => 'locale_language_url_rewrite_url',
+        ),
+        'file' => 'includes/locale.inc',
+      ),
+      'language-default' => array(
+        'callbacks' => array(
+          'language' => 'language_from_default',
+        ),
+      ),
+    ));
+    variable_set('language_negotiation_language_content', array(
+      'locale-interface' => array(
+        'callbacks' => array(
+          'language' => 'locale_language_from_interface',
+        ),
+        'file' => 'includes/locale.inc',
+      ),
+    ));
+    variable_set('language_negotiation_language_url', array(
+      'locale-url' => array(
+        'callbacks' => array(
+          'language' => 'locale_language_from_url',
+          'switcher' => 'locale_language_switcher_url',
+          'url_rewrite' => 'locale_language_url_rewrite_url',
+        ),
+        'file' => 'includes/locale.inc',
+      ),
+      'locale-url-fallback' => array(
+        'callbacks' => array(
+          'language' => 'locale_language_url_fallback',
+        ),
+        'file' => 'includes/locale.inc',
+      ),
+    ));
+
+    // Create user that is authorized to use the l10n client.
+    $admin_user = $this->drupalCreateUser(array('use on-page translation', 'submit translations to localization server'));
+    $this->drupalLogin($admin_user);
+    $user = user_load(2);
+    user_save($user, array('data' => array('l10n_client_key' => drupal_get_token('l10n-client-test'))));
+
+    // Open the site in german to load the localization client form.
+    $this->drupalGet('de');
+    // Parse the form token.
+    $token_input = $this->xpath("//form[@id='l10n-client-form']//input[@name='form_token']");
+    $form_token = (string)$token_input[0]['value'];
+
+    // Post data that will be sent to the server.
+    $post = array(
+      // Source string that gets translated.
+      'source' => 'Content',
+      // Translation suggestion.
+      'target' => 'Translation suggestion for Content',
+      'textgroup' => 'default',
+      'context' => '',
+      'form_token' => $form_token,
+    );
+
+    // Execute the submission using curl.
+    $action = url('l10n_client/save', array('absolute' => TRUE));
+    $response = $this->curlExec(array(CURLOPT_URL => $action, CURLOPT_POST => TRUE, CURLOPT_POSTFIELDS => $post));
+    $this->refreshVariables();
+
+    // Get id of the source string.
+    $lid = db_query("SELECT lid FROM {locales_source} WHERE source = :source AND context = :context AND textgroup = :textgroup",
+      array(
+        ':source' => $post['source'],
+        ':context' => $post['context'],
+        ':textgroup' => $post['textgroup'])
+      )
+      ->fetchField();
+    // Get the saved translation.
+    $translation = db_query("SELECT translation FROM {locales_target} WHERE lid = :lid", array(':lid' => $lid))
+      ->fetchField();
+    // Check if translation was saved successfully saved in local DB.
+    $this->assertEqual($translation, $post['target'], 'Translation was successfully saved in local DB.');
+
+    // Check response of the server.
+    $this->assertTrue(strpos($response, 'Translation sent and accepted by') > 0, 'Translation sent and accepted by the server.');
+    // Get returned data that is mocked in the l10n_client_test module.
+    $saved = variable_get('l10n_client_test_mock_request');
+
+    $saved_xml = new SimpleXMLElement($saved);
+    // Assert basic structure of the saved data.
+    $this->assertEqual((string)$saved_xml->methodName, 'l10n.submit.translation', 'Right methodname was returned.');
+    $this->assertEqual(count($saved_xml->params->param), 6, 'Response XML contains right amount of parameters.');
+    // Assert values in saved data.
+    $this->assertEqual((string)$saved_xml->params[0]->param[0]->value->string, 'en', 'Source language parameter is correct.');
+    $this->assertEqual((string)$saved_xml->params[0]->param[1]->value->string, $post['source'], 'Source string parameter is correct.');
+    $this->assertEqual((string)$saved_xml->params[0]->param[2]->value->string, $post['target'], 'Suggestion string parameter is correct.');
+  }
+}

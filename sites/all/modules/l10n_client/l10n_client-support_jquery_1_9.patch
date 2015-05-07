@@ -1,0 +1,31 @@
+Index: l10n_client.js
+===================================================================
+--- l10n_client.js	(revision 217)
++++ l10n_client.js	(working copy)
+@@ -23,7 +23,7 @@
+           } else {
+             if ($l10nClient.is('.l10n-client-minimized')) {
+               this.toggle(1);
+-              if (!$.browser.safari) {
++              if (!(navigator.userAgent.indexOf('Safari') != -1 && navigator.userAgent.indexOf('Chrome') == -1)) {
+                 $l10nClient.find('.string-search').focus();
+               }
+             }
+@@ -45,7 +45,7 @@
+       if (!!state == true) {
+         $clientWrapper.show();
+         $l10nClient.removeClass('l10n-client-minimized').addClass('l10n-client-maximized').find('.labels .toggle').text('X');
+-        if (!$.browser.msie) {
++        if(!(navigator.userAgent.indexOf('MSIE') !== -1 || navigator.appVersion.indexOf('Trident/') > 0)) {
+           $('body').addClass('toggle-expanded');
+         }
+         $.cookie('Drupal_l10n_client', '1', {expires: 7, path: '/'});
+@@ -52,7 +52,7 @@
+       } else {
+         $clientWrapper.hide();
+         $l10nClient.removeClass('l10n-client-maximized').addClass('l10n-client-minimized').find('.labels .toggle').text(Drupal.t('Translate Text'));
+-        if (!$.browser.msie) {
++        if(!(navigator.userAgent.indexOf('MSIE') !== -1 || navigator.appVersion.indexOf('Trident/') > 0)) {
+           $('body').removeClass('toggle-expanded');
+         }
+         $.cookie('Drupal_l10n_client', '0', {expires: 7, path: '/'});

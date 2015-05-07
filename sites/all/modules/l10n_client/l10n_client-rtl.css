@@ -1,0 +1,11 @@
+
+#l10n-client {
+  direction: ltr;
+}
+#l10n-client .string-list {
+  direction: rtl;
+  text-align: right;
+}
+#l10n-client-form .form-textarea {
+  direction: rtl;
+}

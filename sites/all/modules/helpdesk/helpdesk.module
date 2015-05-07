@@ -520,11 +520,13 @@ function helpdesk_theme() {
  */
 function helpdesk_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'forum_node_form') {
-    dsm($form);
     $node = $form_state['node'];
-    if ($node->nid && !empty($node->taxonomy_forums[LANGUAGE_NONE][0]['tid'])) {
+    $form['language']['#access'] = false;
+    if (!empty($node->nid) && !empty($node->taxonomy_forums[LANGUAGE_NONE][0]['tid'])) {
       $forum = $node->taxonomy_forums[LANGUAGE_NONE][0]['tid'];
-
     }
+  }
+  elseif ($form_id == 'ticket_node_form') {
+    $form['language']['#access'] = false;
   }
 }
