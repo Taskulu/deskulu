@@ -545,7 +545,7 @@ function helpdesk_file_url_alter(&$uri) {
  * Implements hook_field_access().
  */
 function helpdesk_field_access($op, $field, $entity_type, $entity, $account) {
-  if ($op == 'view' && $entity_type == 'node' && $entity->type == 'ticket' && $field['field_name'] == 'field_files') {
+  if ($op == 'view' && $entity_type == 'node' && isset($entity->type) && $entity->type == 'ticket' && $field['field_name'] == 'field_files') {
     if (user_is_anonymous() && !empty($_GET['uid']) && !empty($_GET['token'])) {
       return $entity->uid == $_GET['uid'] && $entity->field_security_token[LANGUAGE_NONE][0]['value'] == $_GET['token'];
     }
