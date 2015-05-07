@@ -64,7 +64,10 @@ function incoming_mail_create_ticket() {
       foreach ($msg['attachments'] as $file) {
         $file = incoming_mail_create_file($file);
         if ($file !== FALSE) {
-          $files[] = (array)$file;
+          $files[] = (array)$file + array(
+              'display' => 1,
+              'description' => '',
+            );
         }
       }
     }
@@ -74,7 +77,10 @@ function incoming_mail_create_ticket() {
         $image = incoming_mail_create_file($image);
         if ($image !== FALSE) {
           $body = str_replace('src="cid:' . $image['name'], 'src="' . file_create_url($image->uri), $body);
-          $files[] = (array)$image;
+          $files[] = (array)$image + array(
+              'display' => 1,
+              'description' => '',
+            );
         }
       }
     }
