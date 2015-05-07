@@ -169,7 +169,8 @@ function incoming_mail_strip_tags($body) {
   incoming_mail_remove_element_by_tag_name('script', $doc);
   incoming_mail_remove_element_by_tag_name('style', $doc);
   incoming_mail_remove_element_by_tag_name('link', $doc);
-  return strip_tags(html_entity_decode($doc->saveHtml()), '<br><br/><b><i><p><img><ul><li><ol><a><em><strong><blockquote><code><dl><dd><dt>');
+
+  return strip_tags(html_entity_decode($doc->saveHtml()), '<div><br><br/><b><i><p><img><ul><li><ol><a><em><strong><blockquote><code><dl><dd><dt>');
 }
 
 /**
