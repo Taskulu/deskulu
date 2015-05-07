@@ -1,0 +1,64 @@
+@import "../bootstrap/assets/stylesheets/bootstrap/mixins";
+
+.glyphicon.large {
+  margin-left: 6px;
+  margin-right: 0;
+}
+
+.topic-row {
+  .topic-votes {
+    left: 0;
+    right: auto;
+    ul {
+      padding-right: 0;
+    }
+  }
+}
+.forum-node-create-links {
+  float: left;
+}
+
+.views-widget-sort-by {
+  padding-left: 0;
+}
+
+.forum-post {
+  .forum-post-number {
+    left: 10px;
+    right: auto;
+  }
+  .forum-post-wrapper {
+    &:before {
+      right: 21px;
+      left: auto;
+    }
+    &:after {
+      right: 22px;
+      left: auto;
+    }
+  }
+  .forum-post-panel-main {
+    .form-type-item {
+      float: left;
+      ul {
+        padding-right: 0;
+      }
+    }
+  }
+}
+
+.node-type-forum {
+  h1.page-header {
+    padding-right: 10px;
+    padding-left: 0;
+    span.glyphicon {
+      right: -28px;
+      left: auto;
+      > span {
+        right: 10px;
+        left: auto;
+      }
+    }
+  }
+}
+

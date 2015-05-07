@@ -1,0 +1,177 @@
+body {
+  background-color: #dde6ec; }
+
+span.form-required {
+  color: red; }
+
+#block-helpdesk-helpdesk-ticket-updater div.select2-container {
+  width: 100% !important; }
+#block-helpdesk-helpdesk-ticket-updater label {
+  display: block; }
+
+.highlighted {
+  margin-bottom: 15px;
+  background: #fafafa;
+  padding: 10px 0;
+  border-radius: 5px; }
+  .highlighted .section-wrapper {
+    background-color: #fafafa; }
+  .highlighted .col-md-8 {
+    border-right: 1px solid #eaeaea; }
+  .highlighted .search-form-wrapper {
+    padding-left: 15px; }
+  .highlighted .col-md-4 {
+    height: 125px; }
+    .highlighted .col-md-4 .links-wrapper {
+      height: 100%;
+      position: relative; }
+    .highlighted .col-md-4 ul {
+      position: absolute;
+      top: 50%;
+      margin-top: -25px; }
+      .highlighted .col-md-4 ul li a {
+        font-size: 18px; }
+        .highlighted .col-md-4 ul li a span {
+          margin-right: 10px; }
+
+#views-exposed-form-search-page button.form-submit {
+  height: 34px; }
+#views-exposed-form-search-page label {
+  font-size: 34px;
+  font-family: 'Open Sans'; }
+
+fieldset.filter-wrapper {
+  display: none; }
+
+.section-wrapper {
+  border-radius: 5px;
+  padding: 15px;
+  background: #fff; }
+
+a {
+  color: #3e4756; }
+  a:hover {
+    color: #414a56; }
+
+/**
+ *Front page
+ */
+.page-frontpage h1.page-header {
+  margin-bottom: 0;
+  border-color: #344564;
+  font-size: 30px; }
+
+.page-frontpage #block-system-main .section-wrapper {
+  padding: 0; }
+
+.page-frontpage #block-system-main h3.section {
+  margin-top: 0;
+  border-top: 5px solid #344564;
+  display: inline-block;
+  margin-bottom: 20px;
+  padding-top: 5px;
+  font-size: 22px; }
+
+h4.subsection {
+  margin-top: 0;
+  font-weight: normal; }
+
+h4.subsection span {
+  color: #bbb;
+  font-size: 15px; }
+
+.subsection-container li {
+  color: #aaa;
+  line-height: 1.9; }
+  .subsection-container li > a {
+    color: #3e4756; }
+    .subsection-container li > a:hover {
+      color: #414a56; }
+
+.subsection-container li span {
+  margin-right: 10px; }
+
+.node-type-ticket .submitted, .node-type-ticket .field-type-text-long {
+  margin-bottom: 5px; }
+
+.conversation {
+  padding-left: 40px;
+  border-left: 5px solid #eaeaea;
+  margin-left: 30px; }
+
+.conversation-msg {
+  background: #fafafa;
+  margin-bottom: 20px;
+  padding: 15px;
+  position: relative;
+  border-radius: 5px;
+  border: 1px solid #eaeaea; }
+  .conversation-msg:before {
+    position: absolute;
+    top: 24px;
+    z-index: 0;
+    margin-top: -10px;
+    right: 100%;
+    border: solid transparent;
+    content: " ";
+    height: 0;
+    width: 0;
+    border-width: 12px;
+    border-right-color: #fafafa; }
+  .conversation-msg .submitted {
+    color: #aaa; }
+    .conversation-msg .submitted a {
+      color: #428bca; }
+  .conversation-msg .section-wrapper {
+    background: transparent;
+    padding: 0; }
+  .conversation-msg h3 {
+    margin: 0 0 15px; }
+  .conversation-msg .user-picture {
+    display: inline-block;
+    left: -68px;
+    border-radius: 50%;
+    overflow: hidden;
+    position: absolute;
+    top: 0;
+    border: 1px solid #eaeaea; }
+
+.node-type-ticket form.comment-form {
+  margin-left: -68px;
+  padding-left: 68px;
+  background: white;
+  position: relative; }
+  .node-type-ticket form.comment-form > div {
+    background: #fafafa;
+    padding: 15px;
+    border-radius: 5px; }
+  .node-type-ticket form.comment-form .user-picture {
+    left: 0;
+    top: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    position: absolute; }
+  .node-type-ticket form.comment-form .title-wrapper, .node-type-ticket form.comment-form .sender-name {
+    font-weight: bold;
+    margin-bottom: 8px; }
+    .node-type-ticket form.comment-form .title-wrapper span.name, .node-type-ticket form.comment-form .title-wrapper span.name a, .node-type-ticket form.comment-form .sender-name span.name, .node-type-ticket form.comment-form .sender-name span.name a {
+      color: #999; }
+  .node-type-ticket form.comment-form .form-type-textarea label, .node-type-ticket form.comment-form .form-type-textarea .form-required {
+    display: none; }
+
+.rate-widget-thumbs_up_down ul {
+  margin-bottom: 0; }
+
+h2.block-title {
+  font-size: 18px; }
+
+.ckeditor_links {
+  display: none !important; }
+
+.view-related-topics .views-field-title a span.glyphicon, .view-related-articles .views-field-title a span.glyphicon {
+  margin-right: 5px; }
+
+aside .views-exposed-form .views-exposed-widget {
+  float: none; }
+
+/*# sourceMappingURL=content.css.map */

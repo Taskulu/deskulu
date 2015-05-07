@@ -1,0 +1,119 @@
+// Bootstrap variables.
+@import 'variables';
+
+// Media query variables.
+$tablet:  "screen and (min-width: ${screen-sm-min})";
+$normal:  "screen and (min-width: ${screen-md-min})";
+$wide:    "screen and (min-width: ${screen-lg-min})";
+
+// Drop shadows.
+@mixin box-shadow($shadow) {
+  -webkit-box-shadow: $shadow;
+  -moz-box-shadow: $shadow;
+  box-shadow: $shadow;
+}
+
+body {
+  &.admin-expanded.admin-vertical.admin-nw .navbar,
+  &.admin-expanded.admin-vertical.admin-sw .navbar {
+    margin-right: 260px;
+    margin-left: 0;
+  }
+}
+
+// Navigation.
+ul.secondary {
+  float: right;
+  @media screen and (min-width: $screen-sm-min) {
+    float: left;
+  }
+}
+// Help region.
+.region-help {
+  > .glyphicon {
+    float: right;
+    margin: -0.05em 0 0 0.5em;
+  }
+}
+
+.navbar #block-search-form {
+  margin: 5px 5px 5px 0;
+  @media screen and (min-width: $screen-md-min) {
+    float: left;
+  }
+}
+
+// Action Links
+ul.action-links {
+  li {
+    padding: 0 0 0 $padding-base-vertical;
+  }
+  .glyphicon {
+    padding-left: 0.5em;
+    padding-right: 0;
+  }
+}
+
+fieldset legend.panel-heading {
+  float: right;
+}
+
+// Lists
+.list-inline {
+  > li.first {
+    padding-right: 0;
+  }
+}
+
+
+// Password strength indicator.
+.password-strength {
+  float: left;  /* LTR */
+}
+
+.password-strength-text {
+  float: left; /* LTR */
+}
+div.password-confirm {
+  float: left;  /* LTR */
+}
+.confirm-parent,
+.password-parent {
+  clear: right; /* LTR */
+}
+
+// Views AJAX pager.
+.pagination ul > li > a {
+  &.progress-disabled {
+    float: right;
+  }
+}
+
+// AJAX "Throbber".
+.ajax-progress {
+  .glyphicon {
+    margin: 0 0.5em 0 -.25em;
+  }
+}
+
+// Left and right tabs.
+.tabs-left,
+.tabs-right {
+  > .nav-tabs {
+    > li {
+      > a {
+        margin-left: 0;
+      }
+    }
+  }
+}
+
+// Exposed filters
+.form-horizontal .form-group label {
+  text-align: left;
+
+  @media (min-width: $screen-sm-min) {
+    float: right;
+  }
+}
+

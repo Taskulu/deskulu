@@ -1,0 +1,66 @@
+body.admin-expanded.admin-vertical.admin-nw .navbar, body.admin-expanded.admin-vertical.admin-sw .navbar {
+  margin-right: 260px;
+  margin-left: 0; }
+
+ul.secondary {
+  float: right; }
+  @media screen and (min-width: 768px) {
+    ul.secondary {
+      float: left; } }
+
+.region-help > .glyphicon {
+  float: right;
+  margin: -0.05em 0 0 0.5em; }
+
+.navbar #block-search-form {
+  margin: 5px 5px 5px 0; }
+  @media screen and (min-width: 992px) {
+    .navbar #block-search-form {
+      float: left; } }
+
+ul.action-links li {
+  padding: 0 0 0 6px; }
+ul.action-links .glyphicon {
+  padding-left: 0.5em;
+  padding-right: 0; }
+
+fieldset legend.panel-heading {
+  float: right; }
+
+.list-inline > li.first {
+  padding-right: 0; }
+
+.password-strength {
+  float: left;
+  /* LTR */ }
+
+.password-strength-text {
+  float: left;
+  /* LTR */ }
+
+div.password-confirm {
+  float: left;
+  /* LTR */ }
+
+.confirm-parent,
+.password-parent {
+  clear: right;
+  /* LTR */ }
+
+.pagination ul > li > a.progress-disabled {
+  float: right; }
+
+.ajax-progress .glyphicon {
+  margin: 0 0.5em 0 -.25em; }
+
+.tabs-left > .nav-tabs > li > a,
+.tabs-right > .nav-tabs > li > a {
+  margin-left: 0; }
+
+.form-horizontal .form-group label {
+  text-align: left; }
+  @media (min-width: 768px) {
+    .form-horizontal .form-group label {
+      float: right; } }
+
+/*# sourceMappingURL=overrides-rtl.css.map */
