@@ -30,10 +30,10 @@ function incoming_mail_create_ticket() {
   $data = json_decode($jsonready,true);
 
   watchdog('incoming_mail', '<pre>' . $input . '</pre>');
-  watchdog('incoming_mail', '<pre>' . var_export($_GET, 1) . '</pre>');
+  watchdog('incoming_mail', '<pre>' . var_export($data, 1) . '</pre>');
   foreach ($data as $datum) {
     $files = array();
-    $msg = $datum[0]['msg'];
+    $msg = $datum['msg'];
     if ($msg['email'] == 'support@mail.taskulu.com' || $msg['email'] == 'support@taskulu.com') {
       $event = 'incoming_mail_ticket_new';
     }
@@ -54,7 +54,7 @@ function incoming_mail_create_ticket() {
       }
     }
     else {
-      watchdog('incoming_mail', 'Email received for unrecognized inbox.<br><pre>!data</pre>', array('!data' => $datum), WATCHDOG_ERROR);
+      watchdog('incoming_mail', 'Email received for unrecognized inbox.<br><pre>!data</pre>', array('!data' => var_export($datum, 1)), WATCHDOG_ERROR);
       continue;
     }
 
