@@ -140,6 +140,7 @@ function incoming_mail_get_user_by_email($email, $name = '') {
       ),
     );
     $account = user_save('', $fields);
+    watchdog('incoming_mail', 'user: <pre>@u</pre>', ['@u' => var_export($account)]);
 //    drupal_mail('user', 'register_no_approval_required', $email, NULL, array('account' => $account), variable_get('site_mail', 'support@taskulu.com'));
     return array('user' => $account);
   }
