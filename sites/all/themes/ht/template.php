@@ -55,6 +55,7 @@ function ht_form_alter(&$form, &$form_state, $form_id) {
     $form['author']['_author']['#type'] = 'markup';
 
     global $user;
+
     $form['author']['_author']['#markup'] = theme('user_picture', array('account' => $user));
     $author = user_load($form['#node']->uid);
     $form['actions']['submit']['#value'] = t('Send');

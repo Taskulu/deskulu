@@ -422,7 +422,15 @@ function helpdesk_track_ticket_form_validate($form, &$form_state) {
  * Ticket status checker submit callback.
  */
 function helpdesk_track_ticket_form_submit($form, &$form_state) {
-  $form_state['redirect'] = 'node/' . $form_state['node']->nid . '?uid=' . $form_state['node']->uid . '&token=' . $form_state['values']['security_token'];
+  $form_state['redirect'] = array(
+    'node/' . $form_state['node']->nid,
+    array(
+      'query' => array(
+        'uid' => $form_state['node']->uid,
+        'token' => $form_state['values']['security_token']
+      )
+    )
+  );
 }
 
 /**

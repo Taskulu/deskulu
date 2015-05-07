@@ -105,6 +105,13 @@
   </div>
 
 
-  <?php print render($content['comments']); ?>
-
+  <?php
+  if (user_is_logged_in()):
+    print render($content['comments']);
+  else:
+  ?>
+    <div class="reply-link"><?php echo t('Please !login to post a comment', ['!login' => l(t('Login'), 'user/login')]); ?></div>
+  <?php
+  endif;
+  ?>
 </div>
