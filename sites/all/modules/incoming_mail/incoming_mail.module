@@ -169,7 +169,7 @@ function incoming_mail_strip_tags($body) {
   incoming_mail_remove_element_by_tag_name('script', $doc);
   incoming_mail_remove_element_by_tag_name('style', $doc);
   incoming_mail_remove_element_by_tag_name('link', $doc);
-
+  incoming_mail_remove_element_attribute('div', 'style', $doc);
   return strip_tags(html_entity_decode($doc->saveHtml()), '<div><br><br/><b><i><p><img><ul><li><ol><a><em><strong><blockquote><code><dl><dd><dt>');
 }
 
@@ -181,5 +181,16 @@ function incoming_mail_remove_element_by_tag_name($tagName, DOMDocument $documen
   for ($nodeIdx = $nodeList->length; --$nodeIdx >= 0; ) {
     $node = $nodeList->item($nodeIdx);
     $node->parentNode->removeChild($node);
+  }
+}
+
+/**
+ * Removes $attr from all occurrences of $element in $doc.
+ */
+function incoming_mail_remove_element_attribute($element, $attr, DOMDocument $doc) {
+  $domx = new DOMXPath($doc);
+  $items = $domx->query('//' . $element . '[@' . $attr . ']');
+  foreach($items as $item) {
+    $item->removeAttribute($attr);
   }
 }
