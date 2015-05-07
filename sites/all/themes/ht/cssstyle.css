@@ -6302,4 +6302,7 @@ h2.block-title {
 .view-related-topics .views-field-title a span.glyphicon, .view-related-articles .views-field-title a span.glyphicon {
   margin-right: 5px; }
 
+aside .views-exposed-form .views-exposed-widget {
+  float: none; }
+
 /*# sourceMappingURL=cssstyle.css.map */

@@ -84,13 +84,13 @@
                 <p class="submitted">
                   <?php
                   $account = user_load($node->uid);
-                  echo t('Posted by <b>!name</b>, @time ago', ['!name' => theme('username', ['account' => $account]), '@time' => format_interval(REQUEST_TIME - $node->created)]);
+                  echo t('Posted by <b>!name</b><span class="time">, @time ago</span>', ['!name' => theme('username', ['account' => $account]), '@time' => format_interval(REQUEST_TIME - $node->created)]);
                   ?>
                 </p>
                 <p class="last-reply">
                   <?php
                   $last_commenter = user_load($node->last_comment_uid);
-                  echo t('!last_reply by !name @time ago', ['!last_reply' => l(t('Last reply'), 'comment/' . $node->cid, ['fragment' => 'comment-' . $node->cid]), '!name' => theme('username', ['account' => $last_commenter]), '@time' => format_interval(REQUEST_TIME - $node->last_comment_timestamp)]);
+                  echo t('!last_reply by !name <span class="time">@time ago</span>', ['!last_reply' => l(t('Last reply'), 'comment/' . $node->cid, ['fragment' => 'comment-' . $node->cid]), '!name' => theme('username', ['account' => $last_commenter]), '@time' => format_interval(REQUEST_TIME - $node->last_comment_timestamp)]);
                   ?>
                 </p>
               </div>

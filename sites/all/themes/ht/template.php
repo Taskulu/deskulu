@@ -40,8 +40,15 @@ function ht_theme($existing, $type, $theme, $path) {
 }
 
 function ht_form_alter(&$form, &$form_state, $form_id) {
-  if ($form_id == 'views_exposed_form' && $form['#id'] == 'views-exposed-form-search-page') {
-    $form['search_api_views_fulltext']['#attributes']['placeholder'] = t('Enter your search term here...');
+  if ($form_id == 'views_exposed_form') {
+    if ($form['#id'] == 'views-exposed-form-search-page') {
+      $form['search_api_views_fulltext']['#attributes']['placeholder'] = t('Enter your search term here...');
+    }
+    elseif ($form['#id'] == 'views-exposed-form-advanced-forum-topic-list-default') {
+      foreach ($form['field_feature_request_status_value']['#options'] as &$option) {
+        $option = t($option);
+      }
+    }
   }
   elseif($form_id == 'comment_node_ticket_form') {
     $form['author']['_author']['#title'] = '';
@@ -66,12 +73,12 @@ function ht_form_alter(&$form, &$form_state, $form_id) {
       'attributes' => ['class' => ['list-inline']],
     ]);
     $form['form_title'] = array(
-      '#markup' => '<div class="title-wrapper">' . t('Reply to: <span class="name">!name &lt;@email&gt;</span>', ['!name' => theme('username', ['account' => $author]), '@email' => $author->mail]) . '<div class="pull-right flip">' . $links . '</div></div>',
+      '#markup' => '<div class="sender-name">' . t('Reply to: <span class="name">!name &lt;@email&gt;</span>', ['!name' => theme('username', ['account' => $author]), '@email' => $author->mail]) . '<div class="pull-right flip">' . $links . '</div></div>',
       '#weight' => -100,
     );
 
     $form['from'] = array(
-      '#markup' => '<div class="sender-name">' . t('Reply From: <span class="name"!name &lt;@email&gt;</span>', ['!name' => theme('username', ['account' => $user]), '@email' => $user->mail]) . '</div>',
+      '#markup' => '<div class="sender-name">' . t('Reply From: <span class="name">!name &lt;@email&gt;</span>', ['!name' => theme('username', ['account' => $user]), '@email' => $user->mail]) . '</div>',
       '#weight' => -101,
     );
 
@@ -167,4 +174,43 @@ function ht_preprocess_forum_list(&$variables) {
       }
     }
   }
+}
+
+/**
+ * Theme wrapper for the main menu.
+ */
+function ht_menu_tree__main_menu(&$variables) {
+  return '<ul class="menu nav navbar-nav">' . $variables['tree'] . '</ul>';
+}
+
+/**
+ * Theme wrapper for the main menu.
+ */
+function ht_menu_tree__user_menu(&$variables) {
+  return '<ul class="menu nav navbar-nav secondary">' . $variables['tree'] . '</ul>';
+}
+
+/**
+ * Bootstrap theme wrapper function for the primary menu links.
+ */
+function ht_menu_tree__primary(&$variables) {
+  $variables['tree'] = i18n_menu_translated_tree('main-menu');
+
+  return render($variables['tree']);
+}
+
+/**
+ * Bootstrap theme wrapper function for the secondary menu links.
+ */
+function ht_menu_tree__secondary(&$variables) {
+  $variables['tree'] = i18n_menu_translated_tree('user-menu');
+  return render($variables['tree']);
+}
+
+/**
+ * Allow to translate views page title
+ * @param $view
+ */
+function ht_views_pre_render(&$view)  {
+  $view->set_title(t($view->get_title()));
 }

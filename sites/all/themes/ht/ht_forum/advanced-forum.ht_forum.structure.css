@@ -30,6 +30,8 @@ h3.section {
     font-size: 12px; }
   .subsection-container .last-reply .username {
     margin: 0; }
+  .subsection-container .last-reply .time {
+    display: inline-block; }
   .subsection-container h4 {
     margin-bottom: 0; }
   .subsection-container p.description {
