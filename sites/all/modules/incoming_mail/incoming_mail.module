@@ -78,7 +78,6 @@ function incoming_mail_create_ticket() {
       }
     }
     if ($event == 'incoming_mail_ticket_new') {
-      watchdog('incoming_mail', 'received new ticket, invoking rules');
       rules_invoke_event('incoming_mail_ticket_new', $msg['subject'], $body, $files, $msg['from_name'], $msg['from_email']);
     }
     elseif ($event == 'incoming_mail_ticket_reply') {
@@ -106,22 +105,14 @@ function incoming_mail_file_download($uri) {
   // https://api.drupal.org/api/drupal/modules%21system%21system.api.php/function/hook_file_download/7
 }
 
-/**
- * Implements hook_node_presave().
- */
-//function incoming_mail_node_presave($node) {
-//  if (empty($node->field_security_token[LANGUAGE_NONE][0]['value'])) {
-//    $node->field_security_token[LANGUAGE_NONE][0]['value'] = str_random();
-//  }
-//  if (empty($node->field_ticket_status[LANGUAGE_NONE][0]['tid'])) {
-//    $node->field_ticket_status[LANGUAGE_NONE][0]['tid'] = TICKET_OPEN_STATUS_TID;
-//  }
-//}
+
 
 /**
  * Get rid of email reply quotes.
  */
 function incoming_mail_strip_quotes($html) {
+  $pos = strpos($html, '##- Please type your reply above this line -##');
+  $html = substr($html, 0, $pos);
   $headers = array(
     '/(On\s.+wrote:)/ms', // On DATE, NAME <EMAIL> wrote:
     '/(Le\s.+écrit :)/ms', // Le DATE, NAME <EMAIL> a écrit :
