@@ -1,0 +1,142 @@
+<?php
+
+/**
+ * @file
+ * Views support for Internationalization (i18n) package
+ *
+ * This module translates some views strings on the fly using i18n string system
+ *
+ * @author Miro Dietiker, 2011
+ * @author Jose A. Reyero, 2007
+ */
+
+/**
+ * Implementation of hook_help().
+ */
+function i18nviews_help($path, $arg) {
+  switch ($path) {
+    case 'admin/modules#description' :
+      $output = '<p>'. t('Supports translation for views strings: title, header, footer...') .'</p>';
+      $output .= '<p>'. t('To search and translate strings, use the <a href="@translate-interface">translation interface</a> pages.', array('@translate-interface' => url('admin/build/translate'))) .'</p>';
+      return $output;
+  }
+}
+
+
+/**
+ * Returns true if i18nstrings is used as views localization plugin.
+ */
+function i18nviews_localization_plugin_enabled() {
+  return variable_get('views_localization_plugin', 'core') == 'i18nstrings';
+}
+
+/**
+ * Field handler for taxonomy term fields.
+ *
+ * Remake of views_handler_field_allterms with term name translation.
+ *
+ * TODO CHECK
+ */
+function i18nviews_views_handler_field_allterms($fieldinfo, $fielddata, $value, $data) {
+  if ($fieldinfo['vocabulary']) {
+    $terms = taxonomy_node_get_terms_by_vocabulary($data->nid, $fieldinfo['vocabulary']);
+  }
+  else {
+    $terms = taxonomy_node_get_terms($data->nid);
+  }
+  // Translate all these terms.
+  _i18ntaxonomy_translate_terms($terms);
+
+  if ($fielddata['options'] == 'nolink') {
+    foreach ($terms as $term) {
+      $links[] = check_plain($term->name);
+    }
+    $links = !empty($links) ? implode(' | ', $links) : '';
+  }
+  else {
+    $node = new stdClass();
+    $node->taxonomy = $terms;
+    $links = theme('links', taxonomy_link('taxonomy terms', $node));
+  }
+  return $links;
+}
+
+/**
+ * Implementation of hook_views_api().
+ */
+function i18nviews_views_api() {
+  return array(
+    'api' => '3.0',
+    'path' => drupal_get_path('module', 'i18nviews') . '/includes',
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function i18nviews_menu() {
+  $items['admin/structure/views/view/%views_ui_cache/translate'] = array(
+    'title' => 'Translate',
+    'access callback' => 'i18nviews_translate_tab_access',
+    'page callback' => 'i18n_string_object_translate_page',
+    'page arguments' => array('views', 4),
+    'type' => MENU_VISIBLE_IN_BREADCRUMB,
+    'weight' => 10,
+  );
+  $items['admin/structure/views/view/%views_ui_cache/translate/%'] = array(
+    'title' => 'Translate',
+    'access callback' => 'i18nviews_translate_tab_access',
+    'page callback' => 'i18nviews_object_translate_page',
+    'page arguments' => array(4, 6),
+    'file' => 'i18nviews.pages.inc',
+    'type' => MENU_VISIBLE_IN_BREADCRUMB,
+  );
+
+  return $items;
+}
+
+/**
+ * Menu access callback function.
+ *
+ * Views editors required to have both views and locale admin.
+ */
+function i18nviews_translate_tab_access() {
+  return user_access('translate interface') && user_access('administer views');
+}
+
+/**
+ * Find the location source for a certain expression.
+ */
+function i18nviews_locale_source($translation, $textgroup, $language = NULL) {
+  if (!isset($language)) {
+    $language = $GLOBALS['language']->language;
+  }
+  $select = db_select('locales_source', 'ls');
+  $select->innerJoin('locales_target', 'lt', '(ls.lid = lt.lid AND lt.translation = :translation AND lt.language = :language AND ls.textgroup = :textgroup )', array(
+      ':translation' => $translation,
+      ':language' => $language,
+      ':textgroup' => $textgroup,
+  ));
+  $select->fields('ls', array('source'));
+  return $select->execute()->fetchObject();
+}
+
+/**
+ * Implements hook_ctools_plugin_post_alter
+ *
+ * Register Translate operation in ctools export ui.
+ *
+ * @param $plugin
+ *   An associative array defining a plugin.
+ * @param $info
+ *   An associative array of plugin type info.
+ */
+function i18nviews_ctools_plugin_post_alter(&$plugin, &$info) {
+  if ($info['type'] == 'export_ui' && $plugin['module'] == 'views_ui' && i18nviews_localization_plugin_enabled()) {
+    $plugin['allowed operations']['translate']['title'] = t('Translate');
+    $plugin['menu']['items']['translate'] = array(
+      'path' => 'view/%ctools_export_ui/translate',
+      'title' => t('Translate'),
+    );
+  }
+}

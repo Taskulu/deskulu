@@ -1,0 +1,35 @@
+name = Views translation
+description = Translation of views strings and content selection for views. Requires Views 3.x
+dependencies[] = views
+dependencies[] = i18n_string
+package = Multilingual - Internationalization
+core = 7.x
+
+; i18n translation class
+files[] = i18nviews.inc
+; i18n hooks
+files[] = i18nviews.i18n.inc
+
+; Handlers, Plugins
+files[] = includes/i18nviews_handler_argument_taxonomy_index_tid.inc
+files[] = includes/i18nviews_handler_argument_taxonomy_term_name.inc
+files[] = includes/i18nviews_handler_argument_taxonomy_term_language.inc
+files[] = includes/i18nviews_handler_argument_term_node_tid_depth.inc
+files[] = includes/i18nviews_handler_field_taxonomy_term_description.inc
+files[] = includes/i18nviews_handler_field_taxonomy_term_language.inc
+files[] = includes/i18nviews_handler_field_taxonomy_term_name.inc
+files[] = includes/i18nviews_handler_field_term_node_tid.inc
+files[] = includes/i18nviews_handler_filter_field_list.inc
+files[] = includes/i18nviews_handler_filter_taxonomy_index_tid.inc
+files[] = includes/i18nviews_handler_filter_taxonomy_term_name.inc
+files[] = includes/i18nviews_handler_filter_taxonomy_term_language.inc
+files[] = includes/i18nviews_handler_filter_term_node_tid_depth.inc
+files[] = includes/i18nviews_plugin_argument_validate_i18n_taxonomy_term.inc
+files[] = includes/i18nviews_plugin_localization_i18nstrings.inc
+
+; Information added by Drupal.org packaging script on 2014-10-23
+version = "7.x-3.x-dev"
+core = "7.x"
+project = "i18nviews"
+datestamp = "1414081732"
+

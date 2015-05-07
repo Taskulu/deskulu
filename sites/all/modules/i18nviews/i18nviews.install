@@ -1,0 +1,30 @@
+<?php
+
+/**
+ * @file
+ * Installation file for Internationalization Views (i18nviews) module.
+ */
+
+/**
+ * Automatically enable/disable i18nviews in views settings
+ *
+ * No further install needed. We're using i18n schema and API.
+ */
+
+/**
+ * Implements hook_enable().
+ */
+function i18nviews_enable() {
+  // enable i18nstrings as views translation method
+  variable_set('views_localization_plugin', 'i18nstrings');
+}
+
+/**
+ * Implements hook_disable().
+ */
+function i18nviews_disable() {
+  // disable i18nstrings as views translation method, switch to core
+  if (i18nviews_localization_plugin_enabled()) {
+    variable_set('views_localization_plugin', 'core');
+  }
+}
