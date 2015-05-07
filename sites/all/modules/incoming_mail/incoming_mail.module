@@ -59,6 +59,7 @@ function incoming_mail_create_ticket() {
     }
 
     $body = incoming_mail_strip_quotes($msg['html']);
+    $body = incoming_mail_strip_tags($body);
     if (!empty($msg['attachments'])) {
       foreach ($msg['attachments'] as $file) {
         $file = incoming_mail_create_file($file);
@@ -156,4 +157,27 @@ function str_random($length = 32) {
     $randomString .= $characters[rand(0, $charactersLength - 1)];
   }
   return $randomString;
+}
+
+/**
+ * Strip tags from the email body.
+ */
+function incoming_mail_strip_tags($body) {
+  $doc = new DOMDocument();
+  $doc->loadHTML($body);
+  incoming_mail_remove_element_by_tag_name('script', $doc);
+  incoming_mail_remove_element_by_tag_name('style', $doc);
+  incoming_mail_remove_element_by_tag_name('link', $doc);
+  return strip_tags($doc->saveHtml(), '<b><i><p><img><ul><li><ol><a><em><strong><blockquote><code><dl><dd><dt>');
+}
+
+/**
+ * Remove elements by tag name from a DOMDocument.
+ */
+function incoming_mail_remove_element_by_tag_name($tagName, DOMDocument $document) {
+  $nodeList = $document->getElementsByTagName($tagName);
+  for ($nodeIdx = $nodeList->length; --$nodeIdx >= 0; ) {
+    $node = $nodeList->item($nodeIdx);
+    $node->parentNode->removeChild($node);
+  }
 }
