@@ -6305,4 +6305,14 @@ h2.block-title {
 aside .views-exposed-form .views-exposed-widget {
   float: none; }
 
+.node-type-article .field-name-field-tags, .node-type-article .field-name-field-category {
+  float: right; }
+  .node-type-article .field-name-field-tags a, .node-type-article .field-name-field-category a {
+    padding: 5px;
+    background: #eaeaea;
+    margin: 0 5px;
+    border-radius: 5px; }
+.node-type-article .form-type-item {
+  clear: both; }
+
 /*# sourceMappingURL=style.css.map */

@@ -235,3 +235,18 @@ h2.block-title {
 aside .views-exposed-form .views-exposed-widget {
   float: none;
 }
+
+.node-type-article {
+  .field-name-field-tags, .field-name-field-category {
+    float: right;
+    a {
+      padding: 5px;
+      background: #eaeaea;
+      margin: 0 5px;
+      border-radius: 5px;
+    }
+  }
+  .form-type-item {
+    clear: both;
+  }
+}

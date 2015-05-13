@@ -29,8 +29,8 @@ function incoming_mail_create_ticket() {
   $jsonready = substr($dec_url, 16);
   $data = json_decode($jsonready,true);
 
-  watchdog('incoming_mail', '<pre>' . $input . '</pre>');
-  watchdog('incoming_mail', '<pre>' . var_export($data, 1) . '</pre>');
+//  watchdog('incoming_mail', '<pre>' . $input . '</pre>');
+//  watchdog('incoming_mail', '<pre>' . var_export($data, 1) . '</pre>');
   foreach ($data as $datum) {
     $files = array();
     $msg = $datum['msg'];

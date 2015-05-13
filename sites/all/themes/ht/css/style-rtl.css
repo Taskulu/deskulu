@@ -1475,4 +1475,7 @@ span.name, span.votes, span.time {
   width: 100% !important;
   display: block; }
 
+.node-type-article .field-name-field-tags, .node-type-article .field-name-field-category {
+  float: right; }
+
 /*# sourceMappingURL=style-rtl.css.map */

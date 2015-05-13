@@ -351,7 +351,6 @@ function helpdesk_ticket_update_form($form, &$form_state, $node) {
  */
 function helpdesk_ticket_form_validate($form, &$form_state) {
   module_load_include('inc', 'node', 'node.pages');
-//  dsm($form_state);
   node_form_validate($form, $form_state);
 }
 
@@ -545,12 +544,18 @@ function helpdesk_file_url_alter(&$uri) {
  * Implements hook_field_access().
  */
 function helpdesk_field_access($op, $field, $entity_type, $entity, $account) {
-  if ($op == 'view' && $entity_type == 'node' && isset($entity->type) && $entity->type == 'ticket' && $field['field_name'] == 'field_files') {
+  if ($op == 'view' && $field['field_name'] == 'field_files') {
+    if ($entity_type == 'node' && isset($entity->type) && $entity->type == 'ticket') {
+      $node = $entity;
+    }
+    else {
+      $node = node_load($entity->nid);
+    }
     if (user_is_anonymous() && !empty($_GET['uid']) && !empty($_GET['token'])) {
-      return $entity->uid == $_GET['uid'] && $entity->field_security_token[LANGUAGE_NONE][0]['value'] == $_GET['token'];
+      return $node->uid == $_GET['uid'] && $node->field_security_token[LANGUAGE_NONE][0]['value'] == $_GET['token'];
     }
     elseif (user_is_logged_in()) {
-      return $entity->uid == $account->uid || in_array('agent', $account->roles);
+      return $node->uid == $account->uid || in_array('agent', $account->roles);
     }
   }
 }
