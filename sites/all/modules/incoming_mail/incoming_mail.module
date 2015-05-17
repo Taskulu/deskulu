@@ -59,7 +59,9 @@ function incoming_mail_create_ticket() {
     }
     watchdog('incoming_mail', var_export($msg['html'], 1));
     $body = incoming_mail_strip_quotes($msg['html']);
+    watchdog('incoming_mail', var_export($body, 1));
     $body = incoming_mail_strip_tags($body);
+    watchdog('incoming_mail', var_export($body, 1));
     if (!empty($msg['attachments'])) {
       foreach ($msg['attachments'] as $file) {
         $file = incoming_mail_create_file($file);
