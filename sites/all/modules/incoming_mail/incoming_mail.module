@@ -144,7 +144,9 @@ function incoming_mail_file_download($uri) {
  */
 function incoming_mail_strip_quotes($html) {
   $pos = strpos($html, '##- Please type your reply above this line -##');
-  $html = substr($html, 0, $pos);
+  if ($pos !== false) {
+    $html = substr($html, 0, $pos);
+  }
   $headers = array(
     '/(On\s.+wrote:)/ms', // On DATE, NAME <EMAIL> wrote:
     '/(Le\s.+écrit :)/ms', // Le DATE, NAME <EMAIL> a écrit :
