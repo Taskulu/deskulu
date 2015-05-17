@@ -57,7 +57,7 @@ function incoming_mail_create_ticket() {
       watchdog('incoming_mail', 'Email received for unrecognized inbox.<br><pre>!data</pre>', array('!data' => var_export($datum, 1)), WATCHDOG_ERROR);
       continue;
     }
-
+    watchdog('incoming_mail', var_export($msg['html'], 1));
     $body = incoming_mail_strip_quotes($msg['html']);
     $body = incoming_mail_strip_tags($body);
     if (!empty($msg['attachments'])) {
