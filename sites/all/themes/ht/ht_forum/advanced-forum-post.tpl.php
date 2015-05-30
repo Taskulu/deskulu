@@ -24,10 +24,10 @@ $name = format_username($account);
 <div id="<?php print $post_id; ?>" class="well <?php print $classes; ?>" <?php print $attributes; ?>>
   <div class="forum-post-info clearfix">
     <div class="post-meta">
-      <div class="pull-left">
+      <div class="pull-left flip">
         <?php print theme('user_picture', ['account' => $account]); ?>
       </div>
-      <div class="pull-left description">
+      <div class="pull-left description flip">
         <b><?php print $name ;?></b><br/>
         <?php if ($top_post): ?>
         <span class="submit-time"><?php print t('started a topic @time ago', ['@time' => format_interval(REQUEST_TIME - $node->created)]); ?></span>
