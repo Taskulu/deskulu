@@ -17,6 +17,9 @@
 .forum-post .forum-post-number {
   left: 10px;
   right: auto; }
+.forum-post .user-picture {
+  margin-right: 0;
+  margin-left: 15px; }
 .forum-post .forum-post-wrapper:before {
   right: 21px;
   left: auto; }
