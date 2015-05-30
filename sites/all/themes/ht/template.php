@@ -19,10 +19,26 @@ function ht_preprocess_page(&$variables) {
     $variables['content_column_class'] = ' class="col-sm-12"';
   }
 
+  $variables['actions_nav'] = FALSE;
+  $variables['actions_nav'] = i18n_menu_translated_tree('menu-actions');
+  $children = element_children($variables['actions_nav']);
+  foreach($children as $index => $id) {
+    $classes = ['btn', 'navbar-btn'];
+    if ($index == count($children) - 1) {
+      $classes[] = 'btn-primary';
+    }
+    else {
+      $classes[] = 'btn-info';
+    }
+    $variables['actions_nav'][$id]['#localized_options']['attributes']['class'] = $classes;
+  }
+  $variables['actions_nav']['#theme_wrappers'] = array('menu_tree__actions');
+
   if (isset($variables['node'])) {
     $variables['theme_hook_suggestions'][] = 'page__node_' . $variables['node']->type;
   }
 }
+
 
 function ht_theme($existing, $type, $theme, $path) {
   $items['ticket_node_form'] = array(
@@ -42,7 +58,10 @@ function ht_theme($existing, $type, $theme, $path) {
 function ht_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'views_exposed_form') {
     if ($form['#id'] == 'views-exposed-form-search-page') {
-      $form['search_api_views_fulltext']['#attributes']['placeholder'] = t('Enter your search term here...');
+      $form['search_api_views_fulltext']['#attributes']['placeholder'] = t('Search for articles and topics');
+      $form['#attributes']['class'][] = 'navbar-form';
+      $form['submit']['#value'] = '<i class="glyphicon glyphicon-search"></i>';
+      $form['submit']['#attributes']['class'][] = 'btn-white';
     }
     elseif ($form['#id'] == 'views-exposed-form-advanced-forum-topic-list-default') {
       foreach ($form['field_feature_request_status_value']['#options'] as &$option) {
@@ -196,15 +215,39 @@ function ht_menu_tree__user_menu(&$variables) {
  */
 function ht_menu_tree__primary(&$variables) {
   $variables['tree'] = i18n_menu_translated_tree('main-menu');
-
   return render($variables['tree']);
 }
+
+/**
+ * Theme wrapper function for actions menu in navbar.
+ */
+function ht_menu_tree__actions(&$variables) {
+  return '<ul class="menu nav navbar-nav actions">' . render($variables['tree']) . '</ul>';
+}
+
+/**
+ * Theme wrapper function for actions menu in navbar.
+ */
+function ht_menu_tree__menu_footer(&$variables) {
+  return '<ul class="menu list-inline text-center">' . render($variables['tree']) . '</ul>';
+}
+
 
 /**
  * Bootstrap theme wrapper function for the secondary menu links.
  */
 function ht_menu_tree__secondary(&$variables) {
   $variables['tree'] = i18n_menu_translated_tree('user-menu');
+  if (user_is_anonymous()) {
+    $children = element_children($variables['tree']);
+    foreach($children as $index => $id) {
+      $classes = ['btn', 'navbar-btn'];
+      if ($index == count($children) - 1) {
+        $classes[] = 'btn-material-cyan-900';
+        $variables['tree'][$id]['#localized_options']['attributes']['class'] = $classes;
+      }
+    }
+  }
   return render($variables['tree']);
 }
 
@@ -215,3 +258,60 @@ function ht_menu_tree__secondary(&$variables) {
 function ht_views_pre_render(&$view)  {
   $view->set_title(t($view->get_title()));
 }
+
+/**
+ * Overrides theme_button().
+ */
+function ht_button($variables) {
+  $element = $variables['element'];
+  $label = $element['#value'];
+  element_set_attributes($element, array('id', 'name', 'value', 'type'));
+
+  // If a button type class isn't present then add in default.
+  $button_classes = array(
+    'btn-default',
+    'btn-primary',
+    'btn-success',
+    'btn-info',
+    'btn-warning',
+    'btn-danger',
+    'btn-link',
+    'btn-white',
+    'btn-black',
+  );
+  $class_intersection = array_intersect($button_classes, $element['#attributes']['class']);
+  if (empty($class_intersection)) {
+    $element['#attributes']['class'][] = 'btn-default';
+  }
+
+  // Add in the button type class.
+  $element['#attributes']['class'][] = 'form-' . $element['#button_type'];
+
+  // This line break adds inherent margin between multiple buttons.
+  return '<button' . drupal_attributes($element['#attributes']) . '>' . $label . "</button>\n";
+}
+
+/**
+ * Implements hook_preprocess_button().
+ */
+function ht_preprocess_button(&$vars) {
+  $vars['element']['#attributes']['class'][] = 'btn';
+  $skip = false;
+  foreach ($vars['element']['#attributes']['class'] as $class) {
+    if (strpos($class, 'btn-') === 0) {
+      $skip = true;
+    }
+  }
+  if (!$skip && isset($vars['element']['#value'])) {
+    if ($class = _bootstrap_colorize_button($vars['element']['#value'])) {
+      $vars['element']['#attributes']['class'][] = $class;
+    }
+  }
+}
+
+/**
+ * Updates:
+ *  - Add actions menu
+ *  - Remove new ticket link from main menu
+ *  - Update related articles view: Chane icon to mdi-editor-insert-comment
+ */

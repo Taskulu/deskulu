@@ -171,6 +171,7 @@ function _bootstrap_colorize_button($text) {
       t('Confirm'),
       t('Submit'),
       t('Search'),
+      t('Log in'),
     ),
     'btn-success' => array(
       t('Add'),

@@ -59,7 +59,7 @@
  * @ingroup themeable
  */
 ?>
-<div class="conversation-msg <?php print $classes; ?> clearfix <?php echo $new ? 'new' : ''; ?>"<?php print $attributes; ?>>
+<div class="conversation-msg well <?php print $classes; ?> clearfix <?php echo $new ? 'new' : ''; ?>"<?php print $attributes; ?>>
   <?php print $picture ?>
 
   <div class="submitted">

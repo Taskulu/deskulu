@@ -78,49 +78,7 @@ $node = menu_get_object();
 $term = taxonomy_term_load($node->taxonomy_forums[LANGUAGE_NONE][0]['tid']);
 $icon = $term->field_icon[LANGUAGE_NONE][0]['value'];
 ?>
-<header id="navbar" role="banner" class="<?php print $navbar_classes; ?>">
-  <div class="container">
-    <div class="navbar-header">
-      <?php if ($logo): ?>
-        <a class="logo navbar-btn pull-left" href="<?php print $front_page; ?>" title="<?php print t('Home'); ?>">
-          <img src="<?php print $logo; ?>" alt="<?php print t('Home'); ?>" />
-        </a>
-      <?php endif; ?>
-
-      <?php if (!empty($site_name)): ?>
-        <a class="name navbar-brand sr-only" href="<?php print $front_page; ?>" title="<?php print t('Home'); ?>"><?php print $site_name; ?></a>
-      <?php endif; ?>
-
-      <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-    </div>
-    <nav role="navigation">
-      <?php if (!empty($secondary_nav)): ?>
-        <?php print render($secondary_nav); ?>
-      <?php endif; ?>
-    </nav>
-  </div>
-  <div class="container">
-    <?php if (!empty($primary_nav) || !empty($secondary_nav) || !empty($page['navigation'])): ?>
-      <div class="navbar-collapse collapse lower">
-        <nav role="navigation">
-          <?php if (!empty($primary_nav)): ?>
-            <?php print render($primary_nav); ?>
-          <?php endif; ?>
-          <?php if (!empty($page['navigation'])): ?>
-            <?php print render($page['navigation']); ?>
-          <?php endif; ?>
-        </nav>
-      </div>
-    <?php endif; ?>
-  </div>
-</header>
-
+<?php require_once drupal_get_path('theme', 'ht') . '/templates/header.tpl.php'; ?>
 <div class="main-container container">
 
   <header role="banner" id="page-header">
@@ -131,7 +89,7 @@ $icon = $term->field_icon[LANGUAGE_NONE][0]['value'];
     <?php print render($page['header']); ?>
   </header> <!-- /#page-header -->
   <?php if (!empty($page['highlighted'])): ?>
-    <section class="highlighted">
+    <section class="highlighted well">
       <div class="row">
         <div class="col-md-8">
           <div class="search-form-wrapper">
@@ -156,7 +114,7 @@ $icon = $term->field_icon[LANGUAGE_NONE][0]['value'];
   <div class="row">
 
     <section<?php print $content_column_class; ?>>
-      <div class="section-wrapper">
+      <div class="">
         <?php if (!empty($breadcrumb)): print $breadcrumb; endif;?>
         <a id="main-content"></a>
         <?php print render($title_prefix); ?>
@@ -164,12 +122,11 @@ $icon = $term->field_icon[LANGUAGE_NONE][0]['value'];
           <h1 class="page-header"><span class="glyphicon glyphicon-bookmark"><span class="glyphicon <?php echo $icon; ?>"></span></span><?php print $title; ?></h1>
         <?php endif; ?>
         <?php print render($title_suffix); ?>
-        <?php print $messages; ?>
+        <?php if ($messages): ?>
+          <?php print $messages; ?>
+        <?php endif; ?>
         <?php if (!empty($tabs)): ?>
           <?php print render($tabs); ?>
-        <?php endif; ?>
-        <?php if (!empty($page['help'])): ?>
-          <?php print render($page['help']); ?>
         <?php endif; ?>
         <?php if (!empty($action_links)): ?>
           <ul class="action-links"><?php print render($action_links); ?></ul>
@@ -180,7 +137,9 @@ $icon = $term->field_icon[LANGUAGE_NONE][0]['value'];
 
     <?php if (!empty($page['sidebar'])): ?>
       <aside class="col-sm-4" role="complementary">
-        <?php print render($page['sidebar']); ?>
+        <div class="well">
+          <?php print render($page['sidebar']); ?>
+        </div>
       </aside>  <!-- /#sidebar-first -->
     <?php endif; ?>
 

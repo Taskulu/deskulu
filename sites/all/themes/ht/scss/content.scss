@@ -30,7 +30,7 @@ span.form-required {
     padding-left: 15px;
   }
   .col-md-4 {
-    height: 125px;
+    height: 93px;
     .links-wrapper {
       height: 100%;
       position: relative;
@@ -82,7 +82,7 @@ a {
  */
 .page-frontpage h1.page-header {
   margin-bottom: 0;
-  border-color: #344564;
+  border-color: #009688;
   font-size: 30px;
 }
 
@@ -92,7 +92,7 @@ a {
 
 .page-frontpage #block-system-main h3.section {
   margin-top: 0;
-  border-top: 5px solid #344564;
+  border-top: 5px solid #009688;
   display:inline-block;
   margin-bottom: 20px;
   padding-top: 5px;
@@ -121,6 +121,7 @@ h4.subsection span {
 
 .subsection-container li span {
   margin-right: 10px;
+  font-size: 15px;
 }
 
 .node-type-ticket {
@@ -225,8 +226,9 @@ h2.block-title {
 }
 
 .view-related-topics, .view-related-articles {
-  .views-field-title a {
-    span.glyphicon {
+  .views-field-title-field a {
+    span.mdi-editor-insert-comment {
+      font-size: 12px;
       margin-right: 5px;
     }
   }
@@ -236,9 +238,35 @@ aside .views-exposed-form .views-exposed-widget {
   float: none;
 }
 
+aside {
+  .view {
+    a {
+      font-size: 14px;
+      line-height: 1.8;
+    }
+  }
+  #user-login-form {
+    ul {
+      list-style-type: none;
+      padding-left: 0;
+      overflow: hidden;
+      li {
+        display: inline-block;
+        &.first {
+          float: left;
+        }
+        &.last {
+          float: right;
+        }
+      }
+    }
+  }
+}
+
 .node-type-article {
   .field-name-field-tags, .field-name-field-category {
     float: right;
+    margin-bottom: 20px;
     a {
       padding: 5px;
       background: #eaeaea;
@@ -250,3 +278,15 @@ aside .views-exposed-form .views-exposed-widget {
     clear: both;
   }
 }
+
+.input-group .form-group {
+  margin-bottom: 0;
+}
+
+.page-node- {
+  .nav-tabs {
+    margin-bottom: 0;
+
+  }
+}
+

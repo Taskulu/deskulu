@@ -16,7 +16,7 @@
             <ul class="list-unstyled">
           <?php foreach ($cell['content'] as $nid => $title) {
             ?>
-              <li><span class="glyphicon glyphicon-book"></span><?php echo l($title, 'node/' . $nid); ?></li>
+              <li><span class="mdi-editor-insert-comment"></span><?php echo l($title, 'node/' . $nid); ?></li>
         <?php
           }
           ?>

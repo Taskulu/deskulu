@@ -23,8 +23,12 @@ regions[page_bottom]    = 'Page bottom'
 ;;;;;;;;;;;;;;;;;;;;;
 
 stylesheets[all][] = css/style.css
+stylesheets[all][] = bootstrap-material/dist/css/ripples.min.css
+stylesheets[all][] = bootstrap-material/dist/css/material-fullpalette.min.css
 
 scripts[] = 'js/bootstrap.min.js'
+scripts[] = 'bootstrap-material/dist/js/ripples.min.js'
+scripts[] = 'bootstrap-material/dist/js/material.min.js'
 settings[bootstrap_cdn] = ''
 
 

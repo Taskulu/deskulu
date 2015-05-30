@@ -415,16 +415,16 @@
     > li > a {
       color: $navbar-default-link-color;
 
-      &:hover,
-      &:focus {
+      &:hover:not(.navbar-btn),
+      &:focus:not(.navbar-btn) {
         color: $navbar-default-link-hover-color;
         background-color: $navbar-default-link-hover-bg;
       }
     }
     > .active > a {
       &,
-      &:hover,
-      &:focus {
+      &:hover:not(.navbar-btn),
+      &:focus:not(.navbar-btn) {
         color: $navbar-default-link-active-color;
         background-color: $navbar-default-link-active-bg;
       }

@@ -21,7 +21,7 @@ $account = user_load($node->uid);
 $name = format_username($account);
 ?>
 
-<div id="<?php print $post_id; ?>" class="<?php print $classes; ?>" <?php print $attributes; ?>>
+<div id="<?php print $post_id; ?>" class="well <?php print $classes; ?>" <?php print $attributes; ?>>
   <div class="forum-post-info clearfix">
     <div class="post-meta">
       <div class="pull-left">
@@ -77,4 +77,9 @@ $name = format_username($account);
   <?php /* End of post wrapper div. */ ?>
 </div>
 <?php /* End of main wrapping div. */ ?>
-<?php print render($content['comments']); ?>
+
+<?php if ($top_post && !empty($content['comments'])): ?>
+<div class="col-md-10 col-md-push-1">
+  <?php print render($content['comments']); ?>
+</div>
+<?php endif;?>

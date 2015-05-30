@@ -1,3 +1,32 @@
+@font-face {
+  font-family: 'iran sans';
+  src: url('../fonts/iran_sans_light.ttf') format('truetype');
+  font-weight: 300;
+}
+
+@font-face {
+  font-family: 'iran sans';
+  src: url('../fonts/iran_sans.ttf') format('truetype');
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: 'iran sans';
+  src: url('../fonts/iran_sans_bold.ttf') format('truetype');
+  font-weight: 700;
+}
+
+
+body, a, p {
+  font-family: 'iran sans' !important;
+}
+
+h1,h2,h3,h4,h5 {
+  font-family: 'iran sans' !important;
+  font-weight: 700;
+}
+
+
 .highlighted {
   .col-md-8 {
     border-left: 1px solid #eaeaea;
@@ -73,10 +102,11 @@
 }
 
 .view-related-topics, .view-related-articles {
-  .views-field-title a {
-    span.glyphicon {
+  .views-field-title-field a {
+    span.mdi-editor-insert-comment {
+      font-size: 12px;
       margin-left: 5px;
-      margin-right: auto;
+      margin-right: 0;
     }
   }
 }
@@ -105,5 +135,66 @@ span.name, span.votes, span.time {
 .node-type-article {
   .field-name-field-tags, .field-name-field-category {
     float: right;
+  }
+}
+
+aside #user-login-form {
+  ul {
+    padding-right: 0;
+    li {
+      &.first {
+        float: right;
+      }
+      &.last {
+        float: left;
+      }
+    }
+  }
+}
+
+/**
+ * Thumbs up
+ */
+.rate-widget-thumbs_up_down ul li {
+  float: right;
+}
+.rate-widget-thumbs_up_down ul li a {
+  float: right;
+}
+.rate-widget-thumbs_up_down .percent {
+  float: right;
+}
+.rate-user .rate-thumbs-up-down-btn-up {
+  float: left;
+}
+.rate-widget-thumbs_up_down .thumb-up a {
+  float: left;
+}
+.rate-thumbs-up-down-rating-up {
+  text-align: left;
+}
+.rate-thumbs-up-down-rating-down {
+  text-align: right;
+}
+
+ul:not(.list-inline) {
+  li.expanded, li.collapsed, li.leaf {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}
+
+.page-forum {
+  h4.subsection {
+    margin-bottom: 5px;
+  }
+  .subsection-container {
+    ul {
+      li {
+        p {
+          line-height: 1.6;
+        }
+      }
+    }
   }
 }

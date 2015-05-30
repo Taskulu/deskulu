@@ -1,65 +1,20 @@
 #navbar {
-  border: 0 none;
-  border-radius: 5px;
-  background-color: #344564;
-  margin-bottom: 15px;
+  margin-bottom: 0;
   .navbar-header {
-    background-color: #59b7f4;
-    margin-left: -15px;
-    padding-left: 15px;
-    border-radius: 5px 0 0 0;
     .logo {
       img {
-        width: 132px;
+        width: 160px;
       }
     }
   }
-  .navbar-nav {
-    > li {
-      > a {
-        color: #fff;
-      }
-      &.active {
-        > a {
-          background-color: #fff;
-          color: #000;
-        }
-      }
-    }
-  }
-  .navbar-collapse {
-//    border-radius: 5px;
-    margin-right: -15px;
-    margin-left: -15px;
-    border-radius: 0 0 5px 5px;
-    padding-left: 0;
-    padding-right: 0;
-    &.lower {
-      background-color: #a9b9c8;
-      margin-left: -15px;
-      .navbar-nav {
-        > li {
-          > a {
-            color: #fff;
-            padding: 5px 30px;
-            &:hover {
-              background-color: #fff;
-              color: #000;
-            }
-          }
-          &.first {
-            > a {
-              border-radius: 0 0 0 3px;
-            }
-          }
-          &.active {
-            > a {
-              background-color: #fff;
-              color: #000;
-            }
-          }
-        }
-      }
-    }
-  }
+}
+.navbar-collapse {
+  padding-left:0;
+}
+.menu.nav .navbar-btn {
+  padding: 10px;
+}
+
+.navbar .navbar-nav>.active>a, .navbar .navbar-nav>.active>a:hover, .navbar .navbar-nav>.active>a:focus {
+  background-color: rgba(255, 255, 255, 0.7);
 }

@@ -34,10 +34,12 @@ h3.section {
   }
   .last-reply {
     .username {
+      font-size: 11px;
       margin: 0;
     }
     .time {
       display: inline-block;
+      font-size: 11px;
     }
   }
   h4 {
@@ -51,6 +53,8 @@ h3.section {
     li {
       .glyphicon {
         margin-top: 6px;
+        font-size: 12px;
+        margin-right: 5px;
       }
       p {
         margin-bottom: 0;
@@ -147,7 +151,7 @@ div.form-type-bef-link {
   position: relative;
   margin-bottom: 25px;
   .user-picture {
-    margin-left: 5px;
+//    margin-left: 5px;
     display: inline-block;
     overflow: hidden;
     border: 1px solid #eaeaea;
@@ -174,36 +178,37 @@ div.form-type-bef-link {
     font-size: 16px;
   }
   .forum-post-wrapper {
-    padding: 10px;
-    background: #fafafa;
-    border-radius: 5px;
-    border: 1px solid #eaeaea;
-    position: relative;
-    &:before {
-      position: absolute;
-      top: 0;
-      margin-top: -17px;
-      left: 21px;
-      border: solid transparent;
-      content: " ";
-      height: 0;
-      width: 0;
-      border-width: 8px;
-      border-bottom-color: #eaeaea;
-    }
-    &:after {
-      position: absolute;
-      top: 0;
-      margin-top: -14px;
-      left: 22px;
-      border: solid transparent;
-      content: " ";
-      height: 0;
-      width: 0;
-      border-width: 7px;
-      border-bottom-color: #fafafa;
-    }
+    padding-left: 5px;
   }
+//    background: #fafafa;
+//    border-radius: 5px;
+//    border: 1px solid #eaeaea;
+//    position: relative;
+//    &:before {
+//      position: absolute;
+//      top: 0;
+//      margin-top: -17px;
+//      left: 21px;
+//      border: solid transparent;
+//      content: " ";
+//      height: 0;
+//      width: 0;
+//      border-width: 8px;
+//      border-bottom-color: #eaeaea;
+//    }
+//    &:after {
+//      position: absolute;
+//      top: 0;
+//      margin-top: -14px;
+//      left: 22px;
+//      border: solid transparent;
+//      content: " ";
+//      height: 0;
+//      width: 0;
+//      border-width: 7px;
+//      border-bottom-color: #fafafa;
+//    }
+//  }
   .forum-post-panel-main {
     .form-type-item {
       margin-bottom: 0;

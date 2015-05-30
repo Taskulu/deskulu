@@ -480,7 +480,7 @@ function helpdesk_get_term_nodes($child) {
   $results = $q->entityCondition('entity_type', 'node')
     ->entityCondition('bundle', 'article')
     ->fieldCondition('field_category', 'tid', $child->tid)
-    ->propertyCondition('language', $language->language)
+//    ->propertyCondition('language', $language->language)
     ->execute();
   $content = [];
   if (!empty($results['node'])) {
