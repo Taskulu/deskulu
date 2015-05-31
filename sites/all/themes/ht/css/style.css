@@ -6297,9 +6297,14 @@ aside #user-login-form ul {
     aside #user-login-form ul li.last {
       float: right; }
 
+.node img {
+  max-width: 100%; }
+
 .node-type-article .field-name-field-tags, .node-type-article .field-name-field-category {
-  float: right;
-  margin-bottom: 20px; }
+  margin-bottom: 20px;
+  margin-top: 25px; }
+  .node-type-article .field-name-field-tags .field-item, .node-type-article .field-name-field-category .field-item {
+    float: right; }
   .node-type-article .field-name-field-tags a, .node-type-article .field-name-field-category a {
     padding: 5px;
     background: #eaeaea;

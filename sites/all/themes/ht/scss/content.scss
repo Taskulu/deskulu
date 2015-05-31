@@ -263,10 +263,18 @@ aside {
   }
 }
 
+.node {
+  img {
+    max-width: 100%;
+  }
+}
 .node-type-article {
   .field-name-field-tags, .field-name-field-category {
-    float: right;
     margin-bottom: 20px;
+    margin-top: 25px;
+    .field-item {
+      float: right;
+    }
     a {
       padding: 5px;
       background: #eaeaea;

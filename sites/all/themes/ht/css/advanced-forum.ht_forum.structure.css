@@ -93,7 +93,8 @@ h3.section {
 
 .forum-node-create-links {
   float: right;
-  width: auto; }
+  width: auto;
+  margin-top: 15px; }
 
 div.form-type-bef-link {
   display: inline-block; }
@@ -130,7 +131,8 @@ div.form-type-bef-link {
     .forum-post .forum-post-info .description {
       padding: 7px 0px; }
     .forum-post .forum-post-info .submit-time {
-      color: #999; }
+      color: #999;
+      font-size: 12px; }
   .forum-post .forum-post-number {
     position: absolute;
     top: 15px;
