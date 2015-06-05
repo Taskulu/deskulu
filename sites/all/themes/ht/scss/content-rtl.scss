@@ -134,7 +134,9 @@ span.name, span.votes, span.time {
 
 .node-type-article {
   .field-name-field-tags, .field-name-field-category {
-    float: right;
+    .field-item {
+      float: left;
+    }
   }
 }
 
