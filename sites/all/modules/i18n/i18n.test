@@ -362,6 +362,7 @@ class Drupali18nTestCase extends DrupalWebTestCase {
   function resetCaches() {
     drupal_static_reset('locale_url_outbound_alter');
     drupal_static_reset('language_list');
+    drupal_language_initialize();
   }
 
   /**

@@ -346,6 +346,26 @@ function hook_search_api_query_alter(SearchApiQueryInterface $query) {
 }
 
 /**
+ * Alter the search results before they are returned.
+ *
+ * @param array $results
+ *   The results returned by the server, which may be altered. The data
+ *   structure is the same as returned by SearchApiQueryInterface::execute().
+ * @param SearchApiQueryInterface $query
+ *   The search query that was executed.
+ */
+function hook_search_api_results_alter(array &$results, SearchApiQueryInterface $query) {
+  if ($query->getOption('search id') == 'search_api_views:my_search_view:page') {
+    // Log the number of results.
+    $vars = array(
+      '@keys' => $query->getOriginalKeys(),
+      '@num' => $results['result count'],
+    );
+    watchdog('my_module', 'Search view with query "@keys" had @num results.', $vars, WATCHDOG_DEBUG);
+  }
+}
+
+/**
  * Act on search servers when they are loaded.
  *
  * @param array $servers

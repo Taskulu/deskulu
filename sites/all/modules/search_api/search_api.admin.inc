@@ -303,8 +303,9 @@ function search_api_admin_add_server_validate(array $form, array &$form_state) {
     return;
   }
   $form_state['values']['options']['service'] = $service;
-  $values = isset($form_state['values']['options']['form']) ? $form_state['values']['options']['form'] : array();
-  $service->configurationFormValidate($form['options']['form'], $values, $form_state);
+  if (!empty($form_state['values']['options']['form'])) {
+    $service->configurationFormValidate($form['options']['form'], $form_state['values']['options']['form'], $form_state);
+  }
 }
 
 /**
@@ -630,7 +631,9 @@ function search_api_admin_server_edit(array $form, array &$form_state, SearchApi
  * @see search_api_admin_server_edit_submit()
  */
 function search_api_admin_server_edit_validate(array $form, array &$form_state) {
-  $form_state['server']->configurationFormValidate($form['options']['form'], $form_state['values']['options']['form'], $form_state);
+  if (!empty($form['options']['form']) && !empty($form_state['values']['options']['form'])) {
+    $form_state['server']->configurationFormValidate($form['options']['form'], $form_state['values']['options']['form'], $form_state);
+  }
 }
 
 /**
@@ -682,83 +685,126 @@ function search_api_admin_form_delete_submit($form, &$form_state) {
  *
  * @ingroup forms
  *
+ * @see search_api_admin_add_index_ajax_callback()
  * @see search_api_admin_add_index_validate()
  * @see search_api_admin_add_index_submit()
  */
 function search_api_admin_add_index(array $form, array &$form_state) {
   drupal_set_title(t('Add index'));
 
+  $old_type = empty($form_state['values']['item_type']) ? '' : $form_state['values']['item_type'];
+
   $form['#attached']['css'][] = drupal_get_path('module', 'search_api') . '/search_api.admin.css';
   $form['#tree'] = TRUE;
-  $form['name'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Index name'),
-    '#maxlength' => 50,
-    '#required' => TRUE,
-  );
 
-  $form['machine_name'] = array(
-    '#type' => 'machine_name',
-    '#maxlength' => 50,
-    '#machine_name' => array(
-      'exists' => 'search_api_index_load',
-    ),
-  );
+  if (empty($form_state['step_one'])) {
+    $form['name'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Index name'),
+      '#maxlength' => 50,
+      '#required' => TRUE,
+    );
 
-  $form['item_type'] = array(
-    '#type' => 'select',
-    '#title' => t('Item type'),
-    '#description' => t('Select the type of items that will be indexed in this index. ' .
-        'This setting cannot be changed afterwards.'),
-    '#options' => array(),
-    '#required' => TRUE,
-  );
-  foreach (search_api_get_item_type_info() as $type => $info) {
-    $form['item_type']['#options'][$type] = $info['name'];
+    $form['machine_name'] = array(
+      '#type' => 'machine_name',
+      '#maxlength' => 50,
+      '#machine_name' => array(
+        'exists' => 'search_api_index_load',
+      ),
+    );
+
+    $form['item_type'] = array(
+      '#type' => 'select',
+      '#title' => t('Item type'),
+      '#description' => t('Select the type of items that will be indexed in this index. ' .
+          'This setting cannot be changed afterwards.'),
+      '#options' => array(),
+      '#required' => TRUE,
+      '#ajax' => array(
+        'callback' => 'search_api_admin_add_index_ajax_callback',
+        'wrapper' => 'search-api-datasource-options',
+      ),
+    );
+    $form['datasource'] = array();
+    foreach (search_api_get_item_type_info() as $type => $info) {
+      $form['item_type']['#options'][$type] = $info['name'];
+    }
+    $form['enabled'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Enabled'),
+      '#description' => t('This will only take effect if you also select a server for the index.'),
+      '#default_value' => TRUE,
+    );
+    $form['description'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Index description'),
+    );
+    $form['server'] = array(
+      '#type' => 'select',
+      '#title' => t('Server'),
+      '#description' => t('Select the server this index should reside on.'),
+      '#default_value' => '',
+      '#options' => array('' => t('< No server >'))
+    );
+    $servers = search_api_server_load_multiple(FALSE, array('enabled' => 1));
+    // List enabled servers first.
+    foreach ($servers as $server) {
+      if ($server->enabled) {
+        $form['server']['#options'][$server->machine_name] = $server->name;
+      }
+    }
+    foreach ($servers as $server) {
+      if (!$server->enabled) {
+        $form['server']['#options'][$server->machine_name] = t('@server_name (disabled)', array('@server_name' => $server->name));
+      }
+    }
+    $form['read_only'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Read only'),
+      '#description' => t('Do not write to this index or track the status of items in this index.'),
+      '#default_value' => FALSE,
+    );
+    $form['options']['index_directly'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Index items immediately'),
+      '#description' => t('Immediately index new or updated items instead of waiting for the next cron run. ' .
+          'This might have serious performance drawbacks and is generally not advised for larger sites.'),
+      '#default_value' => FALSE,
+    );
+    $form['options']['cron_limit'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Cron batch size'),
+      '#description' => t('Set how many items will be indexed at once when indexing items during a cron run. ' .
+          '"0" means that no items will be indexed by cron for this index, "-1" means that cron should index all items at once.'),
+      '#default_value' => SEARCH_API_DEFAULT_CRON_LIMIT,
+      '#size' => 4,
+      '#attributes' => array('class' => array('search-api-cron-limit')),
+      '#element_validate' => array('element_validate_integer'),
+    );
   }
-  $form['enabled'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Enabled'),
-    '#description' => t('This will only take effect if the selected server is also enabled.'),
-    '#default_value' => TRUE,
-  );
-  $form['description'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Index description'),
-  );
-  $form['server'] = array(
-    '#type' => 'select',
-    '#title' => t('Server'),
-    '#description' => t('Select the server this index should reside on.'),
-    '#default_value' => '',
-    '#options' => array('' => t('< No server >'))
-  );
-  $servers = search_api_server_load_multiple(FALSE, array('enabled' => 1));
-  // List enabled servers first.
-  foreach ($servers as $server) {
-    $form['server']['#options'][$server->machine_name] = $server->name;
+  elseif (!$old_type) {
+    $old_type = $form_state['step_one']['item_type'];
   }
-  $form['read_only'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Read only'),
-    '#description' => t('Do not write to this index or track the status of items in this index.'),
-    '#default_value' => FALSE,
+
+  if ($old_type) {
+    $datasource = search_api_get_datasource_controller($old_type);
+    $datasource_form = array();
+    $datasource_form = $datasource->configurationForm($datasource_form, $form_state);
+    if ($datasource_form) {
+      $form['datasource'] = $datasource_form;
+      $form['datasource']['#parents'] = array('options', 'datasource');
+    }
+  }
+  $form['datasource']['#prefix'] = '<div id="search-api-datasource-options">';
+  $form['datasource']['#suffix'] = '</div>';
+
+  $form['old_type'] = array(
+    '#type' => 'value',
+    '#value' => $old_type,
   );
-  $form['options']['index_directly'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Index items immediately'),
-    '#description' => t('Immediately index new or updated items instead of waiting for the next cron run. ' .
-        'This might have serious performance drawbacks and is generally not advised for larger sites.'),
-    '#default_value' => FALSE,
-  );
-  $form['options']['cron_limit'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Cron batch size'),
-    '#description' => t('Set how many items will be indexed at once when indexing items during a cron run. ' .
-        '"0" means that no items will be indexed by cron for this index, "-1" means that cron should index all items at once.'),
-    '#default_value' => SEARCH_API_DEFAULT_CRON_LIMIT,
-    '#size' => 4,
-    '#attributes' => array('class' => array('search-api-cron-limit')),
+  $form['datasource_config'] = array(
+    '#type' => 'value',
+    '#value' => !empty($datasource_form),
   );
 
   $form['submit'] = array(
@@ -770,21 +816,32 @@ function search_api_admin_add_index(array $form, array &$form_state) {
 }
 
 /**
+ * AJAX submit callback for search_api_admin_add_index().
+ *
+ * Used for displaying the matching datasource configuration form for the
+ * selected item type.
+ */
+function search_api_admin_add_index_ajax_callback(array $form, array &$form_state) {
+  return $form['datasource'];
+}
+
+/**
  * Form validation handler for search_api_admin_add_index().
  *
  * @see search_api_admin_add_index_submit()
  */
 function search_api_admin_add_index_validate(array $form, array &$form_state) {
-  $name = $form_state['values']['machine_name'];
+  $values = $form_state['values'];
+  $name = $values['machine_name'];
   if (is_numeric($name)) {
     form_set_error('machine_name', t('The machine name must not be a pure number.'));
   }
 
-  $cron_limit = $form_state['values']['options']['cron_limit'];
-  if ($cron_limit != '' . ((int) $cron_limit)) {
-    // We don't enforce stricter rules and treat all negative values as -1.
-    form_set_error('options[cron_limit]', t('The cron batch size must be an integer.'));
+  if (!$values['datasource_config'] || empty($values['item_type']) || $values['item_type'] != $values['old_type']) {
+    return;
   }
+  $datasource = search_api_get_datasource_controller($values['item_type']);
+  $datasource->configurationFormValidate($form['datasource'], $form_state['values']['options']['datasource'], $form_state);
 }
 
 /**
@@ -794,10 +851,34 @@ function search_api_admin_add_index_validate(array $form, array &$form_state) {
  */
 function search_api_admin_add_index_submit(array $form, array &$form_state) {
   form_state_values_clean($form_state);
-
   $values = $form_state['values'];
 
-  // Validation of whether the server of an index is enabled is done in the
+  if (!empty($form_state['step_one'])) {
+    $values += $form_state['step_one'];
+    unset($form_state['step_one']);
+  }
+
+  // The type was changed (or the form submitted without JS for the first time).
+  // If the new type has a configuration form, we have to display it now.
+  $datasource = search_api_get_datasource_controller($values['item_type']);
+  if ($values['item_type'] != $values['old_type']) {
+    $datasource_form = array();
+    if ($datasource->configurationForm($datasource_form, $form_state)) {
+      unset($values['options']['datasource']);
+      $form_state['step_one'] = $values;
+      $form_state['rebuild'] = TRUE;
+      drupal_set_message(t('Please specify further configuration options.'));
+      return;
+    }
+  }
+
+  // If the current type has a configuration form, call the datasource
+  // controller's config submit callback.
+  if ($values['datasource_config']) {
+    $datasource->configurationFormSubmit($form['datasource'], $values['options']['datasource'], $form_state);
+  }
+
+  // Validation of whether a server is set for the index is done in the
   // SearchApiIndex::save() method.
   search_api_index_insert($values);
 
@@ -857,6 +938,7 @@ function search_api_admin_index_view(SearchApiIndex $index, $action = NULL) {
     '#machine_name' => $index->machine_name,
     '#description' => $index->description,
     '#item_type' => $index->item_type,
+    '#datasource_config' => $index->datasource()->getConfigurationSummary($index),
     '#enabled' => $index->enabled,
     '#server' => $server,
     '#options' => $index->options,
@@ -889,6 +971,7 @@ function search_api_admin_index_view(SearchApiIndex $index, $action = NULL) {
  *   - machine_name: The index' machine name.
  *   - description: The index' description.
  *   - item_type: The type of items stored in this index.
+ *   - datasource_config: A summary of the datasource's configuration.
  *   - enabled: Boolean indicating whether the index is enabled.
  *   - server: The server this index currently rests on, if any.
  *   - options: The index' options, like cron limit.
@@ -912,6 +995,7 @@ function theme_search_api_index(array $variables) {
   $description = $variables['description'];
   $enabled = $variables['enabled'];
   $item_type = $variables['item_type'];
+  $datasource_config = $variables['datasource_config'];
   $server = $variables['server'];
   $options = $variables['options'];
   $status = $variables['status'];
@@ -961,6 +1045,12 @@ function theme_search_api_index(array $variables) {
   $item_type = !empty($type['name']) ? $type['name'] : $item_type;
   $info = check_plain($item_type);
   $rows[] = _search_api_deep_copy($row);
+
+  if ($datasource_config) {
+    $label = t('Item type configuration');
+    $info = check_plain($datasource_config);
+    $rows[] = _search_api_deep_copy($row);
+  }
 
   if ($server) {
     $label = t('Server');
@@ -1193,6 +1283,7 @@ function search_api_admin_index_status_form_submit(array $form, array &$form_sta
  *
  * @ingroup forms
  *
+ * @see search_api_admin_index_edit_validate()
  * @see search_api_admin_index_edit_submit()
  */
 function search_api_admin_index_edit(array $form, array &$form_state, SearchApiIndex $index) {
@@ -1208,7 +1299,7 @@ function search_api_admin_index_edit(array $form, array &$form_state, SearchApiI
     '#required' => TRUE,
   );
   try {
-    $enabled_fixed = !$index->enabled && !$index->server();
+    $enabled_fixed = !$index->server();
   }
   catch (Exception $e) {
     watchdog_exception('search_api', $e);
@@ -1220,7 +1311,7 @@ function search_api_admin_index_edit(array $form, array &$form_state, SearchApiI
     '#type' => 'checkbox',
     '#title' => t('Enabled'),
     '#default_value' => $index->enabled,
-    // Can't enable an index lying on a disabled server, or no server at all.
+    // Can't enable an index that's not lying on any server.
     '#disabled' => $enabled_fixed,
   );
   $form['description'] = array(
@@ -1240,6 +1331,15 @@ function search_api_admin_index_edit(array $form, array &$form_state, SearchApiI
   foreach ($servers as $server) {
     $form['server']['#options'][$server->machine_name] = $server->name;
   }
+
+  $datasource_form = !empty($form['options']['datasource']) ? $form['options']['datasource'] : array();
+  $datasource_form = $index->datasource()->configurationForm($datasource_form, $form_state);
+  if ($datasource_form) {
+    $form['options']['datasource'] = $datasource_form;
+    $form['options']['datasource']['#type'] = 'fieldset';
+    $form['options']['datasource']['#title'] = t('Datasource options');
+  }
+
   $form['read_only'] = array(
     '#type' => 'checkbox',
     '#title' => t('Read only'),
@@ -1286,13 +1386,32 @@ function search_api_admin_index_edit(array $form, array &$form_state, SearchApiI
 }
 
 /**
+ * Form validation handler for search_api_admin_index_edit().
+ *
+ * @see search_api_admin_index_edit_submit()
+ */
+function search_api_admin_index_edit_validate(array $form, array &$form_state) {
+  if (!empty($form['options']['datasource'])) {
+    $form_state['values']['options'] += array('datasource' => array());
+    $form_state['index']->datasource()->configurationFormValidate($form['options']['datasource'], $form_state['values']['options']['datasource'], $form_state);
+  }
+}
+
+/**
  * Form submission handler for search_api_admin_index_edit().
+ *
+ * @see search_api_admin_index_edit_validate()
  */
 function search_api_admin_index_edit_submit(array $form, array &$form_state) {
   form_state_values_clean($form_state);
-
   $values = $form_state['values'];
+  /** @var SearchApiIndex $index */
   $index = $form_state['index'];
+
+  if (!empty($form['options']['datasource'])) {
+    $index->datasource()->configurationFormSubmit($form['options']['datasource'], $values['options']['datasource'], $form_state);
+  }
+
   $values['options'] += $index->options;
 
   $ret = $index->update($values);

@@ -16,6 +16,7 @@ class SearchApiViewsHandlerFilterDate extends SearchApiViewsHandlerFilter {
   public function option_definition() {
     return parent::option_definition() + array(
       'widget_type' => array('default' => 'default'),
+      'year_range' => array('default' => '-3:+3'),
     );
   }
 
@@ -43,6 +44,24 @@ class SearchApiViewsHandlerFilterDate extends SearchApiViewsHandlerFilter {
         '#options' => $widget_options,
       );
     }
+
+    if (module_exists('date_api')) {
+      $form['year_range'] = array(
+        '#type' => 'date_year_range',
+        '#default_value' => $this->options['year_range'],
+      );
+    }
+  }
+
+  /**
+   * Validate extra options.
+   */
+  public function extra_options_validate($form, &$form_state) {
+    if (isset($form_state['values']['options']['year_range'])) {
+      if (!preg_match('/^(?:\-[0-9]{1,4}|[0-9]{4}):(?:[\+|\-][0-9]{1,4}|[0-9]{4})$/', $form_state['values']['options']['year_range'])) {
+        form_error($form['year_range'], t('Date year range must be in the format -9:+9, 2005:2010, -9:2010, or 2005:+9'));
+      }
+    }
   }
 
   /**
@@ -56,6 +75,7 @@ class SearchApiViewsHandlerFilterDate extends SearchApiViewsHandlerFilter {
     if ($this->options['widget_type'] == 'date_popup' && module_exists('date_popup')) {
       $form['value']['#type'] = 'date_popup';
       $form['value']['#date_format'] = 'm/d/Y';
+      $form['value']['#date_year_range'] = $this->options['year_range'];
       unset($form['value']['#description']);
     }
     elseif (empty($form_state['exposed'])) {

@@ -588,7 +588,7 @@ function _i18n_menu_link_localizable_properties($link) {
     // If the title callback is 't' and the link title matches the router title
     // it will be localized by core, not by i18n_menu.
     if (!$router ||
-        (empty($router['title_callback']) || $router['title_callback'] != 't') ||
+        (empty($router['title_callback']) || ($router['title_callback'] != 't' || !empty($link['customized']))) ||
         (empty($router['title']) || $router['title'] != $link['link_title'])
     ) {
       $props[] = 'title';
@@ -597,7 +597,7 @@ function _i18n_menu_link_localizable_properties($link) {
   if (!empty($link['options']['attributes']['title'])) {
     // If the description matches the router description, it will be localized
     // by core.
-    if (!$router || empty($router['description']) || $router['description'] != $link['options']['attributes']['title']) {
+    if (!$router || empty($router['description']) || ($router['description'] != $link['options']['attributes']['title']) || !empty($link['customized'])) {
       $props[] = 'description';
     }
   }

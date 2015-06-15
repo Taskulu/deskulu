@@ -830,6 +830,7 @@ class SearchApiUnitTest extends DrupalWebTestCase {
     $this->index = entity_create('search_api_index', array(
       'id' => 1,
       'name' => 'test',
+      'machine_name' => 'test',
       'enabled' => 1,
       'item_type' => 'user',
       'options' => array(
@@ -859,6 +860,7 @@ class SearchApiUnitTest extends DrupalWebTestCase {
     $this->checkIgnoreCaseProcessor();
     $this->checkTokenizer();
     $this->checkHtmlFilter();
+    $this->checkEntityDatasource();
   }
 
   /**
@@ -1120,6 +1122,77 @@ END;
     $processor = new SearchApiTokenizer($this->index, array('fields' => array('name' => 'name'), 'spaces' => '[\s.:]', 'ignorable' => ''));
     $processor->preprocessIndexItems($tmp);
     $this->assertEqual($tmp[1]['name']['value'], $processed1, 'Text was correctly processed.');
+  }
+
+  /**
+   * Tests the entity datasource controller and its bundle setting.
+   */
+  protected function checkEntityDatasource() {
+    // First, create the necessary content types.
+    $type = (object) array(
+      'type' => 'article',
+      'base' => 'article',
+    );
+    node_type_save($type);
+    $type->type = $type->base = 'page';
+    node_type_save($type);
+
+    // Now, create some nodes.
+    $node = (object) array(
+      'title' => 'Foo',
+      'type' => 'article',
+    );
+    node_save($node);
+    $nid1 = $node->nid;
+    $node = (object) array(
+      'title' => 'Bar',
+      'type' => 'article',
+    );
+    node_save($node);
+    $node = (object) array(
+      'title' => 'Baz',
+      'type' => 'page',
+    );
+    node_save($node);
+
+    // We can't use $this->index here, since users don't have bundles.
+    $index = entity_create('search_api_index', array(
+      'id' => 2,
+      'name' => 'test2',
+      'machine_name' => 'test2',
+      'enabled' => 1,
+      'item_type' => 'node',
+      'options' => array(
+        'fields' => array(
+          'nid' => array(
+            'type' => 'integer',
+          ),
+        ),
+      ),
+    ));
+
+    // Now start tracking and check whether the index status is correct.
+    $datasource = search_api_get_datasource_controller('node');
+    $datasource->startTracking(array($index));
+    $status = $datasource->getIndexStatus($index);
+    $this->assertEqual($status['total'], 3, 'Correct number of items marked for indexing on not bundle-specific index.');
+    $datasource->stopTracking(array($index));
+
+    // Once again, but with only indexing articles.
+    $index->options['datasource']['bundles'] = array('article');
+    drupal_static_reset('search_api_get_datasource_controller');
+    $datasource = search_api_get_datasource_controller('node');
+    $datasource->startTracking(array($index));
+    $status = $datasource->getIndexStatus($index);
+    $this->assertEqual($status['total'], 2, 'Correct number of items marked for indexing on bundle-specific index.');
+    $datasource->stopTracking(array($index));
+
+    // Now test that bundle renaming works.
+    $index->save();
+    field_attach_rename_bundle('node', 'article', 'foo');
+    $index = search_api_index_load('test2', TRUE);
+    $this->assertEqual($index->options['datasource']['bundles'], array('foo'), 'Bundle was correctly renamed in index settings.');
+    $index->delete();
   }
 
 }

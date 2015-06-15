@@ -606,7 +606,7 @@ function hook_cron() {
  * @return
  *   An associative array where the key is the queue name and the value is
  *   again an associative array. Possible keys are:
- *   - 'worker callback': A PHP callable to call that is an implementation of
+ *   - 'worker callback': The name of an implementation of
  *     callback_queue_worker().
  *   - 'time': (optional) How much time Drupal should spend on calling this
  *     worker in seconds. Defaults to 15.
@@ -641,28 +641,6 @@ function hook_cron_queue_info_alter(&$queues) {
   // This site has many feeds so let's spend 90 seconds on each cron run
   // updating feeds instead of the default 60.
   $queues['aggregator_feeds']['time'] = 90;
-}
-
-/**
- * Work on a single queue item.
- *
- * Callback for hook_queue_info().
- *
- * @param $queue_item_data
- *   The data that was passed to DrupalQueue::createItem() when the item was
- *   queued.
- *
- * @throws \Exception
- *   The worker callback may throw an exception to indicate there was a problem.
- *   The cron process will log the exception, and leave the item in the queue to
- *   be processed again later.
- *
- * @see drupal_cron_run()
- */
-function callback_queue_worker($queue_item_data) {
-  $node = node_load($queue_item_data);
-  $node->title = 'Updated title';
-  $node->save();
 }
 
 /**
@@ -3715,8 +3693,9 @@ function hook_registry_files_alter(&$files, $modules) {
  *
  * Any tasks you define here will be run, in order, after the installer has
  * finished the site configuration step but before it has moved on to the
- * final import of languages and the end of the installation. You can have any
- * number of custom tasks to perform during this phase.
+ * final import of languages and the end of the installation. This is invoked
+ * by install_tasks().  You can have any number of custom tasks to perform
+ * during this phase.
  *
  * Each task you define here corresponds to a callback function which you must
  * separately define and which is called when your task is run. This function
@@ -3809,6 +3788,8 @@ function hook_registry_files_alter(&$files, $modules) {
  *
  * @see install_state_defaults()
  * @see batch_set()
+ * @see hook_install_tasks_alter()
+ * @see install_tasks()
  */
 function hook_install_tasks(&$install_state) {
   // Here, we define a variable to allow tasks to indicate that a particular,
@@ -3911,6 +3892,8 @@ function hook_html_head_alter(&$head_elements) {
 /**
  * Alter the full list of installation tasks.
  *
+ * This hook is invoked on the install profile in install_tasks().
+ *
  * @param $tasks
  *   An array of all available installation tasks, including those provided by
  *   Drupal core. You can modify this array to change or replace any part of
@@ -3918,6 +3901,9 @@ function hook_html_head_alter(&$head_elements) {
  *   is selected.
  * @param $install_state
  *   An array of information about the current installation state.
+ *
+ * @see hook_install_tasks()
+ * @see install_tasks()
  */
 function hook_install_tasks_alter(&$tasks, $install_state) {
   // Replace the "Choose language" installation task provided by Drupal core
@@ -4803,6 +4789,28 @@ function hook_filetransfer_info_alter(&$filetransfer_info) {
  * @addtogroup callbacks
  * @{
  */
+
+/**
+ * Work on a single queue item.
+ *
+ * Callback for hook_cron_queue_info().
+ *
+ * @param $queue_item_data
+ *   The data that was passed to DrupalQueueInterface::createItem() when the
+ *   item was queued.
+ *
+ * @throws Exception
+ *   The worker callback may throw an exception to indicate there was a problem.
+ *   The cron process will log the exception, and leave the item in the queue to
+ *   be processed again later.
+ *
+ * @see drupal_cron_run()
+ */
+function callback_queue_worker($queue_item_data) {
+  $node = node_load($queue_item_data);
+  $node->title = 'Updated title';
+  node_save($node);
+}
 
 /**
  * Return the URI for an entity.

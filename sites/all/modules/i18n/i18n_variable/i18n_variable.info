@@ -10,9 +10,9 @@ configure = admin/config/regional/i18n/variable
 files[] = i18n_variable.class.inc
 files[] = i18n_variable.test
 
-; Information added by Drupal.org packaging script on 2015-01-26
-version = "7.x-1.12"
+; Information added by Drupal.org packaging script on 2015-05-07
+version = "7.x-1.13"
 core = "7.x"
 project = "i18n"
-datestamp = "1422286982"
+datestamp = "1430999922"
 

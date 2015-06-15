@@ -203,6 +203,10 @@ class SearchApiViewsQuery extends views_plugin_query {
    * Builds the necessary info to execute the query.
    */
   public function build(&$view) {
+    if (!empty($this->errors)) {
+      return;
+    }
+
     $this->view = $view;
 
     // Setup the nested filter structure for this query.
@@ -375,8 +379,8 @@ class SearchApiViewsQuery extends views_plugin_query {
     // loading any items.
     foreach ($results as $id => $result) {
       if (!empty($this->options['entity_access']) && ($entity_type = $this->index->getEntityType())) {
-        $entity = entity_load($entity_type, array($id));
-        if (!entity_access('view', $entity_type, $entity[$id])) {
+        $entity = $this->index->loadItems(array($id));
+        if (!$entity || !entity_access('view', $entity_type, reset($entity))) {
           continue;
         }
       }
@@ -400,7 +404,7 @@ class SearchApiViewsQuery extends views_plugin_query {
       }
 
       // Check whether we need to extract any properties from the result item.
-      $missing_fields = array_diff_key($this->fields, $row);
+      $missing_fields = array_diff_key($this->fields, $row['_entity_properties']);
       if ($missing_fields) {
         $missing[$id] = $missing_fields;
         if (is_object($row['entity'])) {
@@ -418,14 +422,14 @@ class SearchApiViewsQuery extends views_plugin_query {
     // Load items of those rows which haven't got all field values, yet.
     if (!empty($ids)) {
       $items += $this->index->loadItems($ids);
-      // $items now includes loaded items, and those already passed in the
-      // search results.
-      foreach ($items as $id => $item) {
-        // Extract item properties.
-        $wrapper = $this->index->entityWrapper($item, FALSE);
-        $rows[$id]->_entity_properties += $this->extractFields($wrapper, $missing[$id]);
-        $rows[$id]->entity = $item;
-      }
+    }
+    // $items now includes all loaded items from which fields still need to be
+    // extracted.
+    foreach ($items as $id => $item) {
+      // Extract item properties.
+      $wrapper = $this->index->entityWrapper($item, FALSE);
+      $rows[$id]->_entity_properties += $this->extractFields($wrapper, $missing[$id]);
+      $rows[$id]->entity = $item;
     }
 
     // Finally, add all rows to the Views result set.

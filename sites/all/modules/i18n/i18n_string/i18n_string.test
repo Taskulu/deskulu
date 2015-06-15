@@ -53,6 +53,28 @@ class i18nStringTestCase extends Drupali18nTestCase {
         $this->assertEqual($translation, $translations[$key][$language->language], "The right $language->name ($language->language) translation has been retrieved for $name, $translation");
       }
     }
+
+    // Test that regular strings can be translated. Use 'Built-in interface' as
+    // filter, and translate first one.
+    $search = array(
+      'language' => 'all',
+      'translation' => 'all',
+      'group' => 'default',
+      'string' => '',
+    );
+    $this->drupalPost('admin/config/regional/translate/translate', $search, t('Filter'));
+    $this->clickLink(t('edit'));
+    // Just add a random translation.
+    $translation = $this->randomString();
+    $edit = array();
+    foreach ($this->getOtherLanguages() as $language) {
+      $langcode = $language->language;
+      $edit["translations[$langcode]"] = $translation;
+    }
+    $this->drupalPost(NULL, $edit, t('Save translations'));
+    $this->assertText(t('The string has been saved.'), t('The string has been saved.'));
+    $this->assertEqual($this->getUrl(), url('admin/config/regional/translate/translate', array('absolute' => TRUE)), t('Correct page redirection.'));
+
   }
 
   /**

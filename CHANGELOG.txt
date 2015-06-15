@@ -1,4 +1,24 @@
 
+Drupal 7.37, 2015-05-07
+-----------------------
+- Fixed a regression in Drupal 7.36 which caused certain kinds of content types
+  to become disabled if they were defined by a no-longer-enabled module.
+- Removed a confusing description regarding automatic time zone detection from
+  the user account form (minor UI and data structure change).
+- Allowed custom HTML tags with a dash in the name to pass through filter_xss()
+  when specified in the list of allowed tags.
+- Allowed hook_field_schema() implementations to specify indexes for fields
+  based on a fixed-length column prefix (rather than the entire column), as was
+  already allowed in hook_schema() implementations.
+- Fixed PDO exceptions on PostgreSQL when accessing invalid entity URLs.
+- Added a sites/all/libraries folder to the codebase, with instructions for
+  using it.
+- Added a description to the "Administer text formats and filters" permission
+  on the Permissions page (string change).
+- Numerous small bug fixes.
+- Numerous API documentation improvements.
+- Additional automated test coverage.
+
 Drupal 7.36, 2015-04-01
 -----------------------
 - Added a 'file_public_schema' variable which allows modules that define

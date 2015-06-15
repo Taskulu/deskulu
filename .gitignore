@@ -1,7 +1,3 @@
-sites/all/themes/ht/ht_forum/.sass-cache/
-sites/all/themes/ht/.sass-cache/
-sites/all/themes/ht/ht_forum/.sass-cache/
-.idea
 # Ignore configuration files that may contain sensitive information.
 sites/*/settings*.php
 

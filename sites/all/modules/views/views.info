@@ -318,9 +318,9 @@ files[] = tests/views_cache.test
 files[] = tests/views_view.test
 files[] = tests/views_ui.test
 
-; Information added by Drupal.org packaging script on 2015-02-11
-version = "7.x-3.10"
+; Information added by Drupal.org packaging script on 2015-04-29
+version = "7.x-3.11"
 core = "7.x"
 project = "views"
-datestamp = "1423648085"
+datestamp = "1430321048"
 

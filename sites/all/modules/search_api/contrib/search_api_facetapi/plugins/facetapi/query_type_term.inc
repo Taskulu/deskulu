@@ -54,6 +54,27 @@ class SearchApiFacetapiTerm extends FacetapiQueryType implements FacetapiQueryTy
     }
     elseif ($operator == FACETAPI_OPERATOR_OR) {
       $conjunction = 'OR';
+      // When the operator is OR, remove parent terms from the active ones if
+      // children are active. If we don't do this, sending a term and its
+      // parent will produce the same results as just sending the parent.
+      if ($settings['flatten'] == '0') {
+        // Check the filters in reverse order, to avoid checking parents that
+        // will afterwards be removed anyways.
+        foreach (array_reverse(array_keys($active)) as $filter) {
+          // Skip this filter if it was already removed, or if it is the
+          // "missing value" filter ("!").
+          if (!isset($active[$filter]) || !is_numeric($filter)) {
+            continue;
+          }
+          $parents = taxonomy_get_parents_all($filter);
+          // The return value of taxonomy_get_parents_all() includes the term
+          // itself at index 0. Remove that to only get the term's ancestors.
+          unset($parents[0]);
+          foreach ($parents as $parent) {
+            unset($active[$parent->tid]);
+          }
+        }
+      }
     }
     else {
       $vars = array(

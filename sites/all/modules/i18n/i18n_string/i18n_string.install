@@ -29,7 +29,9 @@ function i18n_string_install() {
     i18n_string_update_7001();
   }
   // Create new index in {locales_source}, performance improvement in sites with i18n.
-  db_add_index('locales_source', 'textgroup_context', array('textgroup', 'context'));
+  if (!db_index_exists('locales_source', 'textgroup_context')) {
+    db_add_index('locales_source', 'textgroup_context', array('textgroup', array('context', 50)));
+  }
 }
 
 /**
@@ -106,7 +108,7 @@ function i18n_string_schema() {
     ),
     'primary key' => array('lid'),
     'indexes' => array(
-      'group_context' => array('textgroup', 'context'),
+      'group_context' => array('textgroup', array('context', 50)),
     ),
   );
   return $schema;
@@ -238,7 +240,9 @@ function i18n_string_update_7001() {
  *  Create new index in {locales_source}, performance improvement in sites with i18n.
  */
 function i18n_string_update_7002() {
-  db_add_index('locales_source', 'textgroup_context', array('textgroup', 'context'));
+  if (!db_index_exists('locales_source', 'textgroup_context')) {
+    db_add_index('locales_source', 'textgroup_context', array('textgroup', array('context', 50)));
+  }
 }
 
 

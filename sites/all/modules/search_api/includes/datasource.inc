@@ -158,6 +158,10 @@ interface SearchApiDataSourceControllerInterface {
    * @param SearchApiIndex[] $indexes
    *   The indexes for which items should be tracked.
    *
+   * @return SearchApiIndex[]|null
+   *   All indexes for which any items were added; or NULL if items were added
+   *   for all of them.
+   *
    * @throws SearchApiDataSourceException
    *   If any error state was encountered.
    */
@@ -280,6 +284,69 @@ interface SearchApiDataSourceControllerInterface {
    *   If any error state was encountered.
    */
   public function getEntityType();
+
+  /**
+   * Form constructor for configuring the datasource for a given index.
+   *
+   * @param array $form
+   *   The form returned by configurationForm().
+   * @param array $form_state
+   *   The form state. $form_state['index'] will contain the edited index. If
+   *   this key is empty, then a new index is being created. In case of an edit,
+   *   $form_state['index']->options['datasource'] contains the previous
+   *   settings for the datasource.
+   *
+   * @return array|false
+   *   A form array for configuring this callback, or FALSE if no configuration
+   *   is possible.
+   */
+  public function configurationForm(array $form, array &$form_state);
+
+  /**
+   * Validation callback for the form returned by configurationForm().
+   *
+   * This method will only be called if that form was non-empty.
+   *
+   * @param array $form
+   *   The form returned by configurationForm().
+   * @param array $values
+   *   The part of the $form_state['values'] array corresponding to this form.
+   * @param array $form_state
+   *   The complete form state.
+   */
+  public function configurationFormValidate(array $form, array &$values, array &$form_state);
+
+  /**
+   * Submit callback for the form returned by configurationForm().
+   *
+   * This method will only be called if that form was non-empty.
+   *
+   * Any necessary changes to the submitted values should be made, afterwards
+   * they will automatically be stored as the index's "datasource" options. The
+   * method can also be used by the datasource controller to react to the
+   * possible change in its settings.
+   *
+   * @param array $form
+   *   The form returned by configurationForm().
+   * @param array $values
+   *   The part of the $form_state['values'] array corresponding to this form.
+   * @param array $form_state
+   *   The complete form state.
+   */
+  public function configurationFormSubmit(array $form, array &$values, array &$form_state);
+
+  /**
+   * Returns a summary of an index's current datasource configuration.
+   *
+   * @param SearchApiIndex $index
+   *   The index whose datasource configuration should be summarized.
+   *
+   * @return string|null
+   *   A translated string describing the index's current datasource
+   *   configuration. Or NULL, if there is no configuration (or no description
+   *   is available).
+   */
+  public function getConfigurationSummary(SearchApiIndex $index);
 
 }
 
@@ -521,6 +588,10 @@ abstract class SearchApiAbstractDataSourceController implements SearchApiDataSou
       return;
     }
 
+    foreach ($indexes as $index) {
+      $this->checkIndex($index);
+    }
+
     // Since large amounts of items can overstrain the database, only add items
     // in chunks.
     foreach (array_chunk($item_ids, 1000) as $chunk) {
@@ -528,7 +599,6 @@ abstract class SearchApiAbstractDataSourceController implements SearchApiDataSou
         ->fields(array($this->itemIdColumn, $this->indexIdColumn, $this->changedColumn));
       foreach ($chunk as $item_id) {
         foreach ($indexes as $index) {
-          $this->checkIndex($index);
           $insert->values(array(
             $this->itemIdColumn => $item_id,
             $this->indexIdColumn => $index->id,
@@ -657,6 +727,32 @@ abstract class SearchApiAbstractDataSourceController implements SearchApiDataSou
       ->execute()
       ->fetchField();
     return array('indexed' => $indexed, 'total' => $total);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function configurationForm(array $form, array &$form_state) {
+    return FALSE;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function configurationFormValidate(array $form, array &$values, array &$form_state) {
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function configurationFormSubmit(array $form, array &$values, array &$form_state) {
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getConfigurationSummary(SearchApiIndex $index) {
+    return NULL;
   }
 
   /**

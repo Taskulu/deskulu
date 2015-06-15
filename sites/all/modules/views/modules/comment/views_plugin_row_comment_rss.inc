@@ -107,7 +107,7 @@ class views_plugin_row_comment_rss extends views_plugin_row {
       ),
       array(
         'key' => 'dc:creator',
-        'value' => $comment->name,
+        'value' => format_username($comment),
       ),
       array(
         'key' => 'guid',

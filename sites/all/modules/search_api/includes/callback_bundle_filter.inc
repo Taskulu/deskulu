@@ -14,7 +14,9 @@ class SearchApiAlterBundleFilter extends SearchApiAbstractAlterCallback {
    * {@inheritdoc}
    */
   public function supportsIndex(SearchApiIndex $index) {
-    return $index->getEntityType() && ($info = entity_get_info($index->getEntityType())) && self::hasBundles($info);
+    $support = $index->getEntityType() && ($info = entity_get_info($index->getEntityType())) && self::hasBundles($info);
+    $support &= empty($index->options['datasource']['bundles']) || count($index->options['datasource']['bundles']) > 1;
+    return $support;
   }
 
   /**
@@ -44,24 +46,31 @@ class SearchApiAlterBundleFilter extends SearchApiAbstractAlterCallback {
       foreach ($info['bundles'] as $bundle => $bundle_info) {
         $options[$bundle] = isset($bundle_info['label']) ? $bundle_info['label'] : $bundle;
       }
-      $form = array(
-        'default' => array(
-          '#type' => 'radios',
-          '#title' => t('Which items should be indexed?'),
-          '#default_value' => isset($this->options['default']) ? $this->options['default'] : 1,
-          '#options' => array(
-            1 => t('All but those from one of the selected bundles'),
-            0 => t('Only those from the selected bundles'),
-          ),
+      if (!empty($this->index->options['datasource']['bundles'])) {
+        $form['message']['#markup'] = '<p>' . t("<strong>Note:</strong> This index is already restricted to certain bundles. If you use this data alteration, those will be reduced further. However, the index setting is better supported in the user interface and should therefore be prefered. For example, using this data alteration will not reduce the displayed total number of items to index (even though some of them will not be indexed). Consider creating a new index with appropriate bundle settings instead.") . '</p>';
+        $included_bundles = drupal_map_assoc($this->index->options['datasource']['bundles']);
+        foreach ($options as $bundle => $label) {
+          if (!isset($included_bundles[$bundle])) {
+            unset($options[$bundle]);
+          }
+        }
+      }
+      $form['default'] = array(
+        '#type' => 'radios',
+        '#title' => t('Which items should be indexed?'),
+        '#default_value' => isset($this->options['default']) ? $this->options['default'] : 1,
+        '#options' => array(
+          1 => t('All but those from one of the selected bundles'),
+          0 => t('Only those from the selected bundles'),
         ),
-        'bundles' => array(
-          '#type' => 'select',
-          '#title' => t('Bundles'),
-          '#default_value' => isset($this->options['bundles']) ? $this->options['bundles'] : array(),
-          '#options' => $options,
-          '#size' => min(4, count($options)),
-          '#multiple' => TRUE,
-        ),
+      );
+      $form['bundles'] = array(
+        '#type' => 'select',
+        '#title' => t('Bundles'),
+        '#default_value' => isset($this->options['bundles']) ? $this->options['bundles'] : array(),
+        '#options' => $options,
+        '#size' => min(4, count($options)),
+        '#multiple' => TRUE,
       );
     }
     else {

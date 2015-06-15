@@ -1522,7 +1522,7 @@ function _filter_xss_split($m, $store = FALSE) {
     return '&lt;';
   }
 
-  if (!preg_match('%^<\s*(/\s*)?([a-zA-Z0-9]+)([^>]*)>?|(<!--.*?-->)$%', $string, $matches)) {
+  if (!preg_match('%^<\s*(/\s*)?([a-zA-Z0-9\-]+)([^>]*)>?|(<!--.*?-->)$%', $string, $matches)) {
     // Seriously malformed.
     return '';
   }
@@ -3802,7 +3802,7 @@ function drupal_load_stylesheet_content($contents, $optimize = FALSE) {
 
   // Replaces @import commands with the actual stylesheet content.
   // This happens recursively but omits external files.
-  $contents = preg_replace_callback('/@import\s*(?:url\(\s*)?[\'"]?(?![a-z]+:)([^\'"\()]+)[\'"]?\s*\)?\s*;/', '_drupal_load_stylesheet', $contents);
+  $contents = preg_replace_callback('/@import\s*(?:url\(\s*)?[\'"]?(?![a-z]+:)(?!\/\/)([^\'"\()]+)[\'"]?\s*\)?\s*;/', '_drupal_load_stylesheet', $contents);
   return $contents;
 }
 
@@ -7138,6 +7138,23 @@ function _drupal_schema_initialize(&$schema, $module, $remove_descriptions = TRU
 }
 
 /**
+ * Retrieves the type for every field in a table schema.
+ *
+ * @param $table
+ *   The name of the table from which to retrieve type information.
+ *
+ * @return
+ *   An array of types, keyed by field name.
+ */
+function drupal_schema_field_types($table) {
+  $table_schema = drupal_get_schema($table);
+  foreach ($table_schema['fields'] as $field_name => $field_info) {
+    $field_types[$field_name] = isset($field_info['type']) ? $field_info['type'] : NULL;
+  }
+  return $field_types;
+}
+
+/**
  * Retrieves a list of fields from a table schema.
  *
  * The returned list is suitable for use in an SQL query.
@@ -7761,6 +7778,7 @@ function entity_get_info($entity_type = NULL) {
         // Prepare entity schema fields SQL info for
         // DrupalEntityControllerInterface::buildQuery().
         if (isset($entity_info[$name]['base table'])) {
+          $entity_info[$name]['base table field types'] = drupal_schema_field_types($entity_info[$name]['base table']);
           $entity_info[$name]['schema_fields_sql']['base table'] = drupal_schema_fields_sql($entity_info[$name]['base table']);
           if (isset($entity_info[$name]['revision table'])) {
             $entity_info[$name]['schema_fields_sql']['revision table'] = drupal_schema_fields_sql($entity_info[$name]['revision table']);
