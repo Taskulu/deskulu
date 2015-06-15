@@ -1,0 +1,177 @@
+$resource-border: 1px solid #CECECE;
+$verb-color: #669900;
+$link-color: #0F3E72;
+$header-bg-color: #0F3E72;
+
+@mixin services-docs-h5 {
+  background: $header-bg-color;
+  padding: 5px 5px;
+  color: white;
+  font-weight: bold;
+  font-size: 1.1em;
+  margin: 0;
+}
+
+@mixin services-docs-section {
+  margin: 0 0 1em 0;
+}
+
+.services-documentation-version {
+  .services-documentation-toc {
+
+    h2.toc-title {
+      font-size: 1.6em;
+    }
+
+    ul {
+      margin: 1.5em 0 2em 0;
+      padding: 0;
+
+      li {
+        margin: .5em 0;
+        font-size: 1.2em;
+        list-style: none;
+
+        a {
+          .verb {
+            color: $verb-color;
+            text-transform: uppercase;
+            min-width: 40px;
+            display: inline-block;
+            text-align: right;
+            margin-right: 7px;
+          }
+
+          .path {
+            color: $link-color;
+          }
+        }
+      }
+    }
+  }
+  .services-documentation-resources {
+
+    .services-documentation-resource {
+      border-bottom: $resource-border;
+      border-top: $resource-border;
+
+      h2.resource-title {
+        font-size: 1.6em;
+      }
+
+      .resource-method-bundle {
+        .resource-method {
+          border-bottom: $resource-border;
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          h4.method-title {
+            .method-verb {
+              color: $verb-color;
+              font-size: 1.4em;
+            }
+            .method-path {
+              color: #333;
+              text-transform: none;
+            }
+          }
+          .method-description {
+
+          }
+
+          // Arguments section.
+          .method-arguments {
+            @include services-docs-section;
+            background: white;
+
+            h5.title {
+              @include services-docs-h5;
+            }
+            ul {
+              border: $resource-border;
+              padding-left: 0px;
+              padding-right: 13px;
+              display: block;
+              margin: 0;
+
+              li.method-argument {
+                padding-left: 5px;
+                padding-right: 5px;
+                display: table;
+                list-style: none;
+                list-style-image: none;
+                width: 100%;
+
+                .argument-title {
+                  width: 42%;
+                  display: table-cell;
+
+                  .argument-type { }
+                  .argument-key { }
+                  .argument-source { }
+
+                  .argument-optional {
+                    display: block;
+                    color: #999;
+                    font-style: italic;
+                  }
+                }
+
+                .argument-description {
+                  display: table-cell;
+                  width: 58%;
+                }
+              }
+            }
+          }
+
+          // Request section.
+          .method-request {
+            @include services-docs-section;
+
+            h5.request-title {
+              @include services-docs-h5;
+            }
+            .request-url {
+              border: $resource-border;
+              padding: 5px 5px;
+              background: white;
+            }
+          }
+
+          // Response section.
+          .method-response {
+            @include services-docs-section;
+
+            h5.response-title {
+              @include services-docs-h5;
+            }
+            pre.response-body {
+              background: rgb(237, 237, 237);
+              max-height: 300px;
+              overflow: scroll;
+              border: 1px inset;
+              color: black;
+              font-family: courier;
+              font-size: .9em;
+              padding: 10px;
+              margin: 0 0 3em 0;
+
+              &::-webkit-scrollbar {
+                -webkit-appearance: none;
+                width: 7px;
+              }
+              &::-webkit-scrollbar-thumb {
+                border-radius: 4px;
+                background-color: rgba(0,0,0,.5);
+                -webkit-box-shadow: 0 0 1px rgba(255,255,255,.5);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,278 @@
+<?php
+
+/**
+ * @file
+ * services_documentation.module
+ *
+ * Generates documentation pages for Services resources.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function services_documentation_menu() {
+  $base_path = variable_get('services_documentation_base_path', 'developers');
+
+  // API versions overview.
+  $endpoints = services_endpoint_load_all();
+
+  $items[$base_path] = array(
+    'title' => 'Services Documentation: API Versions',
+    'page callback' => 'services_documentation_versions_overview_page',
+    'page arguments' => array($endpoints),
+    'access arguments' => array('view services documentation'),
+    'file' => 'services_documentation.pages.inc',
+  );
+
+  // Build menu items for each API version.
+  foreach ($endpoints as $endpoint_id => $endpoint) {
+    $endpoint_path = $base_path . '/' . $endpoint_id;
+    $items[$endpoint_path] = array(
+      'title' => 'Version ' . $endpoint->name,
+      'page callback' => 'services_documentation_version_page',
+      'access arguments' => array('view services documentation'),
+      'page arguments' => array($endpoint),
+      'file' => 'services_documentation.pages.inc',
+    );
+  }
+
+  $items['admin/structure/services/list/%services_endpoint/resources/%/%/%'] = array(
+    'title' => 'Services Documentation',
+    'title callback' => 'services_documentation_op_docs_form_title',
+    'title arguments' => array($endpoint->name, 6, 7, 8),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('services_documentation_op_docs_form', 4, 6, 7, 8),
+    'access arguments' => array('edit services documentation'),
+    'file' => 'services_documentation.admin.inc',
+  );
+
+  // Provide an administration page for configuring homepage content.
+  $items['admin/config/services/documentation'] = array(
+    'title' => 'Services Documentation',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('services_documentation_configure'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'services_documentation.admin.inc',
+    'description' => "Configure API documentation.",
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function services_documentation_permission() {
+  $permissions = array();
+
+  $permissions['view services documentation'] = array(
+    'title' => t('view services documentation'),
+    'description' => t('View services documentation.'),
+  );
+
+  module_load_include('inc', 'services_documentation');
+
+  // Generate a permission per enabled method, per resource, per endpoint.
+  $endpoints = services_endpoint_load_all();
+  foreach ($endpoints as $endpoint_id => $endpoint) {
+    $resources = services_documentation_build_documentation($endpoint);
+    // Cycle through resources. E.g., users, taxonomy_term, etc.
+    foreach ($resources as $resource_name => $resource) {
+      // Cycle through operation bundles. E.g., targeted_actions, actions, etc.
+      foreach ($resource as $method_bundle_type => $method_bundle) {
+        // Cycle through each operation in bundle. E.g., create, retrieve, etc.
+        foreach ($method_bundle as $method_name => $method) {
+          $permission_name = 'view ' . $endpoint_id . ' ' . $resource_name . ' ' . $method_name . ' documentation';
+          $method_title = $endpoint_id . ' > ' . $resource_name . ' > ' . $method_name;
+          $vars = array(
+            '@endpoint_id' => $endpoint_id,
+            '@resource_name' => $resource_name,
+            '@method_name' => $method_name,
+            '@method_title' => $method_title,
+          );
+          $permissions[$permission_name] = array(
+            'title' => t('View services documentation for @method_title', $vars),
+            'description' => t('View services documentation for the @method_name method of the @resource_name resource at the @endpoint_id endpoint.', $vars),
+          );
+        }
+      }
+    }
+  }
+
+  return $permissions;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function services_documentation_theme($existing, $type, $theme, $path) {
+  $theme_path = drupal_get_path('module', 'services_documentation') . '/theme';
+
+  return array(
+    'services_documentation_versions_overview' => array(
+      'path' => $theme_path,
+      'template' => 'services-documentation-versions-overview',
+      'variables' => array('versions' => NULL),
+    ),
+    'services_documentation_version' => array(
+      'path' => $theme_path,
+      'template' => 'services-documentation-version',
+      'variables' => array(
+        'table_of_contents' => NULL,
+        'description' => NULL,
+        'resources' => NULL,
+      ),
+    ),
+    'services_documentation_resource' => array(
+      'path' => $theme_path,
+      'template' => 'services-documentation-resource',
+      'variables' => array(
+        'name' => NULL,
+        'description' => NULL,
+        'limit' => NULL,
+        'method_bundles' => NULL,
+      ),
+    ),
+    'services_documentation_method_bundle' => array(
+      'path' => $theme_path,
+      'template' => 'services-documentation-method-bundle',
+      'variables' => array(
+        'name' => NULL,
+        'methods' => NULL,
+      ),
+    ),
+    'services_documentation_method' => array(
+      'path' => $theme_path,
+      'template' => 'services-documentation-method',
+      'variables' => array(
+        'anchor' => NULL,
+        'name' => NULL,
+        'path' => NULL,
+        'weight' => NULL,
+        'verb' => NULL,
+        'description' => NULL,
+        'parameters' => NULL,
+        'request_url' => NULL,
+        'request_data' => NULL,
+        'response' => NULL,
+        'errors' => NULL,
+        'example_implementations_bundles' => NULL,
+        'method' => NULL,
+        'auth' => FALSE,
+      ),
+    ),
+    'services_documentation_method_error' => array(
+      'path' => $theme_path,
+      'template' => 'services-documentation-method-error',
+      'variables' => array(
+        'question' => NULL,
+        'description' => NULL,
+        'response' => NULL,
+        'anchor' => NULL,
+      ),
+    ),
+    'services_documentation_implementation_bundle' => array(
+      'path' => $theme_path,
+      'template' => 'services-documentation-implementation-bundle',
+      'variables' => array(
+        'language' => NULL,
+        'examples' => NULL,
+      ),
+    ),
+    'services_documentation_implementation' => array(
+      'path' => $theme_path,
+      'template' => 'services-documentation-implementation',
+      'variables' => array(
+        'name' => NULL,
+        'description' => NULL,
+        'location' => NULL,
+        'files' => NULL,
+        'download_link' => NULL,
+        'uses_sdk' => NULL,
+      ),
+    ),
+    'services_documentation_implementation_file' => array(
+      'path' => $theme_path,
+      'template' => 'services-documentation-implementation-file',
+      'variables' => array(
+        'name' => NULL,
+        'path' => NULL,
+        'type' => NULL,
+        'contents' => NULL,
+        'children' => NULL,
+      ),
+    ),
+  );
+}
+
+/**
+ * Preprocesses variables for services_documentation_method_bundle template.
+ */
+function template_preprocess_services_documentation_method_bundle(&$vars) {
+  // Implement admin setting for hiding method bundle title.
+  if (!variable_get('services_documentation_display_bundle_title', FALSE)) {
+    unset($vars['name']);
+  }
+}
+
+/**
+ * Implements hook_element_info().
+ */
+function services_documentation_element_info() {
+  $types['services_documentation_method'] = array(
+    '#input' => FALSE,
+    '#pre_render' => array('services_documentation_format_method'),
+    '#theme' => array('services_documentation_method'),
+  );
+  return $types;
+}
+
+/**
+ * Formats documented Services methods.
+ */
+function services_documentation_format_method($element) {
+
+  $element['url'] = array();
+
+  // Create HTTP method key.
+  foreach ($element['#method']['args'] as $key => $argument) {
+    if (!empty($argument['source'])) {
+      if (is_array($argument['source'])) {
+        switch (key($argument['source'])) {
+          case 'param':
+            $element['#method']['args'][$key]['http_method'] = t('GET');
+            break;
+
+          case 'path':
+            $element['#method']['args'][$key]['http_method'] = t('URL');
+            $element['url'][$argument['source']['path']] = '[' . $argument['name'] . ']';
+            break;
+        }
+      }
+      else {
+        $element['#method']['args'][$key]['http_method'] = t('POST');
+      }
+    }
+    else {
+      unset($element['#method']['args'][$key]);
+    }
+  }
+  $element['url'] = $element['#name'] . '/' . implode('/', $element['url']);
+
+  if (!empty($element['#request_url']) && valid_url($element['#request_url'])) {
+    $url = drupal_parse_url($element['#request_url']);
+    $options = array('query' => $url['query'], 'html' => TRUE);
+    $element['#request_url'] = l($element['#request_url'], $url['path'], $options);
+  }
+
+  return $element;
+}
+
+/**
+ * Implements hook_controller_settings_alter().
+ */
+function services_documentation_controller_settings_alter(&$controller_info, $op_info) {
+  $controller_info['services_documentation'] = array(
+    '#markup' => l(t('edit documentation'), "admin/structure/services/list/{$op_info['endpoint']->name}/resources/{$op_info['resource']['key']}/{$op_info['class']}/{$op_info['op']['name']}"),
+  );
+}

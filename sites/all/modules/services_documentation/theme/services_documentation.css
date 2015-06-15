@@ -1,0 +1,107 @@
+.services-documentation-version .services-documentation-toc h2.toc-title {
+  font-size: 1.6em; }
+.services-documentation-version .services-documentation-toc ul {
+  margin: 1.5em 0 2em 0;
+  padding: 0; }
+  .services-documentation-version .services-documentation-toc ul li {
+    margin: .5em 0;
+    font-size: 1.2em;
+    list-style: none; }
+    .services-documentation-version .services-documentation-toc ul li a .verb {
+      color: #669900;
+      text-transform: uppercase;
+      min-width: 40px;
+      display: inline-block;
+      text-align: right;
+      margin-right: 7px; }
+    .services-documentation-version .services-documentation-toc ul li a .path {
+      color: #0F3E72; }
+.services-documentation-version .services-documentation-resources .services-documentation-resource {
+  border-bottom: 1px solid #CECECE;
+  border-top: 1px solid #CECECE; }
+  .services-documentation-version .services-documentation-resources .services-documentation-resource h2.resource-title {
+    font-size: 1.6em; }
+  .services-documentation-version .services-documentation-resources .services-documentation-resource .resource-method-bundle .resource-method {
+    border-bottom: 1px solid #CECECE; }
+    .services-documentation-version .services-documentation-resources .services-documentation-resource .resource-method-bundle .resource-method:last-child {
+      border-bottom: none; }
+    .services-documentation-version .services-documentation-resources .services-documentation-resource .resource-method-bundle .resource-method h4.method-title .method-verb {
+      color: #669900;
+      font-size: 1.4em; }
+    .services-documentation-version .services-documentation-resources .services-documentation-resource .resource-method-bundle .resource-method h4.method-title .method-path {
+      color: #333;
+      text-transform: none; }
+    .services-documentation-version .services-documentation-resources .services-documentation-resource .resource-method-bundle .resource-method .method-arguments {
+      margin: 0 0 1em 0;
+      background: white; }
+      .services-documentation-version .services-documentation-resources .services-documentation-resource .resource-method-bundle .resource-method .method-arguments h5.title {
+        background: #0F3E72;
+        padding: 5px 5px;
+        color: white;
+        font-weight: bold;
+        font-size: 1.1em;
+        margin: 0; }
+      .services-documentation-version .services-documentation-resources .services-documentation-resource .resource-method-bundle .resource-method .method-arguments ul {
+        border: 1px solid #CECECE;
+        padding-left: 0px;
+        padding-right: 13px;
+        display: block;
+        margin: 0; }
+        .services-documentation-version .services-documentation-resources .services-documentation-resource .resource-method-bundle .resource-method .method-arguments ul li.method-argument {
+          padding-left: 5px;
+          padding-right: 5px;
+          display: table;
+          list-style: none;
+          list-style-image: none;
+          width: 100%; }
+          .services-documentation-version .services-documentation-resources .services-documentation-resource .resource-method-bundle .resource-method .method-arguments ul li.method-argument .argument-title {
+            width: 42%;
+            display: table-cell; }
+            .services-documentation-version .services-documentation-resources .services-documentation-resource .resource-method-bundle .resource-method .method-arguments ul li.method-argument .argument-title .argument-optional {
+              display: block;
+              color: #999;
+              font-style: italic; }
+          .services-documentation-version .services-documentation-resources .services-documentation-resource .resource-method-bundle .resource-method .method-arguments ul li.method-argument .argument-description {
+            display: table-cell;
+            width: 58%; }
+    .services-documentation-version .services-documentation-resources .services-documentation-resource .resource-method-bundle .resource-method .method-request {
+      margin: 0 0 1em 0; }
+      .services-documentation-version .services-documentation-resources .services-documentation-resource .resource-method-bundle .resource-method .method-request h5.request-title {
+        background: #0F3E72;
+        padding: 5px 5px;
+        color: white;
+        font-weight: bold;
+        font-size: 1.1em;
+        margin: 0; }
+      .services-documentation-version .services-documentation-resources .services-documentation-resource .resource-method-bundle .resource-method .method-request .request-url {
+        border: 1px solid #CECECE;
+        padding: 5px 5px;
+        background: white; }
+    .services-documentation-version .services-documentation-resources .services-documentation-resource .resource-method-bundle .resource-method .method-response {
+      margin: 0 0 1em 0; }
+      .services-documentation-version .services-documentation-resources .services-documentation-resource .resource-method-bundle .resource-method .method-response h5.response-title {
+        background: #0F3E72;
+        padding: 5px 5px;
+        color: white;
+        font-weight: bold;
+        font-size: 1.1em;
+        margin: 0; }
+      .services-documentation-version .services-documentation-resources .services-documentation-resource .resource-method-bundle .resource-method .method-response pre.response-body {
+        background: #ededed;
+        max-height: 300px;
+        overflow: scroll;
+        border: 1px inset;
+        color: black;
+        font-family: courier;
+        font-size: .9em;
+        padding: 10px;
+        margin: 0 0 3em 0; }
+        .services-documentation-version .services-documentation-resources .services-documentation-resource .resource-method-bundle .resource-method .method-response pre.response-body::-webkit-scrollbar {
+          -webkit-appearance: none;
+          width: 7px; }
+        .services-documentation-version .services-documentation-resources .services-documentation-resource .resource-method-bundle .resource-method .method-response pre.response-body::-webkit-scrollbar-thumb {
+          border-radius: 4px;
+          background-color: rgba(0, 0, 0, 0.5);
+          -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, 0.5); }
+
+/*# sourceMappingURL=services_documentation.css.map */

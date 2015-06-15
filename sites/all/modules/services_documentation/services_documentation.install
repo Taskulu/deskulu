@@ -1,0 +1,20 @@
+<?php
+/**
+ * @file
+ * services_documentation.install
+ * Installation file for Services Documentation.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function services_documentation_uninstall() {
+  $services_documentation_base_path = variable_get('services_documentation_base_path', '');
+  // Remove path alias.
+  if ($path = path_load($services_documentation_base_path)) {
+    path_delete($path);
+  }
+  // Remove variables.
+  db_delete('variable')->condition('name', db_like('services_documentation') . '%', 'LIKE')->execute();
+  cache_clear_all('variables', 'cache_bootstrap');
+}
