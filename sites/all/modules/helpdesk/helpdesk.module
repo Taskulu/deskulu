@@ -562,6 +562,14 @@ function helpdesk_field_access($op, $field, $entity_type, $entity, $account) {
 
 
 function helpdesk_rest_server_request_parsed_alter(&$data, $controller) {
+
+  if ($controller['callback'] == '_node_resource_create') {
+    if (empty($data['title_field']) && !empty($data['title'])) {
+      global $language;
+      $lang = !empty($data['language']) ? $data['language'] : $language->language;
+      $data['title_field'][$lang][0]['value'] = $data['title'];
+    }
+  }
   watchdog('helpdesk', var_export($data, 1));
   watchdog('helpdesk', var_export($controller, 1));
 }
