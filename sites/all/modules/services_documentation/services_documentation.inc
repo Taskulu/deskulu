@@ -119,7 +119,7 @@ function services_documentation_method_element($method) {
 
   // Attach example implementations.
   services_documentation_method_element_examples($element);
-
+  if (empty($element['#method']['args'])) $element['#method']['args'] = [];
   foreach ($element['#method']['args'] as $key => $value) {
     if (isset($value['hidden']) && $value['hidden']) {
       unset($element['#method']['args'][$key]);

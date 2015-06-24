@@ -235,6 +235,7 @@ function services_documentation_format_method($element) {
   $element['url'] = array();
 
   // Create HTTP method key.
+  if (empty($element['#method']['args'])) $element['#method']['args'] = [];
   foreach ($element['#method']['args'] as $key => $argument) {
     if (!empty($argument['source'])) {
       if (is_array($argument['source'])) {
