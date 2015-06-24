@@ -128,6 +128,7 @@ function services_documentation_method_element($method) {
 
   // Load and attach errors by looping through the error arrays to apply
   // appropriate #theme functions and#anchor values.
+  if (empty($element['#errors'])) return $element;
   foreach ($element['#errors'] as $key => $value) {
     $element['#errors'][$key]['#anchor'] = drupal_clean_css_identifier($method['resource']['name'] . '-' . $method['name'] . '-error-' . $key);
     $element['#errors'][$key]['#theme'] = 'services_documentation_method_error';
