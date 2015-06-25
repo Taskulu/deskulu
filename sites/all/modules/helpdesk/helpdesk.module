@@ -562,12 +562,21 @@ function helpdesk_field_access($op, $field, $entity_type, $entity, $account) {
 
 
 function helpdesk_rest_server_request_parsed_alter(&$data, $controller) {
-
   if ($controller['callback'] == '_node_resource_create') {
     if (empty($data['title_field']) && !empty($data['title'])) {
       global $language;
       $lang = !empty($data['language']) ? $data['language'] : $language->language;
       $data['title_field'][$lang][0]['value'] = $data['title'];
+    }
+    if (!empty($data['type']) && $data['type'] == 'ticket' && !empty($data['customer'])) {
+      $customer = $data['customer'];
+      unset($data['customer']);
+      if (!empty($customer['email'])) {
+        module_load_include('inc', 'incoming_mail', 'incoming_mail.rules');
+        if (empty($customer['name'])) $customer['name'] = '';
+        $account = incoming_mail_get_user_by_email($customer['email'], $customer['name'])['user'];
+        $data['uid'] = $account->uid;
+      }
     }
   }
   watchdog('helpdesk', var_export($data, 1));

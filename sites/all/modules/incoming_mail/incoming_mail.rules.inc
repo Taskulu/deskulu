@@ -141,14 +141,18 @@ function incoming_mail_get_user_by_email($email, $name = '') {
       'roles' => array(
         DRUPAL_AUTHENTICATED_RID => 'authenticated user',
       ),
-      'field_full_name' => array(
-        LANGUAGE_NONE => array(
-          0 => array(
-            'value' => $name,
-          ),
-        ),
-      ),
     );
+    if (!empty($name)) {
+      $fields += array(
+        'field_full_name' => array(
+          LANGUAGE_NONE => array(
+            0 => array(
+              'value' => $name,
+            ),
+          ),
+        )
+      );
+    }
     $account = user_save('', $fields);
     watchdog('incoming_mail', 'user: <pre>@u</pre>', ['@u' => var_export($account)]);
     drupal_mail('user', 'register_no_approval_required', $email, NULL, array('account' => $account), variable_get('site_mail', 'support@taskulu.com'));
