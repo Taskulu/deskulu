@@ -1,0 +1,126 @@
+<?php
+
+/**
+ * @file
+ * job scheduler module.
+ */
+
+/**
+ * Implements hook_help().
+ */
+function job_scheduler_trigger_help($path, $arg) {
+  switch ($path) {
+    case 'admin/structure/trigger/job_scheduler':
+      // The first line is the very same text trigger module provides. Do not edit.
+      $output = '<p>' . t('Triggers are events on your site, such as new content being added or a user logging in. The Trigger module associates these triggers with actions (functional tasks), such as unpublishing content containing certain keywords or e-mailing an administrator. The <a href="@url">Actions settings page</a> contains a list of existing actions and provides the ability to create and configure advanced actions (actions requiring configuration, such as an e-mail address or a list of banned words).', array('@url' => url('admin/config/system/actions'))) . '</p>';
+      $output .= '<p>' . t('Below you can assign actions to run on a periodic basis. To create more triggers of this type use the <a href="@url">Job Scheduler configuration</a> page.', array('@url' => url('admin/config/system/job_scheduler'))) . '</p>';
+      return $output;
+    case 'admin/config/system/job_scheduler':
+      $output = '<p>' . t('You can create any number of jobs that are triggered depending on a crontab.') . '</p>';
+      $output .= '<p>' . t('To set actions for these triggers, go to the <a href="@url">Job Scheduler Triggers</a> page.', array('@url' => url('admin/structure/trigger/job_scheduler'))) . '</p>';
+      return $output;
+  }
+}
+
+/**
+ * Implementation of hook_menu()
+ */
+function job_scheduler_trigger_menu() {
+  $items['admin/config/system/job_scheduler'] = array(
+    'title' => 'Trigger scheduler',
+    'description' => 'Configure timely triggers',
+    'page callback' => 'job_scheduler_trigger_admin_overview',
+    'access arguments' => array('administer site configuration'),
+    'file' => 'job_scheduler_trigger.admin.inc',
+  );
+  $items['admin/config/system/job_scheduler/add'] = array(
+    'title' => 'Trigger scheduler',
+    'description' => 'Configure timely triggers',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('job_scheduler_trigger_edit_form', NULL),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'job_scheduler_trigger.admin.inc',
+  );
+  $items['admin/config/system/job_scheduler/%job_scheduler_trigger'] = array(
+    'title' => 'Trigger scheduler',
+    'description' => 'Configure timely triggers',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('job_scheduler_trigger_edit_form', 4),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'job_scheduler_trigger.admin.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implementation of hook_trigger_info().
+ */
+function job_scheduler_trigger_trigger_info() {
+  $triggers = array();
+  foreach (job_scheduler_trigger_list() as $trigger) {
+    $label = $trigger->status ? $trigger->title : $trigger->title . ' ' . t('(Disabled)');
+    $triggers['job_scheduler'][$trigger->hook] = array(
+      'label' => $label,
+    );
+  }
+  return $triggers;
+}
+
+/**
+ * Implementation of hook_job_scheduler_info()
+ */
+function job_scheduler_trigger_cron_job_scheduler_info() {
+  foreach (job_scheduler_trigger_list() as $trigger) {
+    if ($trigger->status) {
+      $jobs[$trigger->trid] = array('id' => $trigger->trid, 'type' => $trigger->hook, 'crontab' => $trigger->crontab, 'periodic' => TRUE);
+    }
+  }
+  if (!empty($jobs)) {
+    $scheduler['job_scheduler_trigger'] = array(
+      'worker callback' => 'job_scheduler_trigger_worker',
+      'jobs' => $jobs,
+    );
+    return $scheduler;
+  }
+}
+
+/**
+ * Get job list for job scheduler
+ */
+function job_scheduler_trigger_list() {
+  return db_select('job_scheduler_trigger', 't')
+    ->fields('t')
+    ->orderBy('status', 'DESC')
+    ->execute()->fetchAll();
+}
+
+/**
+ * Fire up a scheduled trigger
+ */
+function job_scheduler_trigger_worker($job) {
+  // Mark last time triggered for the records
+  db_update('job_scheduler_trigger')
+    ->fields(array('last' => REQUEST_TIME))
+    ->condition('trid', $job['id'])
+    ->execute();
+  if ($aids = trigger_get_assigned_actions($job['type'])) {
+    $context = array(
+      'group' => 'scheduler',
+      'hook' => $job['type'],
+      'job' => $job,
+    );
+    // Scheduler's object is the job from job_scheduler
+    $object = (object)$job;
+    actions_do(array_keys($aids), $object, $context);
+  }
+}
+
+/**
+ * Menu loader
+ */
+function job_scheduler_trigger_load($trid) {
+  return db_select('job_scheduler_trigger', 't')
+    ->fields('t')
+    ->condition('trid', $trid)
+    ->execute()->fetchObject();
+}

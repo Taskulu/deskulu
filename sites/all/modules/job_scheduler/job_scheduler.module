@@ -1,0 +1,158 @@
+<?php
+
+/**
+ * @file
+ * job scheduler module.
+ */
+
+/**
+ * Collects and returns scheduler info.
+ *
+ * @see hook_cron_job_scheduler_info()
+ *
+ * @param $name
+ *   Name of the schedule
+ * @return array
+ *   Information for the schedule if $name, all the information if not
+ */
+function job_scheduler_info($name = NULL) {
+  $info = &drupal_static(__FUNCTION__);
+  if (!$info) {
+    $info = module_invoke_all('cron_job_scheduler_info');
+    drupal_alter('cron_job_scheduler_info', $info);
+  }
+  if ($name) {
+    return isset($info[$name]) ? $info[$name] : NULL;
+  }
+  else {
+    return $info;
+  }
+}
+
+/**
+ * Implements hook_cron().
+ */
+function job_scheduler_cron() {
+  // Reschedule all jobs if requested.
+  if (variable_get('job_scheduler_rebuild_all', FALSE)) {
+    foreach (job_scheduler_info() as $name => $info) {
+      job_scheduler_rebuild_scheduler($name, $info);
+    }
+    variable_set('job_scheduler_rebuild_all', FALSE);
+    return;
+  }
+
+  // Reschedule stuck periodic jobs after one hour.
+  db_update('job_schedule')
+    ->fields(array(
+      'scheduled' => 0,
+    ))
+    ->condition('scheduled', REQUEST_TIME - 3600, '<')
+    ->condition('periodic', 1)
+    ->execute();
+
+  // Query and dispatch scheduled jobs.
+  // Process a maximum of 200 jobs in a maximum of 30 seconds.
+  $start = time();
+  $total =
+  $failed = 0;
+  $jobs = db_select('job_schedule', NULL, array('fetch' => PDO::FETCH_ASSOC))
+            ->fields('job_schedule')
+            ->condition('scheduled', 0)
+            ->condition('next', REQUEST_TIME, '<=')
+            ->orderBy('next', 'ASC')
+            ->range(0, 200)
+            ->execute();
+  foreach ($jobs as $job) {
+    try {
+      JobScheduler::get($job['name'])->dispatch($job);
+    }
+    catch (Exception $e) {
+      watchdog('job_scheduler', $e->getMessage(), array(), WATCHDOG_ERROR);
+      $failed++;
+      // Drop jobs that have caused exceptions
+      JobScheduler::get($job['name'])->remove($job);
+    }
+    $total++;
+    if (time() > ($start + 30)) {
+      break;
+    }
+  }
+
+  // Leave a note on how much time we spent processing.
+  watchdog('job_scheduler', 'Finished processing scheduled jobs (!time s, !total total, !failed failed).', array('!time' => format_interval(time() - $start), '!total' => $total, '!failed' => $failed));
+}
+
+/**
+ * Implements hook_modules_enabled().
+ */
+function job_scheduler_modules_enabled($modules) {
+  job_scheduler_rebuild_all();
+}
+
+/**
+ * Implements hook_modules_disabled().
+ */
+function job_scheduler_modules_disabled($modules) {
+  job_scheduler_rebuild_all();
+}
+
+/**
+ * Rebuild scheduled information after enable/disable modules
+ *
+ * @todo What should we do about missing ones when disabling their module?
+ */
+function job_scheduler_rebuild_all() {
+  variable_set('job_scheduler_rebuild_all', TRUE);
+}
+
+/**
+ * Rebuild a single scheduler
+ */
+function job_scheduler_rebuild_scheduler($name, $info = NULL) {
+  $info = $info ? $info : job_scheduler_info($name);
+  if (!empty($info['jobs'])) {
+    $scheduler = JobScheduler::get($name);
+    foreach ($info['jobs'] as $job) {
+      if (!$scheduler->check($job)) {
+        $scheduler->set($job);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_cron_queue_info().
+ *
+ * Provide queue worker information for jobs declared in
+ * hook_cron_job_scheduler_info().
+ */
+function job_scheduler_cron_queue_info() {
+  $queue = array();
+  foreach (job_scheduler_info() as $name => $info) {
+    if (!empty($info['jobs']) && !empty($info['queue name'])) {
+      $queue[$info['queue name']] = array(
+        'worker callback' => 'job_scheduler_cron_queue_worker',
+        'time' => 60, // Some reasonable default as we don't know
+      );
+    }
+  }
+  return $queue;
+}
+
+/**
+ * Execute job worker from queue
+ *
+ * Providing our own worker has the advantage that we can reschedule the job or take care of cleanup
+ * Note that as we run the execute() action, the job won't be queued again this time.
+ */
+function job_scheduler_cron_queue_worker($job) {
+  try {
+    JobScheduler::get($job['name'])->execute($job);
+  }
+  catch (Exception $e) {
+    watchdog('job_scheduler', $e->getMessage(), array(), WATCHDOG_ERROR);
+    // Drop jobs that have caused exceptions
+    JobScheduler::get($job['name'])->remove($job);
+  }
+}

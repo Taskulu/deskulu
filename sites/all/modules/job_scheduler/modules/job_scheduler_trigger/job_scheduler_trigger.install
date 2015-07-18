@@ -1,0 +1,54 @@
+<?php
+
+/**
+ * Implementation of hook_schema().
+ */
+function job_scheduler_trigger_schema() {
+  $schema['job_scheduler_trigger'] = array(
+    'description' => 'Schedule of triggers to be created.',
+    'fields' => array(
+       'trid' => array(
+        'description' => 'Primary Key: unique trigger id.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'hook' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Primary Key: The name of the internal Drupal hook; for example, job_scheduer_100.',
+      ),
+      'title' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Title for the trigger.',
+      ),
+      'crontab' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Crontab line in *NIX format.',
+      ),
+      'status' => array(
+        'description' => 'Boolean indicating whether the trigger is active.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+      'last' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'default' => 0,
+        'not null' => TRUE,
+        'description' => 'Timestamp when it was lat triggered.',
+      ),
+    ),
+    'primary key' => array('trid'),
+  );
+  return $schema;
+}

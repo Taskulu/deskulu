@@ -1,0 +1,15 @@
+name = Job Scheduler
+description = Scheduler API
+files[] = job_scheduler.module
+files[] = job_scheduler.install
+files[] = JobScheduler.inc
+files[] = JobSchedulerCronTab.inc
+core = 7.x
+php = 5.2
+
+; Information added by drupal.org packaging script on 2012-05-08
+version = "7.x-2.0-alpha3"
+core = "7.x"
+project = "job_scheduler"
+datestamp = "1336466457"
+
