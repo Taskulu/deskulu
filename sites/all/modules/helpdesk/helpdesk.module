@@ -223,7 +223,7 @@ function helpdesk_new_ticket_form_create_user($form, &$form_state) {
       ->fields(array('name' => $new_name))
       ->condition('uid', $account->uid)
       ->execute();
-    
+
     drupal_mail('user', 'status_activated', $email, NULL, array('account' => $account), variable_get('site_mail', 'support@taskulu.com'));
   }
   $form_state['user'] = $account;
@@ -579,6 +579,4 @@ function helpdesk_rest_server_request_parsed_alter(&$data, $controller) {
       }
     }
   }
-  watchdog('helpdesk', var_export($data, 1));
-  watchdog('helpdesk', var_export($controller, 1));
 }

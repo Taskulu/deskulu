@@ -280,13 +280,20 @@ function _node_resource_retrieve($nid) {
  * @see drupal_form_submit()
  */
 function _node_resource_create($node) {
-  global $user;
+  $account = NULL;
+  if ($node['uid']) {
+    $account = user_load($node['uid']);
+  }
+  if (empty($account)) {
+    global $user;
+    $account = $user;
+  }
   // Adds backwards compatability with regression fixed in #1083242
   $node = _services_arg_value($node, 'node');
   if (!isset($node['name'])) {
     // Assign username to the node from $user created at auth step.
-    if (isset($user->name)) {
-      $node['name'] = $user->name;
+    if (isset($account->name)) {
+      $node['name'] = $account->name;
     }
   }
   if(!isset($node['language'])) {
@@ -312,7 +319,7 @@ function _node_resource_create($node) {
   // has permission to change it, $form_state['values'] will override this
   // default when the form is submitted).
   $stub_node = (object) array_intersect_key($node, array_flip(array('type', 'language')));
-  $stub_node->name = $user->name;
+  $stub_node->name = $account->name;
 
   // Contributed modules may check the triggering element in the form state.
   // The triggering element is usually set from the browser's POST request, so
