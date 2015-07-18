@@ -1,0 +1,22 @@
+name = Feeds XPath Parser
+description = Parse an XML or HTML document using XPath.
+package = Feeds
+dependencies[] = feeds
+
+files[] = FeedsXPathParserBase.inc
+files[] = FeedsXPathParserHTML.inc
+files[] = FeedsXPathParserXML.inc
+files[] = FeedsXPathParserQueryParser.inc
+files[] = FeedsXPathParserDOMXPath.inc
+files[] = tests/feeds_xpathparser.test
+files[] = tests/feeds_xpathparser_parser_html.test
+files[] = tests/feeds_xpathparser_parser_xml.test
+files[] = tests/feeds_xpathparser_query_parser.test
+core = 7.x
+
+; Information added by Drupal.org packaging script on 2015-07-03
+version = "7.x-1.1"
+core = "7.x"
+project = "feeds_xpathparser"
+datestamp = "1435895044"
+

@@ -1,0 +1,160 @@
+<?php
+
+/**
+ * @file
+ * Tests for Feeds Admin UI module.
+ */
+
+/**
+ * Test basic Feeds UI functionality.
+ */
+class FeedsUIUserInterfaceTestCase extends FeedsWebTestCase {
+  public static function getInfo() {
+    return array(
+      'name' => 'Feeds UI user interface',
+      'description' => 'Tests Feeds Admin UI module\'s GUI.',
+      'group' => 'Feeds',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp(array('php'), array('use PHP for settings'));
+  }
+
+  /**
+   * UI functionality tests on
+   * feeds_ui_overview(),
+   * feeds_ui_create_form(),
+   * Change plugins on feeds_ui_edit_page().
+   */
+  public function testEditFeedConfiguration() {
+
+    // Create an importer.
+    $this->createImporterConfiguration('Test feed', 'test_feed');
+
+    // Assert UI elements.
+    $this->drupalGet('admin/structure/feeds/test_feed');
+    $this->assertText('Basic settings');
+    $this->assertText('Fetcher');
+    $this->assertText('HTTP Fetcher');
+    $this->assertText('Parser');
+    $this->assertText('Common syndication parser');
+    $this->assertText('Processor');
+    $this->assertText('Node processor');
+    $this->assertText('Getting started');
+    $this->assertRaw('admin/structure/feeds/test_feed/settings');
+    $this->assertRaw('admin/structure/feeds/test_feed/settings/FeedsNodeProcessor');
+    $this->assertRaw('admin/structure/feeds/test_feed/fetcher');
+    $this->assertRaw('admin/structure/feeds/test_feed/parser');
+    $this->assertRaw('admin/structure/feeds/test_feed/processor');
+    $this->drupalGet('import');
+    $this->assertText('Basic page');
+
+    // Select some other plugins.
+    $this->drupalGet('admin/structure/feeds/test_feed');
+
+    $this->clickLink('Change', 0);
+    $this->assertText('Select a fetcher');
+    $edit = array(
+      'plugin_key' => 'FeedsFileFetcher',
+    );
+    $this->drupalPost('admin/structure/feeds/test_feed/fetcher', $edit, 'Save');
+
+    $this->clickLink('Change', 1);
+    $this->assertText('Select a parser');
+    $edit = array(
+      'plugin_key' => 'FeedsCSVParser',
+    );
+    $this->drupalPost('admin/structure/feeds/test_feed/parser', $edit, 'Save');
+
+    $this->clickLink('Change', 2);
+    $this->assertText('Select a processor');
+    $edit = array(
+      'plugin_key' => 'FeedsUserProcessor',
+    );
+    $this->drupalPost('admin/structure/feeds/test_feed/processor', $edit, 'Save');
+
+    // Assert changed configuration.
+    $this->assertPlugins('test_feed', 'FeedsFileFetcher', 'FeedsCSVParser', 'FeedsUserProcessor');
+
+    // Delete importer.
+    $this->drupalPost('admin/structure/feeds/test_feed/delete', array(), 'Delete');
+    $this->drupalGet('import');
+    $this->assertNoText('Test feed');
+
+    // Create the same importer again.
+    $this->createImporterConfiguration('Test feed', 'test_feed');
+
+    // Test basic settings settings.
+    $edit = array(
+      'name' => 'Syndication feed',
+      'content_type' => 'page',
+      'import_period' => 3600,
+    );
+    $this->setSettings('test_feed', NULL, $edit);
+
+    // Assert results of change.
+    $this->assertText('Syndication feed');
+    $this->assertText('Your changes have been saved.');
+    $this->assertText('Attached to: Basic page');
+    $this->assertText('Periodic import: every 1 hour');
+    $this->drupalGet('admin/structure/feeds');
+    $this->assertLink('Basic page');
+
+    // Configure processor.
+    $this->setSettings('test_feed', 'FeedsNodeProcessor', array('bundle' => 'article'));
+    $this->assertFieldByName('bundle', 'article');
+
+    // Create a feed node.
+    $edit = array(
+      'title' => 'Development Seed',
+      'feeds[FeedsHTTPFetcher][source]' => $GLOBALS['base_url'] . '/' . drupal_get_path('module', 'feeds') . '/tests/feeds/developmentseed.rss2',
+      );
+    $this->drupalPost('node/add/page', $edit, 'Save');
+    $this->assertText('Basic page Development Seed has been created.');
+
+    // @todo Refreshing/deleting feed items. Needs to live in feeds.test
+  }
+
+  public function testImporterImport() {
+    $name = $this->randomString();
+    $id = drupal_strtolower($this->randomName());
+    $this->createImporterConfiguration($name, $id);
+    $this->setPlugin($id, 'FeedsCSVParser');
+    $this->setPlugin($id, 'FeedsFileFetcher');
+    $this->setPlugin($id, 'FeedsTermProcessor');
+
+    $this->setSettings($id, 'FeedsFileFetcher', array('allowed_extensions' => 'xml'));
+    $this->setSettings($id, 'FeedsCSVParser', array('delimiter' => '|'));
+    $this->setSettings($id, 'FeedsUserProcessor', array('skip_hash_check' => TRUE));
+
+    $this->drupalGet('admin/structure/feeds/' . $id . '/export');
+
+    $export = $this->xpath('//textarea[1]/text()');
+    $export = (string) $export[0];
+
+    // Delete this importer.
+    $this->drupalPost('admin/structure/feeds/' . $id . '/delete', array(), t('Delete'));
+
+    // Try to import.
+    $this->drupalPost('admin/structure/feeds/import', array('importer' => $export), t('Import'));
+
+    $this->assertText("Successfully imported the $id feeds importer.");
+
+    // Check that the settings are correct.
+    $importer = feeds_importer($id);
+    $this->assertEqual('FeedsFileFetcher', get_class($importer->fetcher));
+    $this->assertEqual('FeedsCSVParser', get_class($importer->parser));
+    $this->assertEqual('FeedsTermProcessor', get_class($importer->processor));
+
+    $config = $importer->fetcher->getConfig();
+    $this->assertEqual('xml', $config['allowed_extensions']);
+
+    $config = $importer->parser->getConfig();
+    $this->assertEqual('|', $config['delimiter']);
+
+    $config = $importer->processor->getConfig();
+    $this->assertTrue($config['skip_hash_check']);
+  }
+
+}

@@ -1,0 +1,23 @@
+/**
+ * @file
+ * Feeds CSS magic.
+ */
+
+/* For file uploads, display previously uploaded files on the left side. */
+.feeds-file-info {
+  float: left;
+  width: 200px;
+  border-right: 1px solid #ccc;
+  margin-right: 10px;
+  margin-bottom: 10px;
+}
+
+/* For file uploads, display upload field on the right side. */
+.feeds-file-upload {
+  float: left;
+}
+
+/* Make sure file upload fields don't get too wide. */
+.feeds-file-upload .form-file {
+  width: auto;
+}

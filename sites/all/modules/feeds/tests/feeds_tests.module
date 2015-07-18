@@ -1,0 +1,367 @@
+<?php
+
+/**
+ * @file
+ * Helper module for Feeds tests.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function feeds_tests_menu() {
+  $items['testing/feeds/flickr.xml'] = array(
+    'page callback' => 'feeds_tests_flickr',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['testing/feeds/files.csv'] = array(
+    'page callback' => 'feeds_tests_files',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['testing/feeds/files-remote.csv'] = array(
+    'page callback' => 'feeds_tests_files_remote',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['testing/feeds/files-empty-alt-title.csv'] = array(
+    'page callback' => 'feeds_tests_files_empty_alt_title',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['testing/feeds/files-empty.csv'] = array(
+    'page callback' => 'feeds_tests_files_empty',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function feeds_tests_theme() {
+  return array(
+    'feeds_tests_flickr' => array(
+      'variables' => array('image_urls' => array()),
+      'path' => drupal_get_path('module', 'feeds_tests') . '/feeds',
+      'template' => 'feeds-tests-flickr',
+    ),
+    'feeds_tests_files' => array(
+      'variables' => array('files' => array()),
+      'path' => drupal_get_path('module', 'feeds_tests') . '/feeds',
+      'template' => 'feeds-tests-files',
+    ),
+    'feeds_tests_files_empty' => array(
+      'variables' => array('files' => array()),
+      'path' => drupal_get_path('module', 'feeds_tests') . '/feeds',
+      'template' => 'feeds-tests-files-empty',
+    ),
+  );
+}
+
+/**
+ * Outputs flickr test feed.
+ */
+function feeds_tests_flickr() {
+  $images = array(
+    0 => "tubing.jpeg",
+    1 => "foosball.jpeg",
+    2 => "attersee.jpeg",
+    3 => "hstreet.jpeg",
+    4 => "la fayette.jpeg",
+  );
+  $path = drupal_get_path('module', 'feeds_tests') . '/feeds/assets';
+  foreach ($images as &$image) {
+    $image = file_create_url("$path/$image");
+  }
+  drupal_add_http_header('Content-Type', 'application/rss+xml; charset=utf-8');
+  print theme('feeds_tests_flickr', array('image_urls' => $images));
+}
+
+/**
+ * Outputs a CSV file pointing to files.
+ */
+function feeds_tests_files() {
+  $images = array(
+    0 => "tubing.jpeg",
+    1 => "foosball.jpeg",
+    2 => "attersee.jpeg",
+    3 => "hstreet.jpeg",
+    4 => "la fayette.jpeg",
+  );
+  foreach ($images as &$image) {
+    $image = "public://images/$image";
+  }
+  drupal_add_http_header('Content-Type', 'text/plain; charset=utf-8');
+  print theme('feeds_tests_files', array('files' => $images));
+}
+
+/**
+ * Outputs a CSV file pointing to files to download.
+ */
+function feeds_tests_files_remote() {
+  $images = array(
+    0 => 'tubing.jpeg',
+    1 => 'foosball.jpeg',
+    2 => 'attersee.jpeg',
+    3 => 'hstreet.jpeg',
+    4 => 'la fayette.jpeg',
+  );
+  $path = drupal_get_path('module', 'feeds_tests') . '/feeds/assets';
+  foreach ($images as &$image) {
+    $image = file_create_url("$path/$image");
+  }
+  drupal_add_http_header('Content-Type', 'text/plain; charset=utf-8');
+  print theme('feeds_tests_files', array('files' => $images));
+}
+
+/**
+ * Outputs a CSV file pointing to files without alt/title.
+ *
+ * This is used to test if alt/title attributes are removed on a second import.
+ */
+function feeds_tests_files_empty_alt_title() {
+  $images = array(
+    0 => 'tubing.jpeg',
+    1 => 'foosball.jpeg',
+    2 => 'attersee.jpeg',
+    3 => 'hstreet.jpeg',
+    4 => 'la fayette.jpeg',
+  );
+  $path = drupal_get_path('module', 'feeds_tests') . '/feeds/assets';
+  foreach ($images as &$image) {
+    $image = file_create_url("$path/$image");
+  }
+  drupal_add_http_header('Content-Type', 'text/plain; charset=utf-8');
+  print theme('feeds_tests_files_empty', array('files' => $images));
+}
+
+/**
+ * Outputs a CSV file pointing to no files.
+ *
+ * This is used to test if files are removed on a second import.
+ */
+function feeds_tests_files_empty() {
+  $images = array(
+    0 => '',
+    1 => '',
+    2 => '',
+    3 => '',
+    4 => '',
+  );
+  drupal_add_http_header('Content-Type', 'text/plain; charset=utf-8');
+  print theme('feeds_tests_files_empty', array('files' => $images));
+}
+
+/**
+ * Implements hook_feeds_processor_targets().
+ */
+function feeds_tests_feeds_processor_targets($entity_type, $bundle) {
+  $targets = array();
+
+  // Tests that old keys still work.
+  $targets['test_target_compat'] = array(
+    'name' => t('Old style target'),
+    'callback' => 'feeds_tests_mapper_set_target',
+    'summary_callback' => 'feeds_tests_mapper_summary',
+    'form_callback' => 'feeds_tests_mapper_form',
+  );
+
+  $targets['test_target'] = array(
+    'name' => t('Test Target'),
+    'description' => t('This is a test target.'),
+    'callback' => 'feeds_tests_mapper_set_target',
+    'summary_callbacks' => array('feeds_tests_mapper_summary', 'feeds_tests_mapper_summary_2'),
+    'form_callbacks' => array('feeds_tests_mapper_form', 'feeds_tests_mapper_form_2'),
+    'preprocess_callbacks' => array(array(new FeedsTestsPreprocess(), 'callback')),
+  );
+
+  $targets['test_unique_target'] = array(
+    'name' => t('Test unique target'),
+    'description' => t('This is a unique test target.'),
+    'callback' => 'feeds_tests_mapper_set_target',
+    'optional_unique' => TRUE,
+    'unique_callbacks' => array('feeds_tests_mapper_unique'),
+    'preprocess_callbacks' => array(
+      array('FeedsTestsPreprocess', 'callback'),
+      // Make sure that invalid callbacks are filtered.
+      '__feeds_tests_invalid_callback',
+    ),
+  );
+
+  return $targets;
+}
+
+/**
+ * Implements hook_feeds_processor_targets_alter().
+ */
+function feeds_tests_feeds_processor_targets_alter(array &$targets, $entity_type, $bundle) {
+  if (!isset($targets['test_target'])) {
+    return;
+  }
+
+  $targets['test_target']['description'] = t('The target description was altered.');
+}
+
+/**
+ * Preprocess callback for test_target.
+ *
+ * @see feeds_tests_feeds_processor_targets()
+ */
+function feeds_tests_preprocess_callback(FeedsSource $source, $target_item, $target, array &$mapping) {
+  $mapping['required_value'] = TRUE;
+}
+
+/**
+ * Set target value on entity.
+ *
+ * @see my_module_set_target()
+ */
+function feeds_tests_mapper_set_target(FeedsSource $source, $entity, $target, array $values, array $mapping) {
+  if (empty($mapping['required_value'])) {
+    trigger_error('The required value was not set.', E_USER_ERROR);
+  }
+
+  $entity->body['und'][0]['value'] = serialize($mapping);
+}
+
+/**
+ * Provides setting summary for the mapper.
+ *
+ * @see my_module_summary_callback()
+ */
+function feeds_tests_mapper_summary(array $mapping, $target, array $form, array $form_state) {
+  $options = array(
+    'option1' => t('Option 1'),
+    'option2' => t('Another Option'),
+    'option3' => t('Option for select'),
+    'option4' => t('Another One'),
+  );
+
+  $items = array();
+  if (!empty($mapping['checkbox']) && $mapping['checkbox']) {
+    $items[] = t('Checkbox active.');
+  }
+  else {
+    $items[] = t('Checkbox inactive.');
+  }
+  if (!empty($mapping['textfield'])) {
+    $items[] = t('<strong>Textfield value</strong>: %textfield', array('%textfield' => $mapping['textfield']));
+  }
+  if (!empty($mapping['textarea'])) {
+    $items[] = t('<strong>Textarea value</strong>: %textarea', array('%textarea' => $mapping['textarea']));
+  }
+  if (!empty($mapping['radios'])) {
+    $items[] = t('<strong>Radios value</strong>: %radios', array('%radios' => $options[$mapping['radios']]));
+  }
+  if (!empty($mapping['select'])) {
+    $items[] = t('<strong>Select value</strong>: %select', array('%select' => $options[$mapping['select']]));
+  }
+  $list = array(
+    '#type' => 'ul',
+    '#theme' => 'item_list',
+    '#items' => $items,
+  );
+  return drupal_render($list);
+}
+
+/**
+ * Provides a second summary callback.
+ *
+ * @see my_module_summary_callback()
+ */
+function feeds_tests_mapper_summary_2(array $mapping, $target, array $form, array $form_state) {
+  $mapping += array('second_value' => '');
+  return t('Second summary: @value', array('@value' => $mapping['second_value']));
+}
+
+/**
+ * Provides the form with mapper settings.
+ */
+function feeds_tests_mapper_form(array $mapping, $target, array $form, array $form_state) {
+  $mapping += array(
+    'checkbox' => FALSE,
+    'textfield' => '',
+    'textarea' => '',
+    'radios' => NULL,
+    'select' => NULL,
+  );
+  return array(
+    'checkbox' => array(
+      '#type' => 'checkbox',
+      '#title' => t('A checkbox'),
+      '#default_value' => !empty($mapping['checkbox']),
+    ),
+    'textfield' => array(
+      '#type' => 'textfield',
+      '#title' => t('A text field'),
+      '#default_value' => $mapping['textfield'],
+      '#required' => TRUE,
+    ),
+    'textarea' => array(
+      '#type' => 'textarea',
+      '#title' => t('A textarea'),
+      '#default_value' => $mapping['textarea'],
+    ),
+    'radios' => array(
+      '#type' => 'radios',
+      '#title' => t('Some radios'),
+      '#options' => array('option1' => t('Option 1'), 'option2' => t('Another Option')),
+      '#default_value' => $mapping['radios'],
+    ),
+    'select' => array(
+      '#type' => 'select',
+      '#title' => t('A select list'),
+      '#options' => array('option3' => t('Option for select'), 'option4' => t('Another One')),
+      '#default_value' => $mapping['select'],
+    ),
+  );
+}
+
+/**
+ * Provides a second settings form.
+ */
+function feeds_tests_mapper_form_2(array $mapping, $target, array $form, array $form_state) {
+  return array(
+    'second_value' => array(
+      '#type' => 'textfield',
+      '#title' => t('The second callback value'),
+      '#default_value' => !empty($mapping['second_value']) ? $mapping['second_value'] : '',
+    ),
+  );
+}
+
+/**
+ * Callback for unique_callbacks for test_target mapper.
+ *
+ * @see feeds_tests_feeds_processor_targets()
+ */
+function feeds_tests_mapper_unique(FeedsSource $source, $entity_type, $bundle, $target, array $values) {
+  $query = new EntityFieldQuery();
+  $result = $query
+    ->entityCondition('entity_type', $entity_type)
+    ->entityCondition('bundle', $bundle)
+    ->fieldCondition('field_alpha', 'value', $values)
+    ->execute();
+
+  if (!empty($result[$entity_type])) {
+    return key($result[$entity_type]);
+  }
+}
+
+/**
+ * Helper class to ensure callbacks can be objects.
+ */
+class FeedsTestsPreprocess {
+
+/**
+ * Preprocess callback for test_target.
+ *
+ * @see feeds_tests_feeds_processor_targets()
+ */
+  public static function callback(FeedsSource $source, $target_item, $target, array &$mapping) {
+    $mapping['required_value'] = TRUE;
+  }
+
+}

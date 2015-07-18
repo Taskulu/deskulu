@@ -1,0 +1,354 @@
+<?php
+
+/**
+ * @file
+ * Contains FeedsMapperLinkTestCase.
+ */
+
+/**
+ * Test case for CCK link mapper mappers/date.inc.
+ */
+class FeedsMapperLinkTestCase extends FeedsMapperTestCase {
+
+  /**
+   * Title for link fields with a static title.
+   *
+   * @var string
+   */
+  private $staticTitle;
+
+  /**
+   * Name of created content type.
+   *
+   * @var string
+   */
+  private $contentType;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Mapper: Link',
+      'description' => 'Test Feeds Mapper support for Link fields.',
+      'group' => 'Feeds',
+      'dependencies' => array('link'),
+    );
+  }
+
+  public function setUp() {
+    parent::setUp(array('link'));
+
+    $this->staticTitle = $this->randomName();
+
+    // Create content type.
+    $this->contentType = $this->createContentType(array(), array(
+      'alpha' => array(
+        'type' => 'link_field',
+        'instance_settings' => array(
+          'instance[settings][title]' => 'required',
+        ),
+      ),
+      'beta' => array(
+        'type' => 'link_field',
+        'instance_settings' => array(
+          'instance[settings][title]' => 'none',
+        ),
+      ),
+      'gamma' => array(
+        'type' => 'link_field',
+        'instance_settings' => array(
+          'instance[settings][title]' => 'optional',
+        ),
+      ),
+      'omega' => array(
+      'type' => 'link_field',
+        'instance_settings' => array(
+          'instance[settings][title]' => 'value',
+          'instance[settings][title_value]' => $this->staticTitle,
+        ),
+      ),
+    ));
+  }
+
+  /**
+   * Basic test loading a single entry CSV file.
+   */
+  public function test() {
+    // Create importer configuration.
+    $this->createImporterConfiguration(); //Create a default importer configuration
+    $this->setSettings('syndication', 'FeedsNodeProcessor', array('bundle' => $this->contentType)); //Processor settings
+    $this->addMappings('syndication', array(
+      0 => array(
+        'source' => 'title',
+        'target' => 'title'
+      ),
+      1 => array(
+        'source' => 'timestamp',
+        'target' => 'created'
+      ),
+      2 => array(
+        'source' => 'description',
+        'target' => 'body'
+      ),
+      3 => array(
+        'source' => 'url',
+        'target' => 'field_alpha:url'
+      ),
+      4 => array(
+        'source' => 'title',
+        'target' => 'field_alpha:title'
+      ),
+      5 => array(
+        'source' => 'url',
+        'target' => 'field_beta:url'
+      ),
+      6 => array(
+        'source' => 'url',
+        'target' => 'field_gamma:url'
+      ),
+      7 => array(
+        'source' => 'title',
+        'target' => 'field_gamma:title'
+      ),
+      8 => array(
+        'source' => 'url',
+        'target' => 'field_omega:url'
+      ),
+    ));
+
+    // Import RSS file.
+    $nid = $this->createFeedNode();
+    // Assert 10 items aggregated after creation of the node.
+    $this->assertText('Created 10 nodes');
+
+    // Edit the imported node.
+    $this->drupalGet('node/2/edit');
+
+    $url = 'http://developmentseed.org/blog/2009/oct/06/open-atrium-translation-workflow-two-way-updating';
+    $title = 'Open Atrium Translation Workflow: Two Way Translation Updates';
+    $this->assertNodeFieldValue('alpha', array('url' => $url, 'static' => $title));
+    $this->assertNodeFieldValue('beta', array('url' =>  $url));
+    $this->assertNodeFieldValue('gamma', array('url' => $url, 'static' => $title));
+    $this->assertNodeFieldValue('omega', array('url' => $url, 'static' => $this->staticTitle));
+
+    // Test the static title.
+    $this->drupalGet('node/2');
+    $this->assertText($this->staticTitle, 'Static title link found.');
+  }
+
+  /**
+   * Tests if values are cleared out when an empty value or no value
+   * is provided.
+   */
+  public function testClearOutValues() {
+    // Create and configure importer.
+    $this->createImporterConfiguration('Content CSV', 'csv');
+    $this->setSettings('csv', NULL, array(
+      'content_type' => '',
+      'import_period' => FEEDS_SCHEDULE_NEVER,
+    ));
+    $this->setPlugin('csv', 'FeedsFileFetcher');
+    $this->setPlugin('csv', 'FeedsCSVParser');
+    $this->setSettings('csv', 'FeedsNodeProcessor', array(
+      'bundle' => $this->contentType,
+      'update_existing' => 1,
+    ));
+    $this->addMappings('csv', array(
+      0 => array(
+        'source' => 'guid',
+        'target' => 'guid',
+        'unique' => TRUE,
+      ),
+      1 => array(
+        'source' => 'title',
+        'target' => 'title'
+      ),
+      2 => array(
+        'source' => 'url',
+        'target' => 'field_alpha:url'
+      ),
+      3 => array(
+        'source' => 'link_title',
+        'target' => 'field_alpha:title'
+      ),
+      4 => array(
+        'source' => 'url',
+        'target' => 'field_beta:url'
+      ),
+      5 => array(
+        'source' => 'link_title',
+        'target' => 'field_beta:title'
+      ),
+      6 => array(
+        'source' => 'url',
+        'target' => 'field_gamma:url'
+      ),
+      7 => array(
+        'source' => 'link_title',
+        'target' => 'field_gamma:title'
+      ),
+      8 => array(
+        'source' => 'url',
+        'target' => 'field_omega:url'
+      ),
+      9 => array(
+        'source' => 'link_title',
+        'target' => 'field_omega:title'
+      ),
+    ));
+
+    // Import CSV file.
+    $this->importFile('csv', $this->absolutePath() . '/tests/feeds/content_link.csv');
+    $this->assertText('Created 2 nodes');
+
+    // Check the imported nodes.
+    $link_values = array(
+      1 => array(
+        'title' => 'Feeds',
+        'url' => 'https://www.drupal.org/project/feeds',
+      ),
+      2 => array(
+        'title' => 'Framework for expected behavior when importing empty/blank values',
+        'url' => 'https://www.drupal.org/node/1107522',
+      ),
+    );
+
+    for ($i = 1; $i <= 2; $i++) {
+      $this->drupalGet("node/$i/edit");
+      $this->assertNodeFieldValue('alpha', array(
+        'url' => $link_values[$i]['url'],
+        'title' => $link_values[$i]['title'],
+      ));
+      $this->assertNodeFieldValue('beta', array(
+        'url' => $link_values[$i]['url'],
+      ));
+      $this->assertNodeFieldValue('gamma', array(
+        'url' => $link_values[$i]['url'],
+        'title' => $link_values[$i]['title'],
+      ));
+      $this->assertNodeFieldValue('omega', array(
+        'url' => $link_values[$i]['url'],
+      ));
+
+      // Test static title.
+      $this->drupalGet("node/$i");
+      $this->assertText($this->staticTitle, 'Static title link found.');
+    }
+
+    // Import CSV file with empty values.
+    $this->importFile('csv', $this->absolutePath() . '/tests/feeds/content_empty.csv');
+    $this->assertText('Updated 2 nodes');
+
+    // Check if all values were cleared out for both nodes.
+    for ($i = 1; $i <= 2; $i++) {
+      $this->drupalGet("node/$i/edit");
+      $this->assertNoNodeFieldValue('alpha', array(
+        'url' => $link_values[$i]['url'],
+        'title' => $link_values[$i]['title'],
+      ));
+      $this->assertNoNodeFieldValue('beta', array(
+        'url' => $link_values[$i]['url'],
+      ));
+      $this->assertNoNodeFieldValue('gamma', array(
+        'url' => $link_values[$i]['url'],
+        'title' => $link_values[$i]['title'],
+      ));
+      $this->assertNoNodeFieldValue('omega', array(
+        'url' => $link_values[$i]['url'],
+      ));
+      // Check labels.
+      $this->drupalGet('node/' . $i);
+      $this->assertNoText('alpha_link_field_label');
+      $this->assertNoText('beta_link_field_label');
+      $this->assertNoText('gamma_link_field_label');
+      $this->assertNoText('omega_link_field_label');
+
+      // Assert that the static title is no longer shown.
+      $this->assertNoText($this->staticTitle, 'Static title link not found.');
+    }
+
+    // Re-import the first file again and check if the values returned.
+    $this->importFile('csv', $this->absolutePath() . '/tests/feeds/content_link.csv');
+    $this->assertText('Updated 2 nodes');
+    for ($i = 1; $i <= 2; $i++) {
+      $this->drupalGet("node/$i/edit");
+      $this->assertNodeFieldValue('alpha', array(
+        'url' => $link_values[$i]['url'],
+        'title' => $link_values[$i]['title'],
+      ));
+      $this->assertNodeFieldValue('beta', array(
+        'url' => $link_values[$i]['url'],
+      ));
+      $this->assertNodeFieldValue('gamma', array(
+        'url' => $link_values[$i]['url'],
+        'title' => $link_values[$i]['title'],
+      ));
+      $this->assertNodeFieldValue('omega', array(
+        'url' => $link_values[$i]['url'],
+      ));
+    }
+
+    // Import CSV file with non-existent values.
+    $this->importFile('csv', $this->absolutePath() . '/tests/feeds/content_non_existent.csv');
+    $this->assertText('Updated 2 nodes');
+
+    // Check if all values were cleared out for node 1.
+    $this->drupalGet("node/1/edit");
+    $this->assertNoNodeFieldValue('alpha', array(
+      'url' => $link_values[1]['url'],
+      'title' => $link_values[1]['title'],
+    ));
+    $this->assertNoNodeFieldValue('beta', array(
+      'url' => $link_values[1]['url'],
+    ));
+    $this->assertNoNodeFieldValue('gamma', array(
+      'url' => $link_values[1]['url'],
+      'title' => $link_values[1]['title'],
+    ));
+    $this->assertNoNodeFieldValue('omega', array(
+      'url' => $link_values[1]['url'],
+    ));
+    $this->drupalGet('node/1');
+    $this->assertNoText('alpha_link_field_label');
+    $this->assertNoText('beta_link_field_label');
+    $this->assertNoText('gamma_link_field_label');
+    $this->assertNoText('omega_link_field_label');
+
+    // Assert that the static title is no longer shown.
+    $this->assertNoText($this->staticTitle, 'Static title link not found.');
+  }
+
+  /**
+   * Override parent::getFormFieldsNames().
+   */
+  protected function getFormFieldsNames($field_name, $index) {
+    if (in_array($field_name, array('alpha', 'beta', 'gamma', 'omega'))) {
+      $fields = array("field_{$field_name}[und][{$index}][url]");
+      if (in_array($field_name, array('alpha', 'gamma'))) {
+        $fields[] = "field_{$field_name}[und][{$index}][title]";
+      }
+      return $fields;
+    }
+    else {
+      return parent::getFormFieldsNames($field_name, $index);
+    }
+  }
+
+  /**
+   * Override parent::getFormFieldsValues().
+   */
+  protected function getFormFieldsValues($field_name, $value) {
+    if (in_array($field_name, array('alpha', 'beta', 'gamma', 'omega'))) {
+      if (!is_array($value)) {
+        $value = array('url' => $value);
+      }
+      $values = array($value['url']);
+      if (in_array($field_name, array('alpha', 'gamma'))) {
+        $values[] = isset($value['title']) ? $value['title'] : '';
+      }
+      return $values;
+    }
+    else {
+      return parent::getFormFieldsValues($field_name, $index);
+    }
+  }
+
+}

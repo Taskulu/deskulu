@@ -1,0 +1,164 @@
+<?php
+
+/**
+ * @file
+ * Contains FeedsTamperEfqFinderTestCase.
+ */
+
+/**
+ * Tests for the efq_finder plugin.
+ */
+class FeedsTamperEfqFinderTestCase extends FeedsTamperWebTestHelper {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Plugins: EFQ finder',
+      'description' => 'Regression tests for the EFQ finder plugin.',
+      'group' => 'Feeds Tamper',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp(array('feeds_tamper_ui'), array('administer feeds_tamper'));
+
+    // Create vocabulary.
+    $edit = array(
+      'name' => 'Ref terms',
+      'machine_name' => 'terms',
+    );
+    $this->drupalPost('admin/structure/taxonomy/add', $edit, t('Save'));
+
+    // // Add a taxonomy term field.
+    $edit = array(
+      'fields[_add_new_field][label]' => 'Term',
+      'fields[_add_new_field][field_name]' => 'term',
+      'fields[_add_new_field][type]' => 'taxonomy_term_reference',
+      'fields[_add_new_field][widget_type]' => 'options_select',
+    );
+    $this->drupalPost('admin/structure/types/manage/article/fields', $edit, t('Save'));
+    $edit = array(
+      'field[settings][allowed_values][0][vocabulary]' => 'terms',
+    );
+    $this->drupalPost(NULL, $edit, t('Save field settings'));
+
+    $this->createImporterConfiguration();
+    $this->setSettings('syndication', NULL, array('content_type' => ''));
+    $this->setPlugin('syndication', 'FeedsFileFetcher');
+    $this->setPlugin('syndication', 'FeedsCSVParser');
+
+    $this->addMappings('syndication', array(
+      0 => array(
+        'source' => 'title',
+        'target' => 'title',
+        'unique' => FALSE,
+      ),
+      1 => array(
+        'source' => 'ref',
+        'target' => 'field_term',
+        'term_search' => 1,
+      ),
+    ));
+  }
+
+  /**
+   * Maps term names to term ids with a bundle.
+   */
+  public function testTaxonomyTermWithBundle() {
+    // Create some taxonomy terms.
+    taxonomy_term_save((object) array('name' => 'ref 1', 'vid' => 1));
+    taxonomy_term_save((object) array('name' => 'ref 2', 'vid' => 1));
+    taxonomy_term_save((object) array('name' => 'ref 3', 'vid' => 1));
+
+    $edit = array(
+      'entity_type' => 'taxonomy_term',
+      'bundle' => 'terms',
+      'field' => 'name',
+    );
+
+    $this->doTaxonomyTermTest($edit);
+  }
+
+  /**
+   * Maps term names to term ids with a bundle.
+   */
+  public function testTaxonomyTermWithoutBundle() {
+    // Create some taxonomy terms.
+    taxonomy_term_save((object) array('name' => 'ref 1', 'vid' => 1));
+    taxonomy_term_save((object) array('name' => 'ref 2', 'vid' => 1));
+    taxonomy_term_save((object) array('name' => 'ref 3', 'vid' => 1));
+
+    $edit = array(
+      'entity_type' => 'taxonomy_term',
+      'field' => 'name',
+    );
+
+    $this->doTaxonomyTermTest($edit);
+  }
+
+  /**
+   * Maps to a term by field.
+   */
+  public function testTaxonomyTermByField() {
+    // Add a text field to the vocabulary.
+    $edit = array(
+      'fields[_add_new_field][label]' => 'Other term name',
+      'fields[_add_new_field][field_name]' => 'term_name',
+      'fields[_add_new_field][type]' => 'text',
+      'fields[_add_new_field][widget_type]' => 'text_textfield',
+    );
+    $this->drupalPost('admin/structure/taxonomy/terms/fields', $edit, t('Save'));
+
+    // Create some taxonomy terms.
+    foreach (array(1, 2, 3) as $id) {
+      $term = new stdClass();
+      $term->name = 'term ' . $id;
+      $term->vid = 1;
+      $term->field_term_name = array('und' => array(array('value' => 'ref ' . $id)));
+      taxonomy_term_save($term);
+    }
+
+    $edit = array(
+      'entity_type' => 'taxonomy_term',
+      'bundle' => 'terms',
+      'field' => 'field_term_name',
+      'column' => 'value',
+    );
+
+    $this->doTaxonomyTermTest($edit);
+  }
+
+  /**
+   * Performs the verification.
+   */
+  protected function doTaxonomyTermTest(array $edit) {
+    $this->addEfqPlugin('syndication', 'ref', $edit);
+
+    $this->importFile('syndication', dirname(__FILE__) . '/feeds_tamper/efq_finder_nodes.csv');
+
+    foreach (array(1, 2, 3) as $id) {
+      $this->drupalGet('node/' . $id . '/edit');
+      $this->assertFieldByName('field_term[und]', $id);
+    }
+  }
+
+  /**
+   * Creates an efq_finder plugin instance.
+   */
+  protected function addEfqPlugin($importer, $source, array $settings) {
+    $edit = array(
+      'plugin_id' => 'efq_finder',
+    );
+
+    $this->drupalPost('admin/structure/feeds/' . $importer . '/tamper/add/' . bin2hex($source), $edit, t('Choose'));
+
+    foreach (array('entity_type', 'bundle', 'field', 'column') as $key) {
+      if (!empty($settings[$key])) {
+        $this->drupalPost(NULL, array("settings[$key]" => $settings[$key]), t('Update'));
+      }
+    }
+
+    $this->drupalPost(NULL, array(), t('Add'));
+    $this->assertRaw(t('Plugin %name was successfully added to %source.', array('%name' => 'Entity Field Query finder', '%source' => $source)));
+  }
+
+}

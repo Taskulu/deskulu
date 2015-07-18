@@ -1,0 +1,145 @@
+<?php
+/**
+ * @file
+ */
+
+/**
+ * Implements hook_help().
+ */
+function feeds_ui_help($path, $arg) {
+  switch ($path) {
+    case 'admin/structure/feeds':
+      $output = '<p>' . t('Create one or more Feed importers for pulling content into Drupal. You can use these importers from the <a href="@import">Import</a> page or - if you attach them to a content type - simply by creating a node from that content type.', array('@import' => url('import'))) . '</p>';
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function feeds_ui_menu() {
+  $items = array();
+  $items['admin/structure/feeds'] = array(
+    'title' => 'Feeds importers',
+    'description' => 'Configure one or more Feeds importers to aggregate RSS and Atom feeds, import CSV files or more.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('feeds_ui_overview_form'),
+    'access arguments' => array('administer feeds'),
+    'file' => 'feeds_ui.admin.inc',
+  );
+  $items['admin/structure/feeds/create'] = array(
+    'title' => 'Add importer',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('feeds_ui_create_form'),
+    'access arguments' => array('administer feeds'),
+    'file' => 'feeds_ui.admin.inc',
+    'type' => MENU_LOCAL_ACTION,
+  );
+  $items['admin/structure/feeds/import'] = array(
+    'title' => 'Import importer',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('feeds_ui_importer_import'),
+    'access callback' => 'feeds_importer_import_access',
+    'file' => 'feeds_ui.admin.inc',
+    'type' => MENU_LOCAL_ACTION,
+  );
+  $items['admin/structure/feeds/%feeds_importer'] = array(
+    'title callback' => 'feeds_ui_importer_title',
+    'title arguments' => array(3),
+    'page callback' => 'feeds_ui_edit_page',
+    'page arguments' => array(3),
+    'access arguments' => array('administer feeds'),
+    'file' => 'feeds_ui.admin.inc',
+  );
+  $items['admin/structure/feeds/%feeds_importer/edit'] = array(
+    'title' => 'Edit',
+    'page callback' => 'feeds_ui_edit_page',
+    'page arguments' => array(3),
+    'access arguments' => array('administer feeds'),
+    'file' => 'feeds_ui.admin.inc',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => 1,
+  );
+  $items['admin/structure/feeds/%feeds_importer/export'] = array(
+    'title' => 'Export',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('feeds_ui_export_form', 3),
+    'access arguments' => array('administer feeds'),
+    'file' => 'feeds_ui.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 2,
+  );
+  $items['admin/structure/feeds/%feeds_importer/clone'] = array(
+    'title' => 'Clone',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('feeds_ui_create_form', 3),
+    'access arguments' => array('administer feeds'),
+    'file' => 'feeds_ui.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 3,
+  );
+  $items['admin/structure/feeds/%feeds_importer/delete'] = array(
+    'title' => 'Delete',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('feeds_ui_delete_form', 3),
+    'access arguments' => array('administer feeds'),
+    'file' => 'feeds_ui.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 4,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function feeds_ui_theme() {
+  return array(
+    'feeds_ui_overview_form' => array(
+      'render element' => 'form',
+      'file' => 'feeds_ui.admin.inc',
+    ),
+    'feeds_ui_mapping_form' => array(
+      'render element' => 'form',
+      'file' => 'feeds_ui.admin.inc',
+    ),
+    'feeds_ui_edit_page' => array(
+      'variables' => array('info' => NULL, 'active' => NULL),
+      'file' => 'feeds_ui.admin.inc',
+    ),
+    'feeds_ui_plugin_form' => array(
+      'render element' => 'form',
+      'file' => 'feeds_ui.admin.inc',
+    ),
+    'feeds_ui_container' => array(
+      'variables' => array('container' => NULL),
+      'file' => 'feeds_ui.admin.inc',
+    ),
+  );
+}
+
+/**
+ * Implements hook_admin_menu_map().
+ */
+function feeds_ui_admin_menu_map() {
+  // Add awareness to the administration menu of the various importers so they
+  // are included in the dropdown menu.
+  if (!user_access('administer feeds')) {
+    return;
+  }
+  $map['admin/structure/feeds/%feeds_importer'] = array(
+    'parent' => 'admin/structure/feeds',
+    'arguments' => array(
+      array('%feeds_importer' => feeds_enabled_importers()),
+    ),
+  );
+
+  return $map;
+}
+
+/**
+ * Title callback for importers.
+ */
+function feeds_ui_importer_title($importer) {
+  return t('@importer', array('@importer' => $importer->config['name']));
+}

@@ -1,0 +1,58 @@
+/* Stolen from Rules */
+.feeds-tamper-table ul.action-links {
+  margin: 0;
+  padding: 0;
+}
+
+.feeds-tamper-table li {
+  list-style-position: inside;
+}
+
+.feeds-tamper-table ul.feeds-tamper-add a {
+  line-height: 1em;
+}
+
+tr.feeds-tamper-add td {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.feeds-tamper-table {
+  margin-top: 3em;
+  position: relative;
+}
+
+/* Fix table drag weights to don't take extra space */
+.feeds-tamper-table .tabledrag-toggle-weight-wrapper {
+  float: right;
+  position: absolute;
+  right: 0px;
+}
+
+.feeds-tamper-table caption {
+  font-size: 110%;
+  font-weight: bold;
+  padding-bottom: 0.5em;
+  text-align: left;
+}
+
+.feeds-tamper-table tr.disabled td {
+  color: #aaaaaa;
+}
+
+.feeds-tamper-table tr.disabled {
+  color: #aaaaaa;
+  background-color: #f5f5f5;
+}
+
+/* Style add plugin form. */
+
+/* hide the next button when not degrading to non-javascript browser */
+html.js .no-js {
+  display: none;
+}
+
+/* Make Choose button come up next to select. */
+.form-item-plugin-id {
+  display: inline-block;
+}

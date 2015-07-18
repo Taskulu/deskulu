@@ -1,0 +1,233 @@
+<?php
+
+/**
+ * @file
+ * Contains FeedsMapperFieldTestCase.
+ */
+
+/**
+ * Test case for simple CCK field mapper mappers/content.inc.
+ */
+class FeedsMapperFieldTestCase extends FeedsMapperTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Mapper: Fields',
+      'description' => 'Test Feeds Mapper support for fields.',
+      'group' => 'Feeds',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp(array('number'));
+  }
+
+  /**
+   * Basic test loading a double entry CSV file.
+   */
+  public function test() {
+    // Create content type.
+    $typename = $this->createContentType(array(), array(
+      'alpha' => 'text',
+      'beta' => 'number_integer',
+      'gamma' => 'number_decimal',
+      'delta' => 'number_float',
+    ));
+
+    // Create and configure importer.
+    $this->createImporterConfiguration('Content CSV', 'csv');
+    $this->setSettings('csv', NULL, array('content_type' => '', 'import_period' => FEEDS_SCHEDULE_NEVER));
+    $this->setPlugin('csv', 'FeedsFileFetcher');
+    $this->setPlugin('csv', 'FeedsCSVParser');
+    $this->setSettings('csv', 'FeedsNodeProcessor', array('bundle' => $typename));
+    $this->addMappings('csv', array(
+      0 => array(
+        'source' => 'title',
+        'target' => 'title',
+      ),
+      1 => array(
+        'source' => 'created',
+        'target' => 'created',
+      ),
+      2 => array(
+        'source' => 'body',
+        'target' => 'body',
+      ),
+      3 => array(
+        'source' => 'alpha',
+        'target' => 'field_alpha',
+      ),
+      4 => array(
+        'source' => 'beta',
+        'target' => 'field_beta',
+      ),
+      5 => array(
+        'source' => 'gamma',
+        'target' => 'field_gamma',
+      ),
+      6 => array(
+        'source' => 'delta',
+        'target' => 'field_delta',
+      ),
+    ));
+
+    // Import CSV file.
+    $this->importFile('csv', $this->absolutePath() . '/tests/feeds/content.csv');
+    $this->assertText('Created 2 nodes');
+
+    // Check the two imported files.
+    $this->drupalGet('node/1/edit');
+    $this->assertNodeFieldValue('alpha', 'Lorem');
+    $this->assertNodeFieldValue('beta', '42');
+    $this->assertNodeFieldValue('gamma', '4.20');
+    $this->assertNodeFieldValue('delta', '3.14159');
+
+    $this->drupalGet('node/2/edit');
+    $this->assertNodeFieldValue('alpha', 'Ut wisi');
+    $this->assertNodeFieldValue('beta', '32');
+    $this->assertNodeFieldValue('gamma', '1.20');
+    $this->assertNodeFieldValue('delta', '5.62951');
+  }
+
+  /**
+   * Tests if values are cleared out when an empty value is provided.
+   */
+  public function testClearOutValues() {
+    // Create content type.
+    $typename = $this->createContentType(array(), array(
+      'alpha' => 'text',
+      'beta' => 'number_integer',
+      'gamma' => 'number_decimal',
+      'delta' => 'number_float',
+    ));
+
+    // Create and configure importer.
+    $this->createImporterConfiguration('Content CSV', 'csv');
+    $this->setSettings('csv', NULL, array('content_type' => '', 'import_period' => FEEDS_SCHEDULE_NEVER));
+    $this->setPlugin('csv', 'FeedsFileFetcher');
+    $this->setPlugin('csv', 'FeedsCSVParser');
+    $this->setSettings('csv', 'FeedsNodeProcessor', array('bundle' => $typename, 'update_existing' => 1));
+    $this->addMappings('csv', array(
+      array(
+        'source' => 'guid',
+        'target' => 'guid',
+        'unique' => TRUE,
+      ),
+      array(
+        'source' => 'title',
+        'target' => 'title',
+      ),
+      array(
+        'source' => 'created',
+        'target' => 'created',
+      ),
+      array(
+        'source' => 'body',
+        'target' => 'body',
+      ),
+      array(
+        'source' => 'alpha',
+        'target' => 'field_alpha',
+      ),
+      array(
+        'source' => 'beta',
+        'target' => 'field_beta',
+      ),
+      array(
+        'source' => 'gamma',
+        'target' => 'field_gamma',
+      ),
+      array(
+        'source' => 'delta',
+        'target' => 'field_delta',
+      ),
+    ));
+
+    // Import CSV file.
+    $this->importFile('csv', $this->absolutePath() . '/tests/feeds/content.csv');
+    $this->assertText('Created 2 nodes');
+
+    // Check the two imported nodes.
+    $this->drupalGet('node/1/edit');
+    $this->assertNodeFieldValue('alpha', 'Lorem');
+    $this->assertNodeFieldValue('beta', '42');
+    $this->assertNodeFieldValue('gamma', '4.20');
+    $this->assertNodeFieldValue('delta', '3.14159');
+    $this->assertFieldByName('body[und][0][value]', 'Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.');
+    $this->drupalGet('node/2/edit');
+    $this->assertNodeFieldValue('alpha', 'Ut wisi');
+    $this->assertNodeFieldValue('beta', '32');
+    $this->assertNodeFieldValue('gamma', '1.20');
+    $this->assertNodeFieldValue('delta', '5.62951');
+    $this->assertFieldByName('body[und][0][value]', 'Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat.');
+
+    // Import CSV file with empty values.
+    $this->importFile('csv', $this->absolutePath() . '/tests/feeds/content_empty.csv');
+    $this->assertText('Updated 2 nodes');
+
+    // Check if all values were cleared out for node 1.
+    $this->drupalGet('node/1/edit');
+    $this->assertNoNodeFieldValue('alpha', 'Lorem');
+    $this->assertNoNodeFieldValue('beta', '42');
+    $this->assertNoNodeFieldValue('gamma', '4.20');
+    $this->assertNoNodeFieldValue('delta', '3.14159');
+    $this->assertFieldByName('body[und][0][value]', '');
+    // Check if labels for fields that should be cleared out are not shown.
+    $this->drupalGet('node/1');
+    $this->assertNoText('alpha_text_label');
+    $this->assertNoText('beta_number_integer_label');
+    $this->assertNoText('gamma_number_decimal_label');
+    $this->assertNoText('delta_number_float_label');
+
+    // Check if zero's didn't cleared out values for node 2.
+    $this->drupalGet('node/2/edit');
+    $this->assertNodeFieldValue('alpha', 0);
+    $this->assertNodeFieldValue('beta', 0);
+    $this->assertNodeFieldValue('gamma', 0);
+    $this->assertNodeFieldValue('delta', 0);
+    $this->assertFieldByName('body[und][0][value]', 0);
+    // Check if labels for fields of node 2 are still shown.
+    $this->drupalGet('node/2');
+    $this->assertText('alpha_text_label');
+    $this->assertText('beta_number_integer_label');
+    $this->assertText('gamma_number_decimal_label');
+    $this->assertText('delta_number_float_label');
+
+    // Re-import the first file again.
+    $this->importFile('csv', $this->absolutePath() . '/tests/feeds/content.csv');
+    $this->assertText('Updated 2 nodes');
+
+    // Check if the two imported nodes have content again.
+    $this->drupalGet('node/1/edit');
+    $this->assertNodeFieldValue('alpha', 'Lorem');
+    $this->assertNodeFieldValue('beta', '42');
+    $this->assertNodeFieldValue('gamma', '4.20');
+    $this->assertNodeFieldValue('delta', '3.14159');
+    $this->assertFieldByName('body[und][0][value]', 'Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.');
+    $this->drupalGet('node/2/edit');
+    $this->assertNodeFieldValue('alpha', 'Ut wisi');
+    $this->assertNodeFieldValue('beta', '32');
+    $this->assertNodeFieldValue('gamma', '1.20');
+    $this->assertNodeFieldValue('delta', '5.62951');
+    $this->assertFieldByName('body[und][0][value]', 'Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat.');
+
+    // Import CSV file with non-existent values.
+    $this->importFile('csv', $this->absolutePath() . '/tests/feeds/content_non_existent.csv');
+    $this->assertText('Updated 2 nodes');
+
+    // Check if all values were cleared out for node 1.
+    $this->drupalGet('node/1/edit');
+    $this->assertNoNodeFieldValue('alpha', 'Lorem');
+    $this->assertNoNodeFieldValue('beta', '42');
+    $this->assertNoNodeFieldValue('gamma', '4.20');
+    $this->assertNoNodeFieldValue('delta', '3.14159');
+    $this->assertFieldByName('body[und][0][value]', '');
+    // Check if labels for fields that should be cleared out are not shown.
+    $this->drupalGet('node/1');
+    $this->assertNoText('alpha_text_label');
+    $this->assertNoText('beta_number_integer_label');
+    $this->assertNoText('gamma_number_decimal_label');
+    $this->assertNoText('delta_number_float_label');
+  }
+
+}

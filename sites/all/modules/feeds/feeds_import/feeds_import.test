@@ -1,0 +1,145 @@
+<?php
+
+/**
+ * @file
+ * Tests for feeds_import feature.
+ */
+
+/**
+ * Test Node import configuration.
+ */
+class FeedsExamplesNodeTestCase extends FeedsWebTestCase {
+
+  /**
+   * Set up test.
+   */
+  public function setUp() {
+    parent::setUp(array('feeds_import'));
+  }
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Feature: Node import',
+      'description' => 'Test "Node import" default configuration.',
+      'group' => 'Feeds',
+    );
+  }
+
+  /**
+   * Run tests.
+   */
+  public function test() {
+    // Import file.
+    $this->importFile('node', $this->absolutePath() . '/tests/feeds/nodes.csv');
+
+    // Assert returning page.
+    $this->assertText('Created 8 nodes');
+    $this->assertText('Import CSV files with one or more of these columns: title, body, published, guid.');
+    $this->assertText('Column guid is mandatory and considered unique: only one item per guid value will be created.');
+    $this->assertRaw('feeds/nodes.csv');
+
+    // Assert created nodes.
+    $this->drupalGet('node');
+    $this->assertText('Typi non habent');
+    $this->assertText('Eodem modo typi');
+    $this->assertText('Eodem modo typi, qui nunc nobis videntur parum clari, fiant sollemnes in futurum.');
+    $this->assertText('Lorem ipsum');
+    $this->assertText('Ut wisi enim ad minim veniam');
+    $this->assertText('1976');
+    // Nam liber tempor has the same GUID as Lorem ipsum.
+    $this->assertNoText('Nam liber tempor');
+
+    // Click through to one node.
+    $this->clickLink('Lorem ipsum');
+    $this->assertText('Lorem ipsum');
+    $this->assertText('Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.');
+    $this->assertText('Anonymous');
+
+    // Assert DB status as is and again after an additional import.
+    for ($i = 0; $i < 2; $i++) {
+      $count = db_query("SELECT COUNT(*) FROM {feeds_item} WHERE entity_type = 'node'")->fetchField();
+      $this->assertEqual($count, 8, 'Found correct number of items.');
+      $count = db_query("SELECT COUNT(*) FROM {node} WHERE type = 'article' AND status = 1 AND uid = 0")->fetchField();
+      $this->assertEqual($count, 8, 'Found correct number of items.');
+      // Do not filter on type intentionally. There shouldn't be more than 8 nodes total.
+      $count = db_query("SELECT COUNT(*) FROM {node_revision}")->fetchField();
+      $this->assertEqual($count, 8, 'Found correct number of items.');
+
+      // Import again. Feeds only updates items that haven't changed. However,
+      // there are 2 different items with the same GUID in nodes.csv.
+      // Therefore, feeds will show updates to 2 nodes.
+      $this->drupalPost('import/node/import', array(), 'Import');
+      $this->assertText('Updated 2 nodes');
+    }
+
+    // Remove all nodes.
+    $this->drupalPost('import/node/delete-items', array(), 'Delete');
+    $this->assertText('Deleted 8 nodes');
+
+    // Import once again.
+    $this->drupalPost('import/node/import', array(), 'Import');
+    $this->assertText('Created 8 nodes');
+
+    // Import a similar file with changes in 4 records. Feeds should report 6
+    // Updated Article nodes (4 changed records, 2 records sharing a GUID
+    // subsequently being updated).
+    $this->importFile('node', $this->absolutePath() . '/tests/feeds/nodes_changes.csv');
+    $this->assertText('Updated 6 nodes');
+
+    // Import a larger file with more records.
+    $this->importFile('node', $this->absolutePath() . '/tests/feeds/many_nodes.csv');
+    $this->assertText('Created 71 nodes');
+
+    // Remove all nodes.
+    $this->drupalPost('import/node/delete-items', array(), 'Delete');
+    $this->assertText('Deleted 79 nodes');
+
+    // Import once again.
+    $this->drupalPost('import/node/import', array(), 'Import');
+    $this->assertText('Created 79 nodes');
+    $this->assertText('Updated 7 nodes');
+
+    // Import a tab separated file.
+    $this->drupalPost('import/node/delete-items', array(), 'Delete');
+    $edit = array(
+      'files[feeds]' => $this->absolutePath() . '/tests/feeds/nodes.tsv',
+      'feeds[FeedsCSVParser][delimiter]' => "TAB",
+    );
+    $this->drupalPost('import/node', $edit, 'Import');
+    $this->assertText('Created 8 nodes');
+  }
+}
+
+/**
+ * Test User import configuration.
+ */
+class FeedsExamplesUserTestCase extends FeedsWebTestCase {
+  public static function getInfo() {
+    return array(
+      'name' => 'Feature: User import',
+      'description' => 'Test "User import" default configuration.',
+      'group' => 'Feeds',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp(array('feeds_import'));
+  }
+
+  /**
+   * Run tests.
+   */
+  public function test() {
+    // Import CSV file.
+    $this->importFile('user', $this->absolutePath() . '/tests/feeds/users.csv');
+
+    // Assert result.
+    $this->assertText('Created 3 users');
+    // 1 user has an invalid email address.
+    $this->assertText('Failed importing 2 users');
+    $this->drupalGet('admin/people');
+    $this->assertText('Morticia');
+    $this->assertText('Fester');
+    $this->assertText('Gomez');
+  }
+}

@@ -1,0 +1,73 @@
+<?php
+
+/**
+ * @file
+ * Contains FeedsMapperHookTestCase.
+ */
+
+/**
+ * Test case for the various callbacks implemented for mappers.
+ */
+class FeedsMapperHookTestCase extends FeedsMapperTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Mapper: Hooks and callbacks',
+      'description' => 'Test case for the various callbacks implemented for mappers.',
+      'group' => 'Feeds',
+    );
+  }
+
+  /**
+   * Basic test loading a double entry CSV file.
+   */
+  public function test() {
+
+    // Create and configure importer.
+    $this->createImporterConfiguration();
+    $this->addMappings('syndication', array(
+      0 => array(
+        'source' => 'title',
+        'target' => 'title',
+      ),
+      1 => array(
+        'source' => 'description',
+        'target' => 'test_target',
+      ),
+    ));
+
+    // Checks that alter hooks are invoked.
+    $this->assertText(t('The target description was altered.'));
+
+    // Inherently tests preprocess callbacks.
+    // @see feeds_tests_mapper_set_target()
+    $nid = $this->createFeedNode();
+    $this->drupalGet('node/2/edit');
+    $body_value = $this->xpath('//*[@name = "body[und][0][value]"]');
+    $value = unserialize((string) $body_value[0]);
+    $this->assertTrue(!empty($value));
+
+    // Tests old-style target keys.
+    $this->addMappings('syndication', array(
+      2 => array(
+        'source' => 'url',
+        'target' => 'test_target_compat',
+      ),
+    ));
+
+    // Click gear to get form.
+    $this->drupalPostAJAX(NULL, array(), 'mapping_settings_edit_2');
+
+    // Set some settings.
+    $edit = array(
+      'config[2][settings][checkbox]' => 1,
+      'config[2][settings][textfield]' => 'Some text',
+      'config[2][settings][textarea]' => 'Textarea value: Didery dofffffffffffffffffffffffffffffffffffff',
+      'config[2][settings][radios]' => 'option1',
+      'config[2][settings][select]' => 'option4',
+    );
+    $this->drupalPostAJAX(NULL, $edit, 'mapping_settings_update_2');
+    $this->assertText(t('* Changes made to target configuration are stored temporarily. Click Save to make your changes permanent.'));
+  }
+
+}

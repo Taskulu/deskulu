@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns="http://purl.org/rss/1.0/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:sy="http://purl.org/rss/1.0/modules/syndication/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:georss="http://www.georss.org/georss">
+  <channel rdf:about="http://www.magentosites.net/rss.xml">
+    <title xml:lang="en">Magento Sites Network - A directory listing of Magento Commerce stores</title>
+    <link>http://www.magentosites.net/</link>
+    <description xml:lang="en"></description>
+    <items rdf:nodeID="b1"/>
+    <sy:updatePeriod>daily</sy:updatePeriod>
+  </channel>
+  <rdf:Seq rdf:nodeID="b1">
+    <rdf:li>http://www.magentosites.net/node/3473</rdf:li>
+    <rdf:li>http://www.magentosites.net/node/3472</rdf:li>
+    <rdf:li>http://www.magentosites.net/node/3471</rdf:li>
+    <rdf:li>http://www.magentosites.net/node/3470</rdf:li>
+    <rdf:li>http://www.magentosites.net/node/3468</rdf:li>
+    <rdf:li>http://www.magentosites.net/node/3466</rdf:li>
+    <rdf:li>http://www.magentosites.net/node/3465</rdf:li>
+    <rdf:li>http://www.magentosites.net/node/3464</rdf:li>
+    <rdf:li>http://www.magentosites.net/node/3463</rdf:li>
+    <rdf:li>http://www.magentosites.net/node/3461</rdf:li>
+    <rdf:li>http://www.magentosites.net/node/3459</rdf:li>
+    <rdf:li>http://www.magentosites.net/node/3458</rdf:li>
+    <rdf:li>http://www.magentosites.net/node/3457</rdf:li>
+    <rdf:li>http://www.magentosites.net/node/3456</rdf:li>
+    <rdf:li>http://www.magentosites.net/node/3455</rdf:li>
+    <rdf:li>http://www.magentosites.net/node/3454</rdf:li>
+    <rdf:li>http://www.magentosites.net/node/3453</rdf:li>
+    <rdf:li>http://www.magentosites.net/node/3452</rdf:li>
+    <rdf:li>http://www.magentosites.net/node/3451</rdf:li>
+    <rdf:li>http://www.magentosites.net/node/3450</rdf:li>
+  </rdf:Seq>
+  <item rdf:about="http://www.magentosites.net/node/3473">
+    <title>Gezondheidswebwinkel</title>
+    <link>http://www.magentosites.net/store/2010/04/28/gezondheidswebwinkel/index.html</link>
+    <description>&lt;p&gt;Gezondheidswebwinkrl.nl is een online shop voor reformhuis gebaseerde producten.&lt;/p&gt;</description>
+    <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2010-04-28T03:21:33Z</dc:date>
+    <dc:creator>dzinestudio</dc:creator>
+    <dc:subject>Health &amp; Personal Care</dc:subject>
+    <dc:subject>Grocery, Health &amp; Beauty</dc:subject>
+    <georss:point>52.214007 6.892291</georss:point>
+  </item>
+  <item rdf:about="http://www.magentosites.net/node/3472">
+    <title>MyBobino.com</title>
+    <link>http://www.magentosites.net/store/2010/04/26/mybobinocom/index.html</link>
+    <description>&lt;p&gt;The Bobino helps you organize and shorten your iPod or cell phone earbuds. No more messy lumps of cord in your pockets or purse. Go to www.mybobino.com.&lt;/p&gt;</description>
+    <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2010-04-26T20:04:09Z</dc:date>
+    <dc:creator>TacovanhetReve</dc:creator>
+    <dc:subject>Computer Accessories</dc:subject>
+    <dc:subject>Gifts</dc:subject>
+    <dc:subject>MP3 &amp; Media Players</dc:subject>
+    <dc:subject>Computers &amp; Office</dc:subject>
+    <dc:subject>Electronics</dc:subject>
+    <dc:subject>Gifts, Foods &amp; Drinks</dc:subject>
+    <dc:subject>Other</dc:subject>
+    <georss:point>51.589322 4.774491</georss:point>
+  </item>
+  <item rdf:about="http://www.magentosites.net/node/3471">
+    <title>Boxershorts.nl</title>
+    <link>http://www.magentosites.net/store/2010/04/26/boxershortsnl/index.html</link>
+    <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2010-04-26T12:34:54Z</dc:date>
+    <dc:creator>tomashesseling</dc:creator>
+    <dc:subject>Gifts</dc:subject>
+    <dc:subject>Lingerie</dc:subject>
+    <dc:subject>Clothing, Shoes &amp; Jewelry</dc:subject>
+    <dc:subject>Gifts, Foods &amp; Drinks</dc:subject>
+    <dc:subject>Other</dc:subject>
+    <georss:point>52.097938 5.109197</georss:point>
+  </item>
+  <item rdf:about="http://www.magentosites.net/node/3470">
+    <title>Zapa</title>
+    <link>http://www.magentosites.net/store/2010/04/26/zapa/index.html</link>
+    <description>&lt;p&gt;The Zapa's webshop is based on Magento community edition.&lt;/p&gt;</description>
+    <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2010-04-26T08:21:34Z</dc:date>
+    <dc:creator>wecom</dc:creator>
+    <dc:subject>Clothing &amp; Accessories</dc:subject>
+    <dc:subject>Clothing, Shoes &amp; Jewelry</dc:subject>
+    <georss:point>48.872290 2.363026</georss:point>
+  </item>
+  <item rdf:about="http://www.magentosites.net/node/3468">
+    <title>Bandenshoppen</title>
+    <link>http://www.magentosites.net/store/2010/04/26/bandenshoppen/index.html</link>
+    <description>&lt;p&gt;Bandenshoppen is een Magento webshop waarin voor iedere auto de juiste band te vinden is. Of het nu is voor een bestelwagen, SUV of personenwagen, de juiste band van alle grote merken kunt u hier eenvoudig vinden.&lt;/p&gt;
+&lt;p&gt;Met slechts de code op uw band kiest u de juiste winter- of zomerband.&lt;/p&gt;</description>
+    <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2010-04-26T07:41:01Z</dc:date>
+    <dc:creator>Eigen en Wijze Communicatie</dc:creator>
+    <dc:subject>Automotive</dc:subject>
+    <dc:subject>Tools, Auto &amp; Industrial</dc:subject>
+    <georss:point>52.792620 4.786409</georss:point>
+  </item>
+  <item rdf:about="http://www.magentosites.net/node/3466">
+    <title>Furniture For You (Rugby) LTD</title>
+    <link>http://www.magentosites.net/store/2010/04/23/furniture-for-you-rugby-ltd/index.html</link>
+    <description>&lt;p&gt;Furniture For You (Rugby) LTD is a large discount furniture store based in Rugby, Warwickshire. Huge selections of Bedroom, Living room &amp;amp; Dining room furniture made by top manufacturers in the UK, Italy &amp;amp; Germany.&lt;/p&gt;</description>
+    <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2010-04-23T13:34:28Z</dc:date>
+    <dc:creator>furnitureforyoultd</dc:creator>
+    <dc:subject>Furniture &amp; Décor</dc:subject>
+    <dc:subject>Home &amp; Garden</dc:subject>
+    <georss:point>52.372879 -1.286754</georss:point>
+  </item>
+  <item rdf:about="http://www.magentosites.net/node/3465">
+    <title>GoedHip</title>
+    <link>http://www.magentosites.net/store/2010/04/22/goedhip/index.html</link>
+    <description>&lt;p&gt;GoedHip is een Magento webshop met hippe fair trade, ecologische en biologische producten.&lt;/p&gt;</description>
+    <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2010-04-22T12:02:35Z</dc:date>
+    <dc:creator>Goedhip</dc:creator>
+    <dc:subject>Gifts</dc:subject>
+    <dc:subject>Gifts, Foods &amp; Drinks</dc:subject>
+    <georss:point>52.091262 5.122748</georss:point>
+  </item>
+  <item rdf:about="http://www.magentosites.net/node/3464">
+    <title>Lampenwereld</title>
+    <link>http://www.magentosites.net/store/2010/04/22/lampenwereld/index.html</link>
+    <description>&lt;p&gt;Online Lightstore with a big variation of lights. All prizes include tax, lightbulb and shipment.&lt;/p&gt;</description>
+    <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2010-04-22T11:43:40Z</dc:date>
+    <dc:creator>lampenwereld</dc:creator>
+    <dc:subject>Furniture &amp; Décor</dc:subject>
+    <dc:subject>Home &amp; Garden</dc:subject>
+    <georss:point>51.581985 4.732600</georss:point>
+  </item>
+  <item rdf:about="http://www.magentosites.net/node/3463">
+    <title>Bumblejax</title>
+    <link>http://www.magentosites.net/store/2010/04/21/bumblejax/index.html-0</link>
+    <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2010-04-21T21:42:01Z</dc:date>
+    <dc:creator>coreyd74</dc:creator>
+    <dc:subject>Art, Culture &amp; Leisure</dc:subject>
+    <dc:subject>Photography</dc:subject>
+    <georss:point>47.622748 -122.334355</georss:point>
+  </item>
+  <item rdf:about="http://www.magentosites.net/node/3461">
+    <title>SendraValencia</title>
+    <link>http://www.magentosites.net/store/2010/04/20/sendravalencia/index.html</link>
+    <description>&lt;p&gt;Tienda de Botas Sendra en Internet. Sendra Boots Store.&lt;br /&gt;
+En Botas Sendra Valencia se ha cuidado al máximo el diseño y la navegación. Integración con almacenes y Courier.&lt;/p&gt;</description>
+    <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2010-04-20T09:32:36Z</dc:date>
+    <dc:creator>Onestic</dc:creator>
+    <dc:subject>Shoes</dc:subject>
+    <dc:subject>Clothing, Shoes &amp; Jewelry</dc:subject>
+    <georss:point>39.469008 -0.371995</georss:point>
+  </item>
+  <item rdf:about="http://www.magentosites.net/node/3459">
+    <title>Snowcountry</title>
+    <link>http://www.magentosites.net/store/2010/04/19/snowcountry/index.html</link>
+    <description>&lt;p&gt;Freeski en Snowboard webshop&lt;/p&gt;
+&lt;p&gt;Snowcountry.nl richt zich voornamelijk op de actieve boarder en skiër, je vind hier merken die niet op elke straathoek te koop zijn, sterker nog veelal zijn de ski- en snowboard collecties alleen bij Snowcountry online verkrijgbaar.&lt;/p&gt;</description>
+    <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2010-04-19T15:35:29Z</dc:date>
+    <dc:creator>Snowcountry</dc:creator>
+    <dc:subject>All Sports &amp; Outdoors</dc:subject>
+    <dc:subject>Athletic &amp; Outdoor Clothing</dc:subject>
+    <dc:subject>Outdoor Recreation</dc:subject>
+    <dc:subject>Sports &amp; Outdoors</dc:subject>
+    <georss:point>52.179226 5.507952</georss:point>
+  </item>
+  <item rdf:about="http://www.magentosites.net/node/3458">
+    <title>Floriculture Australia - Wholesale Florist</title>
+    <link>http://www.magentosites.net/store/2010/04/18/floriculture-australia-wholesale-florist/index.html</link>
+    <description>&lt;p&gt;Floriculture Australia Wholesale Florist was set up as a cut flower distribution business a few years ago with a distinct difference to other wholesale florists - we quality check all product, we provide a high level of personal and professional service and a respect for the environment, ourselves and those we deal with.&lt;/p&gt;
+&lt;p&gt;Originally, the family bought a country property to have some room for the dogs to roam around back in the mid 1990’s. This property just happened to have some floristry foliage trees, lavender and daffodils. Max, then in his late 20’s, took on a new industry, a new career and loads and loads of hard work.&lt;/p&gt;
+&lt;p&gt;Today, the business has expanded, Max has married had some kiddies, further property purchases have been made, and a workforce employed to help with all that hard work!&lt;/p&gt;
+&lt;p&gt;The driving philosophy has always been to produce and distribute quality flowers in a sustainable manner. We use natural forms of pest control, so you can be sure any flowers supplied by us at Floriculture.com.au are not only fresh and beautiful – they are safe to handle.&lt;/p&gt;</description>
+    <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2010-04-18T12:52:09Z</dc:date>
+    <dc:creator>MaxTheFlowerGuy</dc:creator>
+    <dc:subject>Flowers</dc:subject>
+    <dc:subject>Gifts, Foods &amp; Drinks</dc:subject>
+    <georss:point>-37.814470 145.437914</georss:point>
+  </item>
+  <item rdf:about="http://www.magentosites.net/node/3457">
+    <title>Flower Bunch</title>
+    <link>http://www.magentosites.net/store/2010/04/18/flower-bunch/index.html</link>
+    <description>&lt;p&gt;FlowerBunch has Australia wide flower delivery direct from our own flower farm and wholesale flower distribution shed. This ensures the freshest flowers, discounted flowers and seasonal specials and next day free flower delivery.&lt;/p&gt;
+&lt;p&gt;The driving philosophy for the company has always been to produce quality flowers in a sustainable manner. Our flowers are grown using hydroponic organic flower production practices, so you can be sure any flowers supplied by us at http://FlowerBunch.com.au are not only fresh and beautiful, they are also safe to handle.&lt;/p&gt;
+&lt;p&gt;Our farm fresh cut flower delivery is available to Sydney, Melbourne, Brisbane, Canberra, Adelaide and all eastern states of Australia. Some remote areas may take a day or two extra for delivery. All flowers are sent direct from our farm, not through a relay/referral service.&lt;/p&gt;</description>
+    <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2010-04-18T12:42:54Z</dc:date>
+    <dc:creator>MaxTheFlowerGuy</dc:creator>
+    <dc:subject>Flowers</dc:subject>
+    <dc:subject>Gifts, Foods &amp; Drinks</dc:subject>
+    <georss:point>-37.812267 145.432457</georss:point>
+  </item>
+  <item rdf:about="http://www.magentosites.net/node/3456">
+    <title>Conec - elektronische Bauelemente</title>
+    <link>http://www.magentosites.net/store/2010/04/15/conec-elektronische-bauelemente/index.html</link>
+    <description>&lt;p&gt;CONEC entwickelt und produziert in modernen Produktionsstätten mit Hightech-Technologie in zuverlässigen Produktionsprozessen. Die Vielfalt der CONEC-Produktpalette bietet zuverlässige und effektive Antworten auf alle Fragen der Verbindungstechnik, bei Geräteherstellern, Subunternehmern und Kabelverarbeitern. CONEC ist in allen Industriebereichen zu Hause.&lt;/p&gt;</description>
+    <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2010-04-15T09:07:48Z</dc:date>
+    <dc:creator>simone.meisner</dc:creator>
+    <dc:subject>Other</dc:subject>
+    <georss:point>51.674817 8.377200</georss:point>
+  </item>
+  <item rdf:about="http://www.magentosites.net/node/3455">
+    <title>Liemke - technisch chemische Artikel</title>
+    <link>http://www.magentosites.net/store/2010/04/15/liemke-technisch-chemische-artikel/index.html</link>
+    <description>&lt;p&gt;Hochwertige Klebstoffe, Aerosole &amp;amp; Reiniger aus dem Hause LIEMKE&lt;/p&gt;
+&lt;p&gt;Überzeugen Sie sich von der Qualität der professionellen chemischen Produkte. Das Sortiment der Hochleistungs-Produkte der Qualitätsmarke &quot;LK&quot; umfasst hochwertige Klebstoffe, Schmiermittel, Aerosole, Dichtstoffe, Silikone, Reiniger, Desinfektionsmittel und Trennmittel für chemisch-technische Anwendungen, für die Bauchemie und die professionelle Desinfektion.&lt;/p&gt;</description>
+    <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2010-04-15T08:59:45Z</dc:date>
+    <dc:creator>simone.meisner</dc:creator>
+    <dc:subject>Other</dc:subject>
+    <georss:point>51.956925 8.578393</georss:point>
+  </item>
+  <item rdf:about="http://www.magentosites.net/node/3454">
+    <title>Peitz Werkzeug und Outdoorbekleidung</title>
+    <link>http://www.magentosites.net/store/2010/04/15/peitz-werkzeug-und-outdoorbekleidung/index.html</link>
+    <description>&lt;p&gt;Bei Peitz Werkzeuge finden Sie ein breites Sortiment an erstklassigen Werkzeugen und hochwertigem Outdoor-Equipment. Wir führen die Marken Hitachi, Milwaukee, Matador, BP, Yeti, Nordisk, Tortuga u.v.m.&lt;/p&gt;
+&lt;p&gt;Über 1.000 Artikel stehen in diesem Shop zur Verfügung. &lt;/p&gt;
+&lt;p&gt;Erfahrung, Service und günstige Preise überzeugen!&lt;/p&gt;</description>
+    <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2010-04-15T08:46:18Z</dc:date>
+    <dc:creator>simone.meisner</dc:creator>
+    <dc:subject>Power &amp; Hand Tools</dc:subject>
+    <dc:subject>Tools, Auto &amp; Industrial</dc:subject>
+    <georss:point>51.791418 8.420595</georss:point>
+  </item>
+  <item rdf:about="http://www.magentosites.net/node/3453">
+    <title>Großewinkelmann Tor- und Zaunsysteme</title>
+    <link>http://www.magentosites.net/store/2010/04/15/grossewinkelmann-tor-und-zaunsysteme/index.html</link>
+    <description>&lt;p&gt;Großewinkelmann bietet Zaun- und Torsysteme sowie Stall- und Weidetechnik an. Produktideen und jahrzentelange Erfahrung bringen den entscheidenden Vorteil für den Kunden. Seit mehr als 60 Jahren steht Großewinkelmann für Qualität und persönlichen Service rund um Zäune und Tore.&lt;/p&gt;</description>
+    <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2010-04-15T08:39:25Z</dc:date>
+    <dc:creator>simone.meisner</dc:creator>
+    <dc:subject>Other</dc:subject>
+    <georss:point>51.862318 8.435454</georss:point>
+  </item>
+  <item rdf:about="http://www.magentosites.net/node/3452">
+    <title>Möbius Werbemittel</title>
+    <link>http://www.magentosites.net/store/2010/04/15/mobius-werbemittel/index.html</link>
+    <description>&lt;p&gt;Möbius Werbemittel bietet einen Onlineshop für Werbemittel und Werbegeschenke. Ein breites Sortiment aus vielen Bereichen bietet optimale Auswahl. Finden Sie Feuerzeuge, Schluesselanhänger, Schirme, Tassen, Schreibgeraete, Buero- und Geschäftsausstattung und vieles mehr.&lt;br /&gt;
+Der schnelle Druckservice und die kompetente Beratung runden das Angebot ab.&lt;/p&gt;</description>
+    <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2010-04-15T08:05:42Z</dc:date>
+    <dc:creator>simone.meisner</dc:creator>
+    <dc:subject>Other</dc:subject>
+    <georss:point>49.544584 8.346575</georss:point>
+  </item>
+  <item rdf:about="http://www.magentosites.net/node/3451">
+    <title>watch store</title>
+    <link>http://www.magentosites.net/store/2010/04/14/watch-store/index.html</link>
+    <description>&lt;p&gt;watches, is a fast growing e-shop in Greece.  You can find a big variety of whell priced watches.&lt;/p&gt;</description>
+    <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2010-04-14T21:44:32Z</dc:date>
+    <dc:creator>webo2</dc:creator>
+    <dc:subject>Watches</dc:subject>
+    <dc:subject>Clothing, Shoes &amp; Jewelry</dc:subject>
+    <georss:point>37.443287 24.942652</georss:point>
+  </item>
+  <item rdf:about="http://www.magentosites.net/node/3450">
+    <title>Fishingtime.com</title>
+    <link>http://www.magentosites.net/store/2010/04/14/fishingtimecom/index.html</link>
+    <description>&lt;p&gt;Fishingtime.com is a very fast growing fishing tackle e-shop. You can find everything about fishing in competitive prices and services.&lt;/p&gt;</description>
+    <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2010-04-14T07:21:29Z</dc:date>
+    <dc:creator>dimmeneidis</dc:creator>
+    <dc:subject>All Sports &amp; Outdoors</dc:subject>
+    <dc:subject>Sports &amp; Outdoors</dc:subject>
+    <georss:point>37.953416 23.692998</georss:point>
+  </item>
+</rdf:RDF>

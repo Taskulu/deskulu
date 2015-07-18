@@ -1,0 +1,137 @@
+<?php
+
+/**
+ * @file
+ * Tests for plugins/FeedsUserProcessor.inc
+ */
+
+/**
+ * Test aggregating a feed as data records.
+ */
+class FeedsCSVtoUsersTest extends FeedsWebTestCase {
+  public static function getInfo() {
+    return array(
+      'name' => 'CSV import to users',
+      'description' => 'Tests a standalone import configuration that uses file fetcher and CSV parser to import users from a CSV file.',
+      'group' => 'Feeds',
+    );
+  }
+
+  /**
+   * Test node creation, refreshing/deleting feeds and feed items.
+   */
+  public function test() {
+    // Create an importer.
+    $this->createImporterConfiguration('User import', 'user_import');
+
+    // Set and configure plugins.
+    $this->setPlugin('user_import', 'FeedsFileFetcher');
+    $this->setPlugin('user_import', 'FeedsCSVParser');
+    $this->setPlugin('user_import', 'FeedsUserProcessor');
+
+    // Go to mapping page and create a couple of mappings.
+    $mappings = array(
+      0 => array(
+        'source' => 'name',
+        'target' => 'name',
+        'unique' => FALSE,
+      ),
+      1 => array(
+        'source' => 'mail',
+        'target' => 'mail',
+        'unique' => TRUE,
+      ),
+      2 => array(
+        'source' => 'since',
+        'target' => 'created',
+      ),
+      3 => array(
+        'source' => 'password',
+        'target' => 'pass',
+      ),
+    );
+    $this->addMappings('user_import', $mappings);
+
+    // Use standalone form.
+    $edit = array(
+      'content_type' => '',
+    );
+    $this->drupalPost('admin/structure/feeds/user_import/settings', $edit, 'Save');
+
+    // Create roles and assign one of them to the users to be imported.
+    $manager_rid = $this->drupalCreateRole(array('access content'), 'manager');
+    $admin_rid = $this->drupalCreateRole(array('access content'), 'administrator');
+    $edit = array(
+      "roles[$manager_rid]" => TRUE,
+      "roles[$admin_rid]" => FALSE,
+    );
+    $this->setSettings('user_import', 'FeedsUserProcessor', $edit);
+
+    // Import CSV file.
+    $this->importFile('user_import', $this->absolutePath() . '/tests/feeds/users.csv');
+
+    // Assert result.
+    $this->assertText('Created 3 users');
+    // 1 user has an invalid email address, all users should be assigned
+    // the manager role.
+    $this->assertText('Failed importing 2 users.');
+    $this->drupalGet('admin/people');
+    $this->assertText('Morticia');
+    $this->assertText('Fester');
+    $this->assertText('Gomez');
+    $count = db_query("SELECT count(*) FROM {users_roles} WHERE rid = :rid", array(':rid' => $manager_rid))->fetchField();
+    $this->assertEqual($count, 3, t('All imported users were assigned the manager role.'));
+    $count = db_query("SELECT count(*) FROM {users_roles} WHERE rid = :rid", array(':rid' => $admin_rid))->fetchField();
+    $this->assertEqual($count, 0, t('No imported user was assigned the administrator role.'));
+
+    // Run import again, verify no new users.
+    $this->importFile('user_import', $this->absolutePath() . '/tests/feeds/users.csv');
+    $this->assertText('Failed importing 2 users.');
+
+    // Attempt to log in as one of the imported users.
+    $account = user_load_by_name('Morticia');
+    $this->assertTrue($account, 'Imported user account loaded.');
+    $account->pass_raw = 'mort';
+    $this->drupalLogin($account);
+
+    // Login as admin.
+    $this->drupalLogin($this->admin_user);
+
+    // Removing a mapping forces updating without needing a different file.
+    // We are also testing that if we don't map anything to the user's password
+    // that it will keep its existing one.
+    $mappings = array(
+      3 => array(
+        'source' => 'password',
+        'target' => 'pass',
+      ),
+    );
+    $this->removeMappings('user_import', $mappings);
+    $this->setSettings('user_import', 'FeedsUserProcessor', array('update_existing' => 2));
+    $this->importFile('user_import', $this->absolutePath() . '/tests/feeds/users.csv');
+    // Assert result.
+    $this->assertText('Updated 3 users');
+    $this->assertText('Failed importing 2 user');
+
+    // Attempt to log in as one of the imported users.
+    $account = user_load_by_name('Fester');
+    $this->assertTrue($account, 'Imported user account loaded.');
+    $account->pass_raw = 'fest';
+    $this->drupalLogin($account);
+
+    // Login as admin.
+    $this->drupalLogin($this->admin_user);
+
+    // Import modified CSV file, one (valid) user is missing.
+    $this->setSettings('user_import', 'FeedsUserProcessor', array('update_existing' => 2, 'update_non_existent' => 'block'));
+    $this->importFile('user_import', $this->absolutePath() . '/tests/feeds/users2.csv');
+    $this->assertText('Blocked 1 user');
+    $this->assertText('Failed importing 2 user');
+
+    // Import the original CSV file again.
+    $this->importFile('user_import', $this->absolutePath() . '/tests/feeds/users.csv');
+    $this->assertText('Updated 1 user');
+    $this->assertText('Failed importing 2 user');
+  }
+
+}

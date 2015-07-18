@@ -1,0 +1,47 @@
+<?php
+
+/**
+ * @file
+ * Contains FeedsPushTest.
+ */
+
+/**
+ * Tests for PubSubHubbub support in feeds.
+ */
+class FeedsPushTest extends FeedsWebTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'PubSubHubbub',
+      'description' => 'Tests for PubSubHubbub support.',
+      'group' => 'Feeds',
+    );
+  }
+
+  /**
+   * Tests that PubSubHubbub challenge is escaped.
+   */
+  public function test() {
+    $this->createImporterConfiguration('Push', 'push');
+
+    $subscription = new PuSHSubscription('push', 0, 'http://example.com', 'http://example.com/feed', 'secret', 'unsubscribe', array());
+    $subscription->save();
+
+    $challenge = '<script>alert();</script>';
+
+    $options = array(
+      'query' => array(
+        'hub.mode' => 'unsubscribe',
+        'hub.challenge' => $challenge,
+        'hub.topic' => 'http://example.com/feed',
+      ),
+    );
+
+    $this->drupalGet("feeds/importer/push/0", $options);
+
+    $this->assertResponse(200);
+    $this->assertRaw(check_plain($challenge), 'Challenge was escaped.');
+    $this->assertNoRaw($challenge, 'Raw challenge not found.');
+  }
+
+}

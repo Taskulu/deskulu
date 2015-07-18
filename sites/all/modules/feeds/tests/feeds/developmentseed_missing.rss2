@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="utf-8" ?><rss version="2.0" xml:base="http://developmentseed.org/blog/all" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Development Seed - Technological Solutions for Progressive Organizations</title>
+    <link>http://developmentseed.org/blog/all</link>
+    <description></description>
+    <language>en</language>
+          <item>
+    <title>Managing News Translation Workflow: Two Way Translation Updates</title>
+    <link>http://developmentseed.org/blog/2009/oct/06/open-atrium-translation-workflow-two-way-updating</link>
+    <description>&lt;div class=&quot;field field-type-text field-field-subtitle&quot;&gt;
+    &lt;div class=&quot;field-items&quot;&gt;
+            &lt;div class=&quot;field-item odd&quot;&gt;
+                    &lt;p&gt;A new translation process for Open Atrium and integration with Localize Drupal&lt;/p&gt;        &lt;/div&gt;
+        &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&#039;node-body&#039;&gt;&lt;p&gt;The &lt;a href=&quot;http://openatrium.com/&quot;&gt;Open Atrium&lt;/a&gt; &lt;a href=&quot;http://developmentseed.org/blog/2009/jul/16/open-atrium-solving-translation-puzzle&quot;&gt;translation infrastructure&lt;/a&gt; (and Drupal translations in general) are progressing quickly. For Open Atrium to be well translated we first need Drupal&#039;s modules to be translated, so I am splitting efforts at the moment between helping with &lt;a href=&quot;http://localize.drupal.org&quot;&gt;Localize Drupal&lt;/a&gt; and improving &lt;a href=&quot;https://translate.openatrium.com&quot;&gt;Open Atrium Translate&lt;/a&gt;. Already, it is much easier to automatically download your language, get updates from a translation server, protect locally translated strings, and scale the translation system so that translation servers can talk to each other.&lt;/p&gt;
+
+&lt;h1&gt;Automatically download your language&lt;/h1&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://farm3.static.flickr.com/2496/3984689117_57559c74eb.jpg&quot; alt=&quot;Magical translation install&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;For more than a month now you have been able to install Open Atrium, select one of its 20+ languages, and have the translation automatically downloaded and installed on your site. While this has been working for awhile now, we are still refining the process. One change we&#039;ve already made is that now translations are downloaded in multiple smaller packages, rather than a single large one.&lt;/p&gt;
+
+&lt;p&gt;Once your translation is installed, you can use tools like the &lt;a href=&quot;http://drupal.org/project/l10n_client&quot;&gt;Localization client&lt;/a&gt;, which comes bundled in the Open Atrium install, to translate page strings and then optionally contribute them back to the localization server, automatically. This flow of translations goes both ways, so your site gets the latest updates from the server just as you can send your latest updates to the server.&lt;/p&gt;
+
+&lt;h1&gt;Two way translation updates&lt;/h1&gt;
+
+&lt;p&gt;&lt;em&gt;But what happens with my locally translated strings, which I like more than the ones that come out of the box, when I update from the server?&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://farm3.static.flickr.com/2442/3984689343_e9b7c32718.jpg&quot; alt=&quot;Two ways translation updates&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;In a word, nothing. There has been a major improvement on this front. Now your translations are tracked and won&#039;t be overwritten by someone else&#039;s translations when you update, unless you choose for them to be. This means that you can contribute your translations, benefit from others contributing theirs, and make the world a better (translated) place, without loosing any custom work that you want. Let the translations flow!&lt;/p&gt;&lt;/div&gt;</description>
+     <comments>http://developmentseed.org/blog/2009/oct/06/open-atrium-translation-workflow-two-way-updating#comments</comments>
+ <category domain="http://developmentseed.org/tags/drupal">Drupal</category>
+ <category domain="http://developmentseed.org/tags/localization">localization</category>
+ <category domain="http://developmentseed.org/tags/localization-client">localization client</category>
+ <category domain="http://developmentseed.org/tags/localization-server">localization server</category>
+ <category domain="http://developmentseed.org/tags/open-atrium">open atrium</category>
+ <category domain="http://developmentseed.org/tags/translation">translation</category>
+ <category domain="http://developmentseed.org/tags/translation-server">translation server</category>
+ <category domain="http://developmentseed.org/channel/drupal-planet">Drupal planet</category>
+ <pubDate>Tue, 06 Oct 2009 15:21:48 +0000</pubDate>
+ <dc:creator>Development Seed</dc:creator>
+ <guid isPermaLink="false">974 at http://developmentseed.org</guid>
+  </item>
+  <item>
+    <title>Week in DC Tech: October 5th Edition</title>
+    <link>http://developmentseed.org/blog/2009/oct/05/week-dc-tech-october-5th-edition</link>
+    <description>&lt;div class=&quot;field field-type-text field-field-subtitle&quot;&gt;
+    &lt;div class=&quot;field-items&quot;&gt;
+            &lt;div class=&quot;field-item odd&quot;&gt;
+                    &lt;p&gt;Drupal, PHP, and Mapping This Week in Washington, DC&lt;/p&gt;        &lt;/div&gt;
+        &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&#039;node-body&#039;&gt;&lt;p&gt;&lt;img src=&quot;http://developmentseed.org/sites/developmentseed.org/files/dctech2_0_0.png&quot; alt=&quot;Week in DC Tech&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;There are some great technology events happening this week in Washington, DC, so if you&#039;re looking to talk code, help map the city, or just hear about some neat projects and ideas, you&#039;re in luck. Below are the events that caught our eye, and you can find a full list of technology events happening this week at &lt;a href=&quot;http://www.dctechevents.com/&quot;&gt;DC Tech Events&lt;/a&gt;. Have a great week!&lt;/p&gt;
+
+&lt;h1&gt;Wednesday, October 7&lt;/h1&gt;
+
+&lt;p&gt;6:30 pm&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://drupal.meetup.com/21/calendar/11332695/&quot;&gt;&lt;strong&gt;NOVA Drupal Meetup&lt;/strong&gt;&lt;/a&gt;: Are you a Drupal developer, use a Drupal site, or just want to learn more about the open source content management system? Come out for this meetup to meet other Drupal fans and hear how people are using the CMS.&lt;/p&gt;
+
+&lt;p&gt;6:30 pm&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://groups.google.com/group/washington-dcphp-group/browse_thread/thread/716d4a625287fef5?hl=en&quot;&gt;&lt;strong&gt;DC PHP Beverage Subgroup&lt;/strong&gt;&lt;/a&gt;: If you&#039;re looking to talk code with PHP developers who share your interest, come out for this casual meetup to chat over beers.&lt;/p&gt;
+
+&lt;p&gt;7:00 pm&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://hacdc.org/&quot;&gt;&lt;strong&gt;Mapping DC Meeting&lt;/strong&gt;&lt;/a&gt;: Come out for this meetup if you want to help create high quality, free maps of Washington, DC. The &lt;a href=&quot;http://wiki.openstreetmap.org/wiki/MappingDC&quot;&gt;Mapping DC&lt;/a&gt; group is doing this, starting with creating a detailed map of the National Zoo.&lt;/p&gt;&lt;/div&gt;</description>
+     <comments>http://developmentseed.org/blog/2009/oct/05/week-dc-tech-october-5th-edition#comments</comments>
+ <category domain="http://developmentseed.org/tags/washington-dc">Washington DC</category>
+ <pubDate>Mon, 05 Oct 2009 15:27:40 +0000</pubDate>
+ <dc:creator>Development Seed</dc:creator>
+ <guid isPermaLink="false">973 at http://developmentseed.org</guid>
+  </item>
+  <item>
+    <title>Mapping Innovation at the World Bank with Open Atrium</title>
+    <link>http://developmentseed.org/blog/2009/oct/02/mapping-innovation-world-bank-open-atrium</link>
+    <description>&lt;div class=&quot;field field-type-text field-field-subtitle&quot;&gt;
+    &lt;div class=&quot;field-items&quot;&gt;
+            &lt;div class=&quot;field-item odd&quot;&gt;
+                    &lt;p&gt;Using map and faceted search features to improve collaboration&lt;/p&gt;        &lt;/div&gt;
+        &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&#039;node-body&#039;&gt;&lt;p&gt;&lt;a href=&quot;http://openatrium.com/&quot;&gt;Open Atrium&lt;/a&gt; is being used as a base platform for collaboration at the World Bank because of its feature flexibility. Last week the World Bank launched a new Open Atrium site called &quot;Innovate,&quot; which is being used to support an organization-wide initiative to better share information about successful projects and approaches to solving problems.&lt;/p&gt;
+
+&lt;p&gt;The core of the site is built around helping World Bank staff discover relevant &quot;innovations&quot; happening around the world and providing a space to discuss them with colleagues in topical discussion groups. To facilitate this workflow we built a custom map-based browser feature that combines custom maps with faceted search, letting users quickly find interesting content. The screenshots below from a staging site with a partial database show what this feature looks like.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://farm4.static.flickr.com/3419/3974644312_c992e1afe8.jpg&quot; alt=&quot;The map-based browser feature makes custom maps with faceted search&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;As users apply new facets to their searches, the map results update to reveal global coverage for innovations that meet the search criteria.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://farm3.static.flickr.com/2600/3974644162_a44cc3a89a.jpg&quot; alt=&quot;Add new facets to the search to further customize the map&quot; /&gt;&lt;/p&gt;&lt;/div&gt;</description>
+     <comments>http://developmentseed.org/blog/2009/oct/02/mapping-innovation-world-bank-open-atrium#comments</comments>
+ <category domain="http://developmentseed.org/tags/custom-mapping">custom mapping</category>
+ <category domain="http://developmentseed.org/tags/drupal">Drupal</category>
+ <category domain="http://developmentseed.org/tags/faceted-search">faceted search</category>
+ <category domain="http://developmentseed.org/tags/intranet">intranet</category>
+ <category domain="http://developmentseed.org/tags/map-basec-browser">map-basec browser</category>
+ <category domain="http://developmentseed.org/tags/mapbox">mapbox</category>
+ <category domain="http://developmentseed.org/tags/open-atrium">open atrium</category>
+ <category domain="http://developmentseed.org/tags/world-bank">World Bank</category>
+ <category domain="http://developmentseed.org/channel/drupal-planet">Drupal planet</category>
+ <pubDate>Fri, 02 Oct 2009 14:31:04 +0000</pubDate>
+ <dc:creator>Development Seed</dc:creator>
+ <guid isPermaLink="false">972 at http://developmentseed.org</guid>
+  </item>
+  <item>
+    <title>September GeoDC Meetup Tonight</title>
+    <link>http://developmentseed.org/blog/2009/sep/30/september-geodc-meetup-tonight</link>
+    <description>&lt;div class=&quot;field field-type-text field-field-subtitle&quot;&gt;
+    &lt;div class=&quot;field-items&quot;&gt;
+            &lt;div class=&quot;field-item odd&quot;&gt;
+                    &lt;p&gt;Presentations on Using Amazon&amp;#8217;s Web Services and OpenStreet Map and an iPhone App that Maps Government Data&lt;/p&gt;        &lt;/div&gt;
+        &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&#039;node-body&#039;&gt;&lt;p&gt;Today is the last Wednesday of the month, which means it&#039;s time for another &lt;a href=&quot;http://geo-dc.ning.com/xn/detail/3537548:Event:1223?xg_source=activity&quot;&gt;GeoDC meetup&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://farm4.static.flickr.com/3525/3966592859_f7f4cb179c.jpg&quot; alt=&quot;September GeoDC Meetup&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;There will be two short presentations at the meetup. &lt;a href=&quot;http://developmentseed.org/team/tom-macwright&quot;&gt;Tom MacWright&lt;/a&gt; from Development Seed will talk about how using Amazon&#039;s web services and &lt;a href=&quot;http://www.openstreetmap.org/&quot;&gt;OpenStreetMap&lt;/a&gt; has helped our mapping team design, render, and host custom maps. Brian Sobel of &lt;a href=&quot;http://www.innovationgeo.com/&quot;&gt;Innovation Geo&lt;/a&gt; will present &lt;a href=&quot;http://areyousafedc.com/&quot;&gt;Are You Safe&lt;/a&gt;, an iPhone App that uses open government data to give users up-to-date and hyper-local information about crime.&lt;/p&gt;
+
+&lt;p&gt;The meetup will run from 7:00 to 9:00 pm at the offices of &lt;a href=&quot;http://www.fortiusone.com&quot;&gt;Fortius One&lt;/a&gt; at 2200 Wilson Blvd, Suite 307 in Arlington, just a &lt;a href=&quot;http://maps.google.com/maps?f=q&amp;amp;source=s_q&amp;amp;hl=en&amp;amp;geocode=&amp;amp;q=2200+Wilson+Blvd+%23+307+Arlington,+VA+22201-3324&amp;amp;sll=38.893037,-77.072783&amp;amp;sspn=0.039481,0.087633&amp;amp;ie=UTF8&amp;amp;ll=38.8912,-77.086236&amp;amp;spn=0.009871,0.021908&amp;amp;t=h&amp;amp;z=16&amp;amp;iwloc=A&quot;&gt;short walk from the Courthouse metro stop on the orange line&lt;/a&gt;.  Hope to see you there!&lt;/p&gt;&lt;/div&gt;</description>
+     <comments>http://developmentseed.org/blog/2009/sep/30/september-geodc-meetup-tonight#comments</comments>
+ <category domain="http://developmentseed.org/tags/geodc">GeoDC</category>
+ <category domain="http://developmentseed.org/tags/washington-dc">Washington DC</category>
+ <pubDate>Wed, 30 Sep 2009 12:02:53 +0000</pubDate>
+ <dc:creator>Development Seed</dc:creator>
+ <guid isPermaLink="false">971 at http://developmentseed.org</guid>
+  </item>
+  <item>
+    <title>Week in DC Tech: September 28th Edition</title>
+    <link>http://developmentseed.org/blog/2009/sep/28/week-dc-tech-september-28th-edition</link>
+    <description>&lt;div class=&quot;field field-type-text field-field-subtitle&quot;&gt;
+    &lt;div class=&quot;field-items&quot;&gt;
+            &lt;div class=&quot;field-item odd&quot;&gt;
+                    &lt;p&gt;Healthcare 2.0, iPhone Development, Online Storytelling, and More This Week in Washington, DC&lt;/p&gt;        &lt;/div&gt;
+        &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&#039;node-body&#039;&gt;&lt;p&gt;&lt;img src=&quot;http://developmentseed.org/sites/developmentseed.org/files/dctech2_0_0.png&quot; alt=&quot;Week in DC Tech&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Looking to geek out this week? There are a bunch of interesting technology events happening in Washington, DC this week, including a look at how social media is impacting healthcare, a screening of online clips from a journalist/filmmaker, and lightning talks on all kinds of geekery by the HacDC folks. Below are the events that caught our eye, and you can find a full list of what&#039;s happening this week in technology over at &lt;a href=&quot;http://www.dctechevents.com/&quot;&gt;DC Tech Events&lt;/a&gt;. Have a great week!&lt;/p&gt;
+
+&lt;h1&gt;Tuesday, September 29&lt;/h1&gt;
+
+&lt;p&gt;6:00 pm&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.meetup.com/DC-MD-VA-Health-2-0/calendar/11291017/&quot;&gt;&lt;strong&gt;Health 2.0 Meetup&lt;/strong&gt;&lt;/a&gt;: Curious as to how - and if - online technologies are impacting healthcare? At this meetup two speakers - Sanjay Koyani from the U.S. Food and Drug Administration and Taylor Walsh from MetroHealth Media - will talk about what they&#039;re seeing and implementing.&lt;/p&gt;
+
+&lt;p&gt;7:00 pm&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://nscodernightdc.com/&quot;&gt;&lt;strong&gt;NSCoderNightDC&lt;/strong&gt;&lt;/a&gt;: Want to build an iphone app, or talk about one that you&#039;ve already built? Come out for this meetup to talk about mac and iphone development, share the latest news from Apple, and eat some delicious French desserts.&lt;/p&gt;&lt;/div&gt;</description>
+     <comments>http://developmentseed.org/blog/2009/sep/28/week-dc-tech-september-28th-edition#comments</comments>
+ <category domain="http://developmentseed.org/tags/washington-dc">Washington DC</category>
+ <pubDate>Mon, 28 Sep 2009 15:33:15 +0000</pubDate>
+ <dc:creator>Development Seed</dc:creator>
+ <guid isPermaLink="false">970 at http://developmentseed.org</guid>
+  </item>
+  <item>
+    <title>Open Data for Microfinance: The New MIXMarket.org</title>
+    <link>http://developmentseed.org/blog/2009/sep/24/open-data-microfinance-new-mixmarketorg</link>
+    <description>&lt;div class=&quot;field field-type-text field-field-subtitle&quot;&gt;
+    &lt;div class=&quot;field-items&quot;&gt;
+            &lt;div class=&quot;field-item odd&quot;&gt;
+                    &lt;p&gt;Relaunch focuses on rich data visualization and downloadable data&lt;/p&gt;        &lt;/div&gt;
+        &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&#039;node-body&#039;&gt;&lt;p&gt;The launch of the new &lt;a href=&quot;http://www.mixmarket.org/&quot;&gt;MIX Market&lt;/a&gt; is a big win for open data in international development, and it vastly improves how rich financial data sets can be accessed.  The MIX Market is like a Bloomberg for microfinance, publishing data on more than 1,500 microfinance institutions (MFIs) in more than 190 countries and affecting 80,021,351 people. Additionally, each MFI has as many as 150 financial indicators and in some cases going back as far as 1995. The goal of this tool is simple - to open this information up to help MFIs, researchers, raters, evaluators, and governmental and regulatory agencies better see the marketplace, and that makes for better international development.&lt;/p&gt;
+
+&lt;p&gt;There are profiles for every country that the MIX Market is hosting. Take a look at the country landing page for India, showing how India stacks up to other peer groups and listing out all MFIs, networks, and funders and service providers.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://farm4.static.flickr.com/3517/3941870722_390f5aa65d.jpg&quot; alt=&quot;Country profiles give a quick overview of the performance of its microfinance institutions.&quot; /&gt;&lt;/p&gt;&lt;/div&gt;</description>
+     <comments>http://developmentseed.org/blog/2009/sep/24/open-data-microfinance-new-mixmarketorg#comments</comments>
+ <category domain="http://developmentseed.org/tags/data-visualization">data visualization</category>
+ <category domain="http://developmentseed.org/tags/graphs">graphs</category>
+ <category domain="http://developmentseed.org/tags/microfinance">microfinance</category>
+ <category domain="http://developmentseed.org/tags/mix-market">MIX Market</category>
+ <category domain="http://developmentseed.org/tags/open-data">open data</category>
+ <category domain="http://developmentseed.org/tags/salesforce">salesforce</category>
+ <category domain="http://developmentseed.org/channel/drupal-planet">Drupal planet</category>
+ <pubDate>Thu, 24 Sep 2009 13:09:10 +0000</pubDate>
+ <dc:creator>Development Seed</dc:creator>
+ <guid isPermaLink="false">969 at http://developmentseed.org</guid>
+  </item>
+  <item>
+    <title>Integrating the Siteminder Access System in an Open Atrium-based Intranet</title>
+    <link>http://developmentseed.org/blog/2009/sep/22/integrating-siteminder-access-system-open-atrium-based-intranet</link>
+    <description>&lt;div class=&quot;field field-type-text field-field-subtitle&quot;&gt;
+    &lt;div class=&quot;field-items&quot;&gt;
+            &lt;div class=&quot;field-item odd&quot;&gt;
+                    &lt;p&gt;Upgraded Siteminder Module in Drupal allows for better integration with Siteminder  &lt;/p&gt;        &lt;/div&gt;
+        &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&#039;node-body&#039;&gt;&lt;p&gt;In &lt;a href=&quot;http://developmentseed.org/blog/2009/sep/08/custom-open-atrium-intranet-launches-world-bank&quot;&gt;our recent work on the World Bank&#039;s Communicate intranet&lt;/a&gt;, we needed to integrate the &lt;a href=&quot;http://www.ca.com/us/internet-access-control.aspx&quot;&gt;Siteminder access system&lt;/a&gt; into the &lt;a href=&quot;http://openatrium.com/&quot;&gt;Open Atrium&lt;/a&gt;-based intranet &quot;Communicate&quot; to allow World Bank staff to use the same single sign-on credentials that they use to access all their internal web systems. To do this, we upgraded the Siteminder module for Drupal. You can download the &lt;a href=&quot;http://drupal.org/project/siteminder&quot;&gt;new module from its Drupal project page&lt;/a&gt; and &lt;a href=&quot;http://cvs.drupal.org/viewvc.py/drupal/contributions/modules/siteminder/README.txt?revision=1.2&amp;amp;view=markup&amp;amp;pathrev=DRUPAL-6--1-0-ALPHA1&quot;&gt;learn more about its API and how to write your own Siteminder plugin in its documentation&lt;/a&gt; and from reading the module&#039;s code. First, here is a little more background on the changes.&lt;/p&gt;
+
+&lt;p&gt;The Siteminder system, from &lt;a href=&quot;http://www.ca.com/us/&quot;&gt;Computer Associates&lt;/a&gt;, is used by many enterprise-level organizations to authenticate signing on to their web resources. How it works is that you can designate a site - like an Open Atrium powered intranet - to be protected by the Siteminder system. Once a site is protected by Siteminder, all traffic to that site is routed through Siteminder first and then on to the actual site. Siteminder sets certain HTTP headers in the user&#039;s request, and Drupal can then examine them to determine credentials. What the Drupal Siteminder module does is map the Siteminder header values to Drupal users and allow a user to login based on the headers they send.&lt;/p&gt;
+
+&lt;p&gt;In addition to authentication, the Siteminder system also stores other information about users. When the Siteminder system sends HTTP headers for authentication, it can also send information about a user - like her name, email address, phone number, and so on. We wanted to be able to pull this information into the intranet too. To achieve this, we re-wrote the Siteminder module in such a way that it&#039;s easy to write a plugin module to provide the fields to which you&#039;d like to map this extra Siteminder meta information and to determine how this information is processed and saved. To do this for the World Bank&#039;s intranet, we built the Siteminder Profile module, which lets you pick a CCK node type to serve as the target content profile for a user as well as select a few taxonomy vocabularies. Then by using the main module&#039;s administrative interface, you can choose which Siteminder headers should get mapped to which CCK fields and vocabularies based on the designated node type and vocabularies you selected in the Siteminder Profile settings page.&lt;/p&gt;
+
+&lt;p&gt;But what happens if a person&#039;s information changes in the Siteminder database - for example if they change phone numbers or office buildings? The Siteminder module now has built-in capability and an API to check whether values in users&#039; profiles have changed in the Siteminder system. The Siteminder Profile module uses this API and saves a new version of a user&#039;s profile if it detects that a value has changed in the Siteminder system database.&lt;/p&gt;&lt;/div&gt;</description>
+     <comments>http://developmentseed.org/blog/2009/sep/22/integrating-siteminder-access-system-open-atrium-based-intranet#comments</comments>
+ <category domain="http://developmentseed.org/tags/authentication">authentication</category>
+ <category domain="http://developmentseed.org/tags/drupal">Drupal</category>
+ <category domain="http://developmentseed.org/tags/open-atrium">open atrium</category>
+ <category domain="http://developmentseed.org/tags/siteminder">siteminder</category>
+ <category domain="http://developmentseed.org/tags/siteminder-module">siteminder module</category>
+ <category domain="http://developmentseed.org/channel/drupal-planet">Drupal planet</category>
+ <pubDate>Tue, 22 Sep 2009 18:02:21 +0000</pubDate>
+ <dc:creator>Development Seed</dc:creator>
+ <guid isPermaLink="false">964 at http://developmentseed.org</guid>
+  </item>
+  <item>
+    <title>Week in DC Tech: September 21 Edition</title>
+    <link>http://developmentseed.org/blog/2009/sep/21/week-dc-tech-september-21-edition</link>
+    <description>&lt;div class=&quot;field field-type-text field-field-subtitle&quot;&gt;
+    &lt;div class=&quot;field-items&quot;&gt;
+            &lt;div class=&quot;field-item odd&quot;&gt;
+                    &lt;p&gt;PHP, Design, Twitter, and Wikipedia This Week in Washington, DC&lt;/p&gt;        &lt;/div&gt;
+        &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&#039;node-body&#039;&gt;&lt;p&gt;&lt;img src=&quot;http://developmentseed.org/sites/default/files/dctech2_0.png&quot; alt=&quot;Week in DC Tech&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;There&#039;s an interesting variety of technology events happening in Washington, DC this week with focuses ranging from using Twitter for advocacy to drinking beers with php developers to discussing designing way outside of the box. Additionally tomorrow is international Car Free Day and there are events happening throughout the city to celebrate it and help you how to rely on cars less. Below are the events that caught our eye, and you can find a full list of the week&#039;s technology events at &lt;a href=&quot;http://www.dctechevents.com/&quot;&gt;DC Tech Events&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h2&gt;Tuesday, September 22&lt;/h2&gt;
+
+&lt;p&gt;All day&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.carfreemetrodc.com/&quot;&gt;&lt;strong&gt;Car Free Day&lt;/strong&gt;&lt;/a&gt;: Help reduce traffic and improve air quality by leaving your car at home on Tuesday in celebration of Car Free Day. There are also &lt;a href=&quot;http://www.carfreemetrodc.com/Information/tabid/57/Default.aspx&quot;&gt;free bike repair trainings, yoga classes, and other events&lt;/a&gt; happening throughout the day to help you lead a car free lifestyle.&lt;/p&gt;
+
+&lt;p&gt;6:00 - 8:00 pm&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.php.net/cal.php?id=3075&quot;&gt;&lt;strong&gt;DC PHP Beverage Subgroup&lt;/strong&gt;&lt;/a&gt;: Come out to talk code with other php developers over a few beers. This is a great opportunity to get to know local php developers in a casual setting while sharing stories about your code.&lt;/p&gt;&lt;/div&gt;</description>
+     <comments>http://developmentseed.org/blog/2009/sep/21/week-dc-tech-september-21-edition#comments</comments>
+ <category domain="http://developmentseed.org/tags/washington-dc">Washington DC</category>
+ <pubDate>Mon, 21 Sep 2009 16:03:24 +0000</pubDate>
+ <dc:creator>Development Seed</dc:creator>
+ <guid isPermaLink="false">968 at http://developmentseed.org</guid>
+  </item>
+  <item>
+    <title>Peru&#039;s Software Freedom Day: Impressions and Photos</title>
+    <link>http://developmentseed.org/blog/2009/sep/21/perus-software-freedom-day-impressions-and-photos</link>
+    <description>&lt;div class=&#039;node-body&#039;&gt;&lt;p&gt;There was a great turn out a &lt;a href=&quot;http://www.sfdperu.org/&quot;&gt;Software Freedom Day&lt;/a&gt; this weekend with 400 people in attendance and a solid 30 presentations. The &lt;a href=&quot;http://developmentseed.org/blog/2009/sep/15/preparing-perus-software-freedom-day-talks-drupal-features-and-open-atrium&quot;&gt;presentations in the Drupal track&lt;/a&gt; were some of the best attended sessions of the day. To get a sense of Drupal&#039;s traction down here, &quot;Drupal&quot; was mentioned in many sessions and conversations throughout the day, and not just by the people working directly with Drupal.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://farm3.static.flickr.com/2653/3940335249_57ce995a84.jpg&quot; alt=&quot;Presenting on Features in Drupal and Managing News&quot; /&gt;
+&lt;em&gt;Presenting on Features in Drupal and Managing News&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;I had a great time meeting people and learning about the work being done in the different open source communities here in Peru. Software Freedom Day is becoming an annual event in Peru, and there were many discussions on improving the event for next year as well as keeping the energy going to improve the image of open source software in the country. It&#039;s great to see the community looking forward like this, and I&#039;m excited to help keep the open source movement growing in Peru.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.flickr.com/photos/developmentseed/sets/72157622423999830/&quot;&gt;More photos from the event here.&lt;/a&gt;&lt;/p&gt;&lt;/div&gt;</description>
+     <comments>http://developmentseed.org/blog/2009/sep/21/perus-software-freedom-day-impressions-and-photos#comments</comments>
+ <category domain="http://developmentseed.org/tags/drupal">Drupal</category>
+ <category domain="http://developmentseed.org/tags/open-source">open source</category>
+ <category domain="http://developmentseed.org/tags/peru">Peru</category>
+ <category domain="http://developmentseed.org/tags/software-freedom-day">software freedom day</category>
+ <pubDate>Mon, 21 Sep 2009 14:22:35 +0000</pubDate>
+ <dc:creator>Development Seed</dc:creator>
+ <guid isPermaLink="false">967 at http://developmentseed.org</guid>
+  </item>
+  </channel>
+</rss>

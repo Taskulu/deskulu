@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<items>
+   <item>
+      <title>2 date values</title>
+      <guid>123456789</guid>
+      <date>Wed, 06 Jan 2010 15:05:00 GMT+00:00</date>
+      <date>Thu, 07 Jan 2010 15:08:00 GMT+00:00</date>
+   </item>
+   <item>
+      <title>4 date values</title>
+      <guid>1234567890</guid>
+      <date>Wed, 06 Jan 2010 15:00:00 GMT+00:00</date>
+      <date>Thu, 07 Jan 2010 15:00:00 GMT+00:00</date>
+      <date>Fri, 08 Jan 2010 15:00:00 GMT+00:00</date>
+      <date>Sat, 09 Jan 2010 15:00:00 GMT+00:00</date>
+   </item>
+   <item>
+      <title>Bogus date values</title>
+      <guid>1234567892</guid>
+      <date>Wed, 36 Jan 2010 15:00:00 GMT+00:00</date>
+      <date>Foo, 07 Bar 2010 95:00:00 GMT+00:00</date>
+      <date>This is just pure bogus. No date here!</date>
+   </item>
+   <item>
+      <title>Single date value</title>
+      <guid>1234567894</guid>
+      <date>Wed, 06 Jan 2010 14:00:00 GMT+00:00</date>
+   </item>
+</items>

@@ -1,0 +1,52 @@
+<?php
+
+/**
+ * @file
+ * Parse an XML or HTML document using XPath.
+ */
+
+/**
+ * Implements hook_feeds_plugins().
+ */
+function feeds_xpathparser_feeds_plugins() {
+  return array(
+    'FeedsXPathParserBase' => array(
+      'hidden' => TRUE,
+      'handler' => array(
+        'parent' => 'FeedsParser',
+        'class' => 'FeedsXPathParserBase',
+        'file' => 'FeedsXPathParserBase.inc',
+      ),
+    ),
+    'FeedsXPathParserHTML' => array(
+      'name' => t('XPath HTML parser'),
+      'description' => t('Parse HTML using XPath.'),
+      'handler' => array(
+        'parent' => 'FeedsXPathParserBase',
+        'class' => 'FeedsXPathParserHTML',
+        'file' => 'FeedsXPathParserHTML.inc',
+      ),
+    ),
+    'FeedsXPathParserXML' => array(
+      'name' => t('XPath XML parser'),
+      'description' => t('Parse XML using XPath.'),
+      'handler' => array(
+        'parent' => 'FeedsXPathParserBase',
+        'class' => 'FeedsXPathParserXML',
+        'file' => 'FeedsXPathParserXML.inc',
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_hook_info().
+ */
+function feeds_xpathparser_hook_info() {
+  $hooks = array();
+  $hooks['feeds_xpathparser_filter_domnode'] = array(
+    'group' => 'feeds_xpathparser',
+  );
+
+  return $hooks;
+}

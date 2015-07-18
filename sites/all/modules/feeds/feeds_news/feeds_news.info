@@ -1,0 +1,27 @@
+name = Feeds News
+description = A news aggregator built with feeds, creates nodes from imported feed items. With OPML import.
+core = 7.x
+package = Feeds
+dependencies[] = ctools
+dependencies[] = features
+dependencies[] = feeds
+dependencies[] = views
+features[ctools][] = feeds:feeds_importer_default:1
+features[ctools][] = views:views_default:3.0
+features[features_api][] = api:2
+features[feeds_importer][] = feed
+features[feeds_importer][] = opml
+features[field_base][] = field_feed_item_description
+features[field_instance][] = node-feed_item-field_feed_item_description
+features[node][] = feed
+features[node][] = feed_item
+features[views_view][] = feeds_defaults_feed_items
+files[] = feeds_news.module
+files[] = feeds_news.test
+
+; Information added by Drupal.org packaging script on 2015-07-11
+version = "7.x-2.0-beta1"
+core = "7.x"
+project = "feeds"
+datestamp = "1436615941"
+

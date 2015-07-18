@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0">
+<channel>
+ <title>drupal.org aggregator</title>
+ <link>http://drupal.org/planet</link>
+ <description>drupal.org - aggregated feeds in category Planet Drupal</description>
+ <language>en</language>
+<item>
+ <title>Adaptivethemes: Why I killed Node, may it RIP</title>
+ <link>http://adaptivethemes.com/why-i-killed-node-may-it-rip</link>
+ <description>&lt;p&gt;Myself, like many others, have always had an acrimonious relationship with the word &amp;#8220;node&amp;#8221;. It didn&amp;#8217;t exactly get off to a good start when node presented me with a rude &amp;#8220;wtf&amp;#8221; moment when we first met. Things only went down hill after that, node remaining aloof and abstract, without ever just coming out and telling me what it actually&amp;nbsp;was.&lt;/p&gt;
+&lt;div class=&quot;og_rss_groups&quot;&gt;&lt;/div&gt;</description>
+ <pubDate>Fri, 23 Oct 2009 17:00:46 +0000</pubDate>
+</item>
+<item>
+ <title>Midwestern Mac, LLC: Managing News - Revolutionary—not Evolutionary—Step for Drupal</title>
+ <link>http://www.midwesternmac.com/blogs/geerlingguy/managing-news-revolutionary%E2%80%94not-evolutionary%E2%80%94step-drupal</link>
+ <description>&lt;p&gt;I noticed a post from the excellent folks over at &lt;a href=&quot;http://developmentseed.org/&quot;&gt;Development Seed&lt;/a&gt; in the drupal.org Planet feed on a new Drupal installation profile they&#039;ve been working on called &lt;a href=&quot;http://managingnews.com/&quot;&gt;Managing News&lt;/a&gt;. Having tried (and loved) their Drupal-based installation of &lt;a href=&quot;http://openatrium.com/&quot;&gt;Open Atrium&lt;/a&gt; (a great package for quick Intranets), I had pretty high expectations.&lt;/p&gt;
+&lt;p&gt;Those expectations were pretty much blown out of the water; this install profile basically sets up a Drupal site (with all the Drupal bells and whistles) that is focused on one thing, and does it well: &lt;strong&gt;news aggregation via feeds&lt;/strong&gt; (Atom, RSS).&lt;/p&gt;
+&lt;p class=&quot;rtecenter&quot;&gt;&lt;a href=&quot;http://catholicnewslive.com/&quot;&gt;&lt;img alt=&quot;Catholic News Live.com - Catholic News Aggregator&quot; width=&quot;450&quot; height=&quot;351&quot; class=&quot;noborder&quot; src=&quot;http://www.midwesternmac.com/sites/default/files/blogpost-images/catholic-news-live-screenshot.jpg&quot; /&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;I decided to quickly build out an aggregation site, &lt;a href=&quot;http://catholicnewslive.com/&quot;&gt;Catholic News Live&lt;/a&gt;. The site took about 4 hours to set up, and it&#039;s already relatively customized to my needs. One thing I still don&#039;t know about is whether Drupal&#039;s cron will be able to handle the site after a few months and a few hundred more feeds... but we&#039;ll see!&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;http://www.midwesternmac.com/blogs/geerlingguy/managing-news-revolutionary%E2%80%94not-evolutionary%E2%80%94step-drupal&quot;&gt;read more&lt;/a&gt;&lt;/p&gt;
+</description>
+ <pubDate>Fri, 23 Oct 2009 04:58:15 +0000</pubDate>
+</item>
+<item>
+ <title>Dries Buytaert: Eén using Drupal</title>
+ <link>http://buytaert.net/een-using-drupal</link>
+ <description>Eén (Dutch for &#039;one&#039;), a public TV station reaching millions of people in Belgium, redesigned its website using &lt;a href=&quot;http://drupal.org&quot;&gt;Drupal&lt;/a&gt;: see &lt;a href=&quot;http://een.be&quot;&gt;http://een.be&lt;/a&gt;.
+
+&lt;div class=&quot;figure&quot;&gt;
+&lt;img src=&quot;http://buytaert.net/sites/buytaert.net/files/cache/drupal-een-500x500.jpg&quot; alt=&quot;Een&quot; style=&quot;border: 1px solid #ccc; padding: 4px;&quot;/&gt;
+
+&lt;/div&gt;</description>
+ <pubDate>Fri, 23 Oct 2009 01:30:55 +0000</pubDate>
+</item>
+<item>
+ <title>Open Em Space: Em Space&#039;s top Drupal 6 modules (that aren&#039;t always in the limelight)</title>
+ <link>http://open.emspace.com.au/article/em-spaces-top-drupal-6-modules-arent-always-limelight</link>
+ <description>&lt;div class=&quot;field field-type-filefield field-field-article-image&quot;&gt;
+    &lt;div class=&quot;field-items&quot;&gt;
+            &lt;div class=&quot;field-item odd&quot;&gt;
+                    &lt;img  class=&quot;imagefield imagefield-field_article_image&quot; width=&quot;200&quot; height=&quot;200&quot; alt=&quot;&quot; src=&quot;http://open.emspace.com.au/sites/open.emspace.com.au/files/article_images/Drupal-logo-C366BDF9CE-seeklogo.com_.gif?1256197849&quot; /&gt;        &lt;/div&gt;
+        &lt;/div&gt;
+&lt;/div&gt;
+&lt;style type=&quot;text/css&quot;&gt;
+  h3 { text-decoration: underline; }
+  div.item-container { border-top: 1px dotted #CCC; padding-bottom: 10px; }
+&lt;/style&gt;&lt;p&gt;
+&lt;strong&gt;Every development house and their dogs seem to have a &#039;TOP 10 DRUPAL MODULES&lt;/strong&gt; - Absolute definitive version!!&#039; blog post somewhere at the minute, and they all tend to be fairly similar - &#039;Views, CCK, Image&#039; etc... &lt;/p&gt;
+&lt;p&gt;We have decided to go a different route, and do our own summary of drupal modules (and combinations) that we use all the time, which you may not have used before.&lt;/p&gt;</description>
+ <pubDate>Fri, 23 Oct 2009 00:00:54 +0000</pubDate>
+</item>
+<item>
+ <title>NodeOne: The new Feeds module</title>
+ <link>http://nodeone.se/blogg/drupal/new-feeds-module</link>
+ <description>&lt;p&gt;How do you aggregate feeds into a &lt;a href=&quot;/drupal&quot;&gt;Drupal website&lt;/a&gt;? Or import data from other sources like a CSV document? The answer to this is of course &lt;a href=&quot;http://drupal.org/project/feedapi&quot;&gt;FeedAPI&lt;/a&gt;! Or is it?&lt;/p&gt;
+&lt;p&gt;FeedAPI has for long been the mainstream solution for this kind of problems. And a really good one! But very recently the guys over at &lt;a href=&quot;http://developmentseed.org/&quot;&gt;Development Seed&lt;/a&gt; (the creators and maintainers of FeedAPI) released a new alpha version of the &lt;a href=&quot;http://drupal.org/project/feeds&quot;&gt;Feeds&lt;/a&gt; module. I haven&#039;t had time to play around with it too much yet. But it seems to be very promising. The dependency of &lt;a href=&quot;http://drupal.org/project/ctools&quot;&gt;CTools&lt;/a&gt; and its plugin framework makes Feeds a lot more extensible than FeedAPI was. The code base and its API is more thought out and seems to be better prepared for scalability.&lt;/p&gt;
+&lt;p&gt;I can&#039;t wait to use Feeds out in the wild! When I do so, I&#039;ll come back with a more in depth review.&lt;/p&gt;
+&lt;div class=&quot;watcher_node&quot;&gt;&lt;a href=&quot;/user/0/watcher/toggle/345?destination=drupalplanet%2Ffeed&quot; class=&quot;watcher_node_toggle_watching_link&quot; title=&quot;Watch posts to be notified when other users comment on them or the posts are changed&quot;&gt;Du bevakar inte detta inlägg, klicka här för att börja bevaka&lt;/a&gt;&lt;/div&gt;</description>
+ <pubDate>Thu, 22 Oct 2009 18:48:37 +0000</pubDate>
+</item>
+<item>
+ <title>Geoff Hankerson: Bring Sanity to Your Web Site (&amp; Your Life)</title>
+ <link>http://geoffhankerson.com/node/110</link>
+ <description>&lt;p&gt; Only 9 seats left. Sign up at &lt;a href=&quot;http://www.strategicit.org/sanity&quot;&gt;http://www.strategicit.org/sanity&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img style=&quot;display: block; padding-bottom: 12px;&quot; src=&quot;http://farm1.static.flickr.com/188/395226087_9002872142.jpg&quot; border=&quot;0&quot; alt=&quot;Sanily&quot; /&gt;&lt;/p&gt;
+&lt;h6 style=&quot;font-size: 9px;  padding-bottom: 12px;&quot;&gt;Photo by  &lt;a href=&quot;http://www.flickr.com/photos/darkpatator/&quot;&gt;http://www.flickr.com/photos/darkpatator/&lt;/a&gt; / &lt;a href=&quot;http://creativecommons.org/licenses/by/2.0/&quot;&gt;CC BY 2.0&lt;/a&gt;&lt;/h6&gt;
+&lt;p&gt;NO CHARGE :: Class Limited to First 15 Applicants&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;http://geoffhankerson.com/node/110&quot; target=&quot;_blank&quot;&gt;read more&lt;/a&gt;&lt;/p&gt;</description>
+ <pubDate>Thu, 22 Oct 2009 18:19:10 +0000</pubDate>
+</item>
+<item>
+ <title>Nick Vidal: HTTP and the Push Model</title>
+ <link>http://nick.iss.im/2009/10/22/http-and-the-push-model/</link>
+ <description>&lt;p&gt;The Real-time Web seems to be the buzz of the moment, and there has been quite a debate comparing HTTP, XMPP and related technologies (Comet, Web sockets). Generally HTTP is associated with the Pull model, while XMPP is associated with the Push model. But it&amp;#8217;s very well possible to design an architecture that follows the Push model using HTTP.&lt;/p&gt;
+&lt;p&gt;Let&amp;#8217;s see an example to illustrated the point: Nick and Debbie are friends and they have subscribed to each other&amp;#8217;s feed to receive updates. Their feeds are hosted on different servers.&lt;/p&gt;
+&lt;p&gt;In the Pull model, Nick has to poll Debbie&amp;#8217;s server every time to check for updates from Debbie, and vice-versa.&lt;/p&gt;
+&lt;p&gt;In the Push model, the flow goes something like this:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt; Debbie publishes a new entry on her server (Push);&lt;/li&gt;
+&lt;li&gt; Debbie&amp;#8217;s server lets Nick&amp;#8217;s server know that Debbie has published a new entry (Push);&lt;/li&gt;
+&lt;li&gt; Nick polls his own server to receive updates (Pull).&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Notice that the second step is a Push implemented in HTTP. Nick&amp;#8217;s server didn&amp;#8217;t have to poll Debbie&amp;#8217;s server every time to check for updates.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;http://nick.iss.im/2009/10/22/http-and-the-push-model/&quot;&gt;read more&lt;/a&gt;&lt;/p&gt;
+</description>
+ <pubDate>Thu, 22 Oct 2009 16:50:31 +0000</pubDate>
+</item>
+<item>
+ <title>Palantir: Pacific Northwest Drupal Summit</title>
+ <link>http://www.palantir.net/blog/pacific-northwest-drupal-summit</link>
+ <description>&lt;p&gt;It&#039;s been a busy fall here in the Pacific Northwest. In the last two months the area has hosted no less than four Drupal events. &lt;/p&gt;
+&lt;p&gt;Things kicked off in late September with &lt;a href=&quot;http://drupalcamp.northstudio.com/&quot;&gt;DrupalCamp Victoria&lt;/a&gt;. A couple weeks later was the Seattle Drupal Clinic, an event specifically focused at introducing new users to Drupal. Two weeks after that was &lt;a href=&quot;http://drupalpdx.org/camp09/&quot;&gt;DrupalCamp Portland&lt;/a&gt;, and finally last week a group of Drupal luminaries gathered in Vancouver for the &lt;a href=&quot;http://groups.drupal.org/node/24642&quot;&gt;Drupal Contrib Code Sprint&lt;/a&gt;, which resulted in &lt;a href=&quot;http://drupal4hu.com/node/223&quot;&gt;usable versions of Views and Coder for Drupal 7&lt;/a&gt;! &lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;http://www.palantir.net/sites/default/files/pnw-summit-logo.png&quot; alt=&quot;Pacific Northwest Drupal Summit&quot; align=&quot;right&quot; /&gt;Phew, that&#039;s a lot of Drupal! The best part is it&#039;s not over yet, Seattle will close off the Drupal season with the &lt;a href=&quot;http://pnwdrupalsummit.org/&quot;&gt;Pacific Northwest Drupal Summit&lt;/a&gt; this coming weekend, October 24-25.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;http://www.palantir.net/blog/pacific-northwest-drupal-summit&quot; target=&quot;_blank&quot;&gt;read more&lt;/a&gt;&lt;/p&gt;</description>
+ <pubDate>Thu, 22 Oct 2009 16:44:15 +0000</pubDate>
+</item>
+<item>
+ <title>Stéphane Corlosquet: Produce and Consume Linked Data with Drupal!</title>
+ <link>http://openspring.net/blog/2009/10/22/produce-and-consume-linked-data-with-drupal</link>
+ <description>&lt;p&gt;&lt;a href=&quot;http://openspring.net/sites/openspring.net/files/corl-etal-2009iswc_logo.png&quot;&gt;&lt;img style=&quot;float:right&quot; src=&quot;http://openspring.net/sites/openspring.net/files/corl-etal-2009iswc_logo_thumb.png&quot; alt=&quot;Drupal in the Linked Data Cloud&quot; /&gt;&lt;/a&gt;&lt;em&gt;Produce and Consume Linked Data with Drupal!&lt;/em&gt; is the title of the paper I will be presenting next week at the &lt;a href=&quot;http://iswc2009.semanticweb.org/&quot;&gt;8th International Semantic Web Conference (ISWC 2009)&lt;/a&gt; in Washington, DC. I wrote it at the end of M.Sc. at &lt;a href=&quot;http://www.deri.ie/&quot;&gt;DERI&lt;/a&gt;, in partnership with the &lt;a href=&quot;http://hms.harvard.edu/&quot;&gt;Harvard Medical School&lt;/a&gt; and the &lt;a href=&quot;http://www.massgeneral.org/&quot;&gt;Massachusetts General Hospital&lt;/a&gt; which is where I am &lt;a href=&quot;http://openspring.net/blog/2009/09/19/one-way-ticket-to-boston&quot;&gt;now working&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;It presents the approach for using Drupal (or any other CMS) as a Linked Data producer and consumer platform. Some part of this approach were used in the &lt;a href=&quot;http://drupal.org/node/493030&quot;&gt;RDF API&lt;/a&gt; that Dries committed a few days ago to Drupal core. I have attached &lt;a href=&quot;http://openspring.net/sites/openspring.net/files/corl-etal-2009iswc.pdf&quot;&gt;full paper&lt;/a&gt;, and here is the abstract:&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;http://openspring.net/blog/2009/10/22/produce-and-consume-linked-data-with-drupal&quot;&gt;read more&lt;/a&gt;&lt;/p&gt;
+</description>
+ <pubDate>Thu, 22 Oct 2009 13:03:26 +0000</pubDate>
+</item>
+<item>
+ <title>Dries Buytaert: Lucas Arts using Drupal</title>
+ <link>http://buytaert.net/lucas-arts-using-drupal</link>
+ <description>Lucas Arts, the video game company of George Lucas, launched a stunning &lt;a href=&quot;http://drupal.org&quot;&gt;Drupal&lt;/a&gt; site for its upcoming MMORPG: &lt;em&gt;Star Wars, The Old Republic&lt;/em&gt;. Check out the website at: &lt;a href=&quot;http://www.swtor.com&quot;&gt;http://www.swtor.com&lt;/a&gt;. &lt;em&gt;The Force is strong with Drupal!&lt;/em&gt;
+
+&lt;div class=&quot;figure&quot;&gt;
+&lt;img src=&quot;http://buytaert.net/sites/buytaert.net/files/cache/drupal-star-wars-game-500x500.jpg&quot; alt=&quot;Star wars game&quot; style=&quot;border: 1px solid #ccc; padding: 4px;&quot;/&gt;
+
+&lt;/div&gt;
+
+PS: in 2006, the &lt;a href=&quot;http://lullabot.com&quot;&gt;Lullabots&lt;/a&gt; and myself visited Skywalker Ranch, the private workplace of George Lucas, to get &lt;a href=&quot;http://buytaert.net/album/san-francisco-2006/light-saber-2&quot;&gt;some lightsaber training&lt;/a&gt;.</description>
+ <pubDate>Thu, 22 Oct 2009 11:40:31 +0000</pubDate>
+</item>
+<item>
+ <title>Janak Singh: Drupal Custom Pager navigation</title>
+ <link>http://janaksingh.com/blog/drupal-custom-pager-navigation-73</link>
+ <description>&lt;!-- google_ad_section_start --&gt;&lt;p&gt;For my portfolio site I wanted each image node (CCK + imagefield) to have a thumbnail strip of 10 or so images from the same category. Very simple stuff I thought. A quick search and I came across fantastic module called &lt;a href=&quot;http://drupal.org/project/custom_pagers&quot;&gt;Custom Pagers&lt;/a&gt; by &lt;a href=&quot;http://drupal.org/user/16496&quot;&gt;Eaton&lt;/a&gt;. This highly flexible module provides you a &lt;b&gt;Next&lt;/b&gt; and &lt;b&gt;Previous&lt;/b&gt; custom pager that you can display in your node pages. This was perfect for blog nodes but I wanted more control over the pager and I only wanted nodes to be pulled out from the same taxonomy term as the node being displayed.. fairly simple idea:&lt;/p&gt;
+&lt;!-- google_ad_section_end --&gt;</description>
+ <pubDate>Thu, 22 Oct 2009 11:13:17 +0000</pubDate>
+</item>
+<item>
+ <title>Ryan Szrama: Ubercart 2.0 and the Ubercore Initiative</title>
+ <link>http://www.bywombats.com/blog/10-22-2009/ubercart-20-and-ubercore-initiative</link>
+ <description>&lt;p&gt;With high spirits and much excitement for the future, Lyle and I polished up and released &lt;a href=&quot;http://drupal.org/node/610966&quot;&gt;Ubercart 2.0&lt;/a&gt; today. Thanks to all those who took notice, and an even bigger thanks to the dozens of contributors who made the release a reality.&lt;/p&gt;
+&lt;p&gt;Features of the release should come as no surprise, as most people have been using Ubercart 2.x for some time based on the project&#039;s &lt;a href=&quot;http://drupal.org/project/usage/ubercart&quot;&gt;usage statistics&lt;/a&gt; and personal experience.  In the final days, we did iron out issues related to file downloads, role promotions, product kits, and Views integration.  We also paved the way for smoother European use in conjunction with the &lt;a href=&quot;http://drupal.org/project/uc_vat&quot;&gt;UC2 VAT&lt;/a&gt; project.&lt;/p&gt;
+&lt;p&gt;For those that are interested, continue reading for my reflections on the state of the Ubercart development process and code, including a community effort to realign both of these things on Drupal 7 with the &lt;a href=&quot;http://d7uc.org&quot;&gt;Drupal 7 Ubercore Initiative&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;The teaser... Ubercart, D7, Small core influence -&gt; Ubercore (or, &lt;a href=&quot;http://d7uc.org&quot;&gt;d7uc&lt;/a&gt;).&lt;/p&gt;
+ &lt;p&gt;&lt;a href=&quot;http://www.bywombats.com/blog/10-22-2009/ubercart-20-and-ubercore-initiative&quot; target=&quot;_blank&quot;&gt;read more&lt;/a&gt;&lt;/p&gt;</description>
+ <pubDate>Thu, 22 Oct 2009 04:38:38 +0000</pubDate>
+</item>
+<item>
+ <title>Lullabot: Drupal Voices 66: Jimmy Berry on the Drupal Test Framework</title>
+ <link>http://feedproxy.google.com/~r/lullabot-all/~3/Nvm2rEBEhN4/drupal-voices-66-jimmy-berry-drupal-test-framework</link>
+ <description>&lt;!--paging_filter--&gt;&lt;p&gt;&lt;a href=&quot;http://boombatower.com/&quot;&gt;Jimmy Berry&lt;/a&gt; (aka &lt;a href=&quot;http://drupal.org/user/214218&quot;&gt;boombatower&lt;/a&gt;) is the Drupal 7 Testing Subsystem Maintainer and maintainer of  &lt;a href=&quot;http://testing.drupal.org&quot;&gt;testing.drupal.org.&lt;/a&gt;  Testing has become an integral part of the core Drupal development process as Drupal 7 has adopted a test-driven development model, which &lt;a href=&quot;http://buytaert.net/drupal-7-testing-status-update-and-next-steps&quot;&gt;Dries explains here.&lt;/a&gt; &lt;/p&gt;
+&lt;p&gt;So Jimmy has picked up the testing torch for Drupal, and talks about his involvement with the &lt;a href=&quot;http://drupal.org/project/simpletest&quot;&gt;SimpleTest framework&lt;/a&gt; and helping getting it into Drupal core, how that&#039;s changed the core development process, and what it could mean if also applied to contributed modules as well.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;http://www.lullabot.com/audio/download/635/DrupalVoices066.mp3&quot;&gt;Download Audio&lt;/a&gt;&lt;/p&gt;</description>
+ <pubDate>Thu, 22 Oct 2009 03:46:07 +0000</pubDate>
+</item>
+<item>
+ <title>Dries Buytaert: Robbie Williams using Drupal</title>
+ <link>http://buytaert.net/robbie-williams-using-drupal</link>
+ <description>&lt;p&gt;A couple of weeks ago, Robbie Williams made &lt;a href=&quot;http://www.youtube.com/watch?v=FTJfNP1VEnw&quot;&gt;his comeback&lt;/a&gt; on 
+British television music talent show The X Factor, where he performed his new single &quot;Bodies&quot; for the first time live.&lt;/p&gt;
+
+&lt;p&gt;With his comeback also comes a website refresh using &lt;a href=&quot;http://drupal.org&quot;&gt;Drupal&lt;/a&gt;: see &lt;a href=&quot;http://robbiewilliams.com&quot;&gt;http://robbiewilliams.com&lt;/a&gt;. The site was developed by an Acquia partner based in the UK.&lt;/p&gt;
+
+
+&lt;div class=&quot;figure&quot;&gt;
+&lt;img src=&quot;http://buytaert.net/sites/buytaert.net/files/cache/drupal-robbie-williams-500x500.jpg&quot; alt=&quot;Robbie williams&quot; style=&quot;border: 1px solid #ccc; padding: 4px;&quot;/&gt;
+
+&lt;/div&gt;
+
+&lt;object width=&quot;500&quot; height=&quot;392&quot;&gt;&lt;param name=&quot;movie&quot; value=&quot;http://www.youtube.com/v/Q5uKa1bDtsk&amp;hl=en&amp;fs=1&amp;&quot;&gt;&lt;/param&gt;&lt;param name=&quot;allowFullScreen&quot; value=&quot;true&quot;&gt;&lt;/param&gt;&lt;param name=&quot;allowscriptaccess&quot; value=&quot;always&quot;&gt;&lt;/param&gt;&lt;embed src=&quot;http://www.youtube.com/v/Q5uKa1bDtsk&amp;hl=en&amp;fs=1&amp;&quot; type=&quot;application/x-shockwave-flash&quot; allowscriptaccess=&quot;always&quot; allowfullscreen=&quot;true&quot; width=&quot;500&quot; height=&quot;392&quot;&gt;&lt;/embed&gt;&lt;/object&gt;</description>
+ <pubDate>Thu, 22 Oct 2009 02:01:49 +0000</pubDate>
+</item>
+<item>
+ <title>Growing Venture Solutions: Introducing Token Starterkit - Simple Introduction to Creating your own Drupal Tokens</title>
+ <link>http://growingventuresolutions.com/blog/introducing-token-starterkit-simple-introduction-creating-your-own-drupal-tokens</link>
+ <description>&lt;p&gt;There seems to be a new pattern emerging in Drupal and I want to let you know that the &lt;a href=&quot;http://drupal.org/project/token&quot;&gt;Token&lt;/a&gt; module has joined the bandwagon with a &quot;Token Starter Kit&quot;&lt;/p&gt;
+&lt;h3&gt;History of the Starter Kit in Drupal: Zen Theming&lt;/h3&gt;
+&lt;p&gt;When the Zen project started it&#039;s goal was to be a really solid base HTML theme with tons of comments in the templates so that a new themer could take it, modify it, and end up with a great theme. Unfortunately, that second step of modifying it meant that people ran into all sorts of support issues that were hard to debug and they were in trouble when a new version of Zen came out - they weren&#039;t really running Zen any more.&lt;/p&gt;
+&lt;h3&gt;How to use the Token Starter Kit&lt;/h3&gt;
+&lt;p&gt;The Token Starter Kit is meant to be similarly easy for folks to use. The idea is that if you just open up the token module itself and start adding tokens then you are &quot;hacking a contrib&quot; (modifying it) and you will have to remember to make those changes again when you upgrade.  Bad news.  It&#039;s also not particularly simple to understand how the module works (it&#039;s got includes, and hooks, oh my!).&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;http://growingventuresolutions.com/blog/introducing-token-starterkit-simple-introduction-creating-your-own-drupal-tokens&quot;&gt;read more&lt;/a&gt;&lt;/p&gt;
+</description>
+ <pubDate>Wed, 21 Oct 2009 23:16:12 +0000</pubDate>
+</item>
+<item>
+ <title>Alldrupalthemes: Does spam thrive during economic decline?</title>
+ <link>http://www.alldrupalthemes.com/drupal-blog/does-spam-thrive-during-economic-decline</link>
+ <description>&lt;p&gt;Are laid off IT workers discovering that sending spam is easier than getting a job these days? It sure seems that way, even with mollom running on all forms around a hundred spam comments get through every week, and they seem to get more clever every time.&lt;/p&gt;
+&lt;p&gt;I just found the following comment below my review of the &lt;em&gt;Drupal 6 Javascript and jQuery&lt;/em&gt; book:&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;&lt;em&gt;Submitted by san diego real estate (not verified) on Wed, 10/21/2009 - 18:55.&lt;/em&gt;&lt;br /&gt;
+The only reason why I like this book is that this book developers deep into the usage of jQuery in themes and modules and there is interesting stuff in there for developers of any experience.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;I can understand mollom didn&#039;t get that message because even I thought it was a real comment. I was much surprised to&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;http://www.alldrupalthemes.com/drupal-blog/does-spam-thrive-during-economic-decline&quot; target=&quot;_blank&quot;&gt;read more&lt;/a&gt;&lt;/p&gt;</description>
+ <pubDate>Wed, 21 Oct 2009 22:53:39 +0000</pubDate>
+</item>
+<item>
+ <title>Tag1 Consulting: Tag1 Now Hiring Interns</title>
+ <link>http://tag1consulting.com/blog/tag1-now-hiring-interns</link>
+ <description>&lt;p&gt;At the beginning of 2009, I was hired by Tag1 Consulting as Jeremy Andrews&#039; full time partner. A decidedly questionable decision on his part, but a great change for me! I used to work at the Open Source Lab at Oregon State University and I am currently the sysadmin for drupal.org. Working at the OSL and drupal.org spoiled me, I&#039;ll be completely honest about that. I got used to working with interesting new technologies and consistently pushing the limits of my knowledge.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;http://tag1consulting.com/blog/tag1-now-hiring-interns&quot;&gt;read more&lt;/a&gt;&lt;/p&gt;</description>
+ <pubDate>Wed, 21 Oct 2009 21:52:02 +0000</pubDate>
+</item>
+<item>
+ <title>Greg Holsclaw: Hook on Drush for Windows</title>
+ <link>http://www.tech-wanderings.com/drush-for-windows</link>
+ <description>&lt;p&gt;So I have heard of &lt;a href=&quot;http://drupal.org/project/drush&quot;&gt;Drush&lt;/a&gt; for years now, saw my first demo at the Boston DrupalCon but since I do all my dev work on a Windows machine I didn&#039;t catch the Drush wave (I kept hearing it was *nix only).&lt;/p&gt;
+&lt;p&gt;It has always been in the back of my mind to keep looking back into Drush, but somehow I missed the major 2.0 update in June and that it works on Windows now. When I saw &lt;a href=&quot;http://morten.dk/blog/got-crush-drush&quot;&gt;Morton&#039;s Mac Drush post&lt;/a&gt; and revisited my Windows issue, and now I am a convert.&lt;/p&gt;
+&lt;p&gt;Already there is an &lt;a href=&quot;http://drupal.org/node/594744&quot;&gt;install guide&lt;/a&gt; written two week ago that I have verified works perfectly for my Vista Business  64 bit machine. Drush is up and running on my dev system now and I am already addicted.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;http://www.tech-wanderings.com/drush-for-windows&quot; target=&quot;_blank&quot;&gt;read more&lt;/a&gt;&lt;/p&gt;</description>
+ <pubDate>Wed, 21 Oct 2009 20:00:34 +0000</pubDate>
+</item>
+<item>
+ <title>Geoff Hankerson: Installing Aegir Hosting System on OSX 10.6 with MAMP</title>
+ <link>http://geoffhankerson.com/node/109</link>
+ <description>&lt;p&gt;Cross posted at &lt;a href=&quot;http://groups.drupal.org/node/30270&quot; title=&quot;http://groups.drupal.org/node/30270&quot;&gt;http://groups.drupal.org/node/30270&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Aegir install on OSX Snow Leopard&lt;/p&gt;
+&lt;p&gt;Aegir install instructions are fantastic if you run Debian/Ubuntu Linux. Some of the steps for OS X are a quite different&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;http://geoffhankerson.com/node/109&quot; target=&quot;_blank&quot;&gt;read more&lt;/a&gt;&lt;/p&gt;</description>
+ <pubDate>Wed, 21 Oct 2009 19:01:59 +0000</pubDate>
+</item>
+<item>
+ <title>Development Seed: Announcing Managing News: A Pluggable News + Data Aggregator</title>
+ <link>http://developmentseed.org/blog/2009/oct/21/announcing-managing-news-pluggable-news-data-aggregator</link>
+ <description>&lt;div class=&quot;field field-type-text field-field-subtitle&quot;&gt;
+    &lt;div class=&quot;field-items&quot;&gt;
+            &lt;div class=&quot;field-item odd&quot;&gt;
+                    &lt;p&gt;From a daily news reader, to a platform for election monitoring in Afghanistan or swine flu preparedness in the United States&lt;/p&gt;        &lt;/div&gt;
+        &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&#039;node-body&#039;&gt;&lt;p&gt;Managing News is a pluggable, open source news and data aggregator with visualization and workflow tools that&#039;s highly customizable and extensible. The code is now in open beta and is available for download on &lt;a href=&quot;http://www.managingnews.com/download&quot;&gt;www.managingnews.com/download&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://farm3.static.flickr.com/2463/4031496689_0dd24a5705.jpg&quot; alt=&quot;http://managingnews.com&quot; /&gt;&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;http://developmentseed.org/blog/2009/oct/21/announcing-managing-news-pluggable-news-data-aggregator&quot;&gt;read more&lt;/a&gt;&lt;/p&gt;
+</description>
+ <pubDate>Wed, 21 Oct 2009 17:14:57 +0000</pubDate>
+</item>
+<item>
+ <title>Good Old Drupal: Co-Maintainers Wanted!</title>
+ <link>http://goodold.se/blog/tech/co-maintainer-wanted</link>
+ <description>&lt;p&gt;The list of modules that I maintain has become quite long, and in the beginning of next year I&#039;ll have a little daughter (if the nurse guessed right on the gender). So the time that I have for being a good maintainer will be very limited.&lt;/p&gt;
+&lt;p&gt;If you feel that you&#039;d like to help maintain any of the following modules, I would be very grateful!&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;http://drupal.org/project/cobalt&quot;&gt;Cobalt&lt;/a&gt; &lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;http://drupal.org/project/nodeformcols&quot;&gt;Node form columns&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;http://drupal.org/project/oauth_common&quot;&gt;OAuth Common&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;http://drupal.org/project/services_oauth&quot;&gt;Services OAuth&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;http://drupal.org/project/simple_geo&quot;&gt;Simple Geo&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;http://drupal.org/project/jsonrpc_server&quot;&gt;JSONRPC Server&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;http://drupal.org/project/query_builder&quot;&gt;Query builder&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Modules not on DO&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;http://github.com/hugowetterberg/services_oop&quot;&gt;Services OOP&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;http://github.com/hugowetterberg/cssdry&quot;&gt;CSS DRY&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Experience of using &lt;strong&gt;git&lt;/strong&gt;, or the willingness to learn, is kind of a requirement, as all my development is done with git. The alternative is a patch-based workflow.&lt;/p&gt;</description>
+ <pubDate>Wed, 21 Oct 2009 06:36:30 +0000</pubDate>
+</item>
+<item>
+ <title>Lullabot: Drupal Voices 65: Konstantin Kafer on Optimizing Javascript and CSS</title>
+ <link>http://feedproxy.google.com/~r/lullabot-all/~3/EcYAQCa5xyE/drupal-voices-65-konstantin-kafer-optimizing-javascript-and-css</link>
+ <description>&lt;!--paging_filter--&gt;&lt;p&gt;&lt;a href=&quot;http://kkaefer.com/&quot;&gt;Konstantin Käfer&lt;/a&gt; (aka &lt;a href=&quot;http://drupal.org/user/14572&quot;&gt;kkafer&lt;/a&gt;) gives an overview of his Drupalcon Paris talk on optimizing the front-end Javascript and CSS -- including some &lt;a href=&quot;http://developer.yahoo.com/yslow/&quot;&gt;YSlow&lt;/a&gt; tips.&lt;/p&gt;
+&lt;p&gt;Konstantin also talks a bit about his &lt;a href=&quot;http://drupal.org/project/sf_cache&quot;&gt;Support File Cache&lt;/a&gt; module that allows additional front-end optimizations by allowing you to control the bundling of CSS and Javascript  files.&lt;/p&gt;
+&lt;p&gt;He also talks a bit about the &lt;a href=&quot;http://frontenddrupal.com/&quot;&gt;Front-End Drupal&lt;/a&gt; that he co-wrote with &lt;a href=&quot;http://www.lullabot.com/drupal-voices/drupal-voices-60-emma-jane-hogbin-theming-and-bazaar-version-control&quot;&gt;Emma Jane Hogbin.&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Finally, Konstantin talks a bit about some of his favorite changes in Drupal 7.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;http://www.lullabot.com/audio/download/633/DrupalVoices065.mp3&quot;&gt;Download Audio&lt;/a&gt;&lt;/p&gt;</description>
+ <pubDate>Wed, 21 Oct 2009 03:09:59 +0000</pubDate>
+</item>
+<item>
+ <title>Morten.dk - The King of Denmark: got a crush on drush</title>
+ <link>http://morten.dk/blog/got-crush-drush</link>
+ <description>&lt;div class=&quot;fieldgroup group-image&quot;&gt;
+
+  
+  &lt;div class=&quot;content&quot;&gt;
+&lt;div class=&quot;field-image-default&quot;&gt;
+
+  
+    
+          
+          &lt;img src=&quot;http://morten.dk/sites/morten.dk/files/imagecache/20_20_crop/drushlove.jpg&quot; alt=&quot;&quot; title=&quot;Drupal shell geekyness&quot;  class=&quot;imagecache imagecache-20_20_crop imagecache-default imagecache-20_20_crop_default&quot; width=&quot;20&quot; height=&quot;20&quot; /&gt;
+      
+&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;/div&gt;
+&lt;p&gt;How I got drush to work on my macosx with mamp pro, and still my illustrator &amp;amp; photoshop works fine, how to do magick stuff with the terminal with out &lt;a href=&quot;/sites/morten.dk/files/images/argh.jpg&quot; class=&quot;fancybox&quot;&gt;deleting to much&lt;/a&gt;, and learning not to use my &lt;a href=&quot;http://www.wacom.com/bamboo/bamboo_fun.php&quot;&gt;pen&lt;/a&gt; to navigate my desktop...&lt;/p&gt;</description>
+ <pubDate>Wed, 21 Oct 2009 01:56:57 +0000</pubDate>
+</item>
+<item>
+ <title>Affinity Bridge: Drupal7 Contrib Module Upgrade Sprint</title>
+ <link>http://affinitybridge.com/blog/drupal7-contrib-module-upgrade-sprint</link>
+ <description>&lt;p&gt;This past weekend was the &lt;a href=&quot;http://groups.drupal.org/node/24642&quot;&gt;Drupal7 Contrib Module Upgrade Sprint&lt;/a&gt; that &lt;a href=&quot;http://drupal.org/user/9446&quot;&gt;K&amp;aacute;roly N&amp;eacute;gyesi&lt;/a&gt; (aka chx) organized at the &lt;a title=&quot;Now Public&quot; href=&quot;http://www.nowpublic.com/&quot;&gt;NowPublic&lt;/a&gt; offices in Vancouver. I spent a good part of Saturday there, helped out with coaching the one brave beginner who turned up to learn some of the tools for helping out in the community.  Otherwise, after a bit of a rough start, the devs all hunkered down and made some Drupal magic, upgrading super important things like Views, Panels, database stuff, and various other bits and pieces of modules and themes.&lt;/p&gt;
+&lt;p&gt;&lt;a title=&quot;D7 contrib sprint by arianek, on Flickr&quot; href=&quot;http://www.flickr.com/photos/arianek/4023847590/&quot;&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;http://farm3.static.flickr.com/2629/4023847590_98f25f162f.jpg&quot; alt=&quot;D7 contrib sprint&quot; width=&quot;500&quot; height=&quot;375&quot; /&gt;&lt;/p&gt;
+&lt;p&gt; &amp;lt;!--break--&gt;
+&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;http://affinitybridge.com/blog/drupal7-contrib-module-upgrade-sprint&quot;&gt;read more&lt;/a&gt;&lt;/p&gt;
+</description>
+ <pubDate>Tue, 20 Oct 2009 23:43:18 +0000</pubDate>
+</item>
+<item>
+ <title>Do it With Drupal: Speaker Spotlight: Earl Miles</title>
+ <link>http://feedproxy.google.com/~r/DoItWithDrupal/~3/Thij4pd2cBE/speaker-spotlight-earl-miles</link>
+ <description>&lt;p&gt;&lt;img src=&quot;http://www.doitwithdrupal.com/files/imagecache/120square/biopics/earl-headshot2.jpg&quot; alt=&quot;earl-headshot2&quot; title=&quot;earl-headshot2&quot; class=&quot;image-right&quot; height=&quot;120&quot; width=&quot;120&quot; /&gt;We are excited to announce that &lt;a href=&quot;http://www.angrydonuts.com/&quot;&gt;Earl Miles&lt;/a&gt; will be returning to &lt;a href=&quot;http://www.doitwithdrupal.com/&quot;&gt;Do It With Drupal&lt;/a&gt;! It is no exaggeration to say that Earl Miles single-handedly revolutionized the &lt;a href=&quot;http://drupal.org/&quot;&gt;Drupal&lt;/a&gt; community when he released the &lt;a href=&quot;http://drupal.org/project/views&quot;&gt;Views&lt;/a&gt; module late in 2005.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;http://www.doitwithdrupal.com/blog/speaker-spotlight-earl-miles&quot; target=&quot;_blank&quot;&gt;read more&lt;/a&gt;&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;http://feedproxy.google.com/~r/DoItWithDrupal/~3/Thij4pd2cBE/speaker-spotlight-earl-miles&quot;&gt;read more&lt;/a&gt;&lt;/p&gt;
+</description>
+ <pubDate>Tue, 20 Oct 2009 22:06:32 +0000</pubDate>
+</item>
+</channel>
+</rss>

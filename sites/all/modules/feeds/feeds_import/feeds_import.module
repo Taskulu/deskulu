@@ -1,0 +1,8 @@
+<?php
+
+/**
+ * @file
+ * Empty module file.
+ */
+
+include_once('feeds_import.features.inc');

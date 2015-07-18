@@ -1,0 +1,54 @@
+<?php
+
+/**
+ * @file
+ * Tests for http_request.inc.
+ */
+
+/**
+ * Tests for the http library.
+ */
+class FeedsHTTPRequestTestCase extends FeedsUnitTestHelper {
+  public static function getInfo() {
+    return array(
+      'name' => 'HTTP library',
+      'description' => 'Tests for Feeds HTTP library.',
+      'group' => 'Feeds',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp();
+    feeds_include_library('http_request.inc', 'http_request');
+  }
+
+  /**
+   * Tests http_request_find_feeds().
+   */
+  public function testHTTPRequestFindFeeds() {
+    $html = <<<EOF
+<html>
+  <head>
+    <title>Welcome to Example.com</title>
+    <link rel="stylesheet" type="text/css" media="screen, projection" href="/stuff.css" >
+    <link rel="search"    title="Something" href="//example.com/search">
+    <link rel="alternate" title="Something RSS" href="http://example.com/rss.xml" type="application/rss+xml">
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  </head>
+  <body>
+    This is a body.
+  </body>
+</html
+EOF;
+
+    $links = http_request_find_feeds($html);
+    $this->assertEqual(count($links), 1);
+    $this->assertEqual($links[0], 'http://example.com/rss.xml');
+
+    // Test single quoted HTML.
+    $links = http_request_find_feeds(str_replace('"', "'", $html));
+    $this->assertEqual(count($links), 1);
+    $this->assertEqual($links[0], 'http://example.com/rss.xml');
+  }
+
+}

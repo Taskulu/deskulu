@@ -1,0 +1,95 @@
+<?php
+
+/**
+ * @file
+ * Tests for the common syndication parser.
+ */
+
+/**
+ * Test cases for common syndication parser library.
+ *
+ * @todo Break out into Drupal independent test framework.
+ * @todo Could I use DrupalUnitTestCase here?
+ */
+class CommonSyndicationParserTestCase extends DrupalWebTestCase {
+  public static function getInfo() {
+    return array(
+      'name' => 'Common Syndication Parser',
+      'description' => 'Unit tests for Common Syndication Parser.',
+      'group' => 'Feeds',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp(array('feeds', 'feeds_ui', 'ctools', 'job_scheduler'));
+    feeds_include_library('common_syndication_parser.inc', 'common_syndication_parser');
+  }
+
+  /**
+   * Dispatch tests, only use one entry point method testX to save time.
+   */
+  public function test() {
+    $this->_testRSS10();
+    $this->_testRSS2();
+    $this->_testAtomGeoRSS();
+  }
+
+  /**
+   * Test RSS 1.0.
+   */
+  protected function _testRSS10() {
+    $string = $this->readFeed('magento.rss1');
+    $feed = common_syndication_parser_parse($string);
+    $this->assertEqual($feed['title'], 'Magento Sites Network - A directory listing of Magento Commerce stores');
+    $this->assertEqual($feed['items'][0]['title'], 'Gezondheidswebwinkel');
+    $this->assertEqual($feed['items'][0]['url'], 'http://www.magentosites.net/store/2010/04/28/gezondheidswebwinkel/index.html');
+    $this->assertEqual($feed['items'][1]['url'], 'http://www.magentosites.net/store/2010/04/26/mybobinocom/index.html');
+    $this->assertEqual($feed['items'][1]['guid'], 'http://www.magentosites.net/node/3472');
+    $this->assertEqual($feed['items'][2]['guid'], 'http://www.magentosites.net/node/3471');
+    $this->assertEqual($feed['items'][2]['timestamp'], 1272285294);
+  }
+
+  /**
+   * Test RSS 2.
+   */
+  protected function _testRSS2() {
+    $string = $this->readFeed('developmentseed.rss2');
+    $feed = common_syndication_parser_parse($string);
+    $this->assertEqual($feed['title'], 'Development Seed - Technological Solutions for Progressive Organizations');
+    $this->assertEqual($feed['items'][0]['title'], 'Open Atrium Translation Workflow: Two Way Translation Updates');
+    $this->assertEqual($feed['items'][1]['url'], 'http://developmentseed.org/blog/2009/oct/05/week-dc-tech-october-5th-edition');
+    $this->assertEqual($feed['items'][1]['guid'], '973 at http://developmentseed.org');
+    $this->assertEqual($feed['items'][2]['guid'], '972 at http://developmentseed.org');
+    $this->assertEqual($feed['items'][2]['timestamp'], 1254493864);
+  }
+
+  /**
+   * Test Geo RSS in Atom feed.
+   */
+  protected function _testAtomGeoRSS() {
+    $string = $this->readFeed('earthquake-georss.atom');
+    $feed = common_syndication_parser_parse($string);
+    $this->assertEqual($feed['title'], 'USGS M2.5+ Earthquakes');
+    $this->assertEqual($feed['items'][0]['title'], 'M 2.6, Central Alaska');
+    $this->assertEqual($feed['items'][1]['url'], 'http://earthquake.usgs.gov/earthquakes/recenteqsww/Quakes/us2010axbz.php');
+    $this->assertEqual($feed['items'][1]['guid'], 'urn:earthquake-usgs-gov:us:2010axbz');
+    $this->assertEqual($feed['items'][2]['guid'], 'urn:earthquake-usgs-gov:us:2010axbr');
+    $this->assertEqual($feed['items'][2]['geolocations'][0]['name'], '-53.1979 -118.0676');
+    $this->assertEqual($feed['items'][2]['geolocations'][0]['lat'], '-53.1979');
+    $this->assertEqual($feed['items'][2]['geolocations'][0]['lon'], '-118.0676');
+    $this->assertEqual($feed['items'][3]['geolocations'][0]['name'], '-43.4371 172.5902');
+    $this->assertEqual($feed['items'][3]['geolocations'][0]['lat'], '-43.4371');
+    $this->assertEqual($feed['items'][3]['geolocations'][0]['lon'], '172.5902');
+  }
+
+  /**
+   * Helper to read a feed.
+   */
+  protected function readFeed($filename) {
+    $feed = dirname(__FILE__) . '/feeds/' . $filename;
+    $handle = fopen($feed, 'r');
+    $string = fread($handle, filesize($feed));
+    fclose($handle);
+    return $string;
+  }
+}

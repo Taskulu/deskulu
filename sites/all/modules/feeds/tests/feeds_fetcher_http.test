@@ -1,0 +1,47 @@
+<?php
+
+/**
+ * @file
+ * Contains FeedsFileHTTPTestCase.
+ */
+
+/**
+ * HTTP fetcher test class.
+ */
+class FeedsFileHTTPTestCase extends FeedsWebTestCase {
+  public static function getInfo() {
+    return array(
+      'name' => 'Fetcher: HTTP',
+      'description' => 'Tests for file http fetcher plugin.',
+      'group' => 'Feeds',
+    );
+  }
+
+  /**
+   * Test the Feed URL form.
+   */
+  public function testFormValidation() {
+    // Set up an importer.
+    $id = drupal_strtolower($this->randomName());
+    $this->createImporterConfiguration($this->randomString(), $id);
+
+    // Check that by default, we add http:// to the front of the URL.
+    $edit = array(
+      'feeds[FeedsHTTPFetcher][source]' => 'example.com',
+    );
+    $this->drupalPost('import/' . $id, $edit, t('Import'));
+    $this->assertText(t('There are no new nodes.'));
+    $this->assertFieldByName('feeds[FeedsHTTPFetcher][source]', 'http://example.com');
+
+    $this->setSettings($id, 'FeedsHTTPFetcher', array('auto_scheme' => 'feed'));
+    $this->drupalPost('import/' . $id, $edit, t('Import'));
+    $this->assertText(t('There are no new nodes.'));
+    $this->assertFieldByName('feeds[FeedsHTTPFetcher][source]', 'feed://example.com');
+
+    $this->setSettings($id, 'FeedsHTTPFetcher', array('auto_scheme' => ''));
+    $this->drupalPost('import/' . $id, $edit, t('Import'));
+    $this->assertText(t('The URL example.com is invalid.'));
+    $this->assertFieldByName('feeds[FeedsHTTPFetcher][source]', 'example.com');
+  }
+
+}

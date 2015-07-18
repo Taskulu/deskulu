@@ -1,0 +1,245 @@
+<?php
+
+/**
+ * @file
+ * Contains FeedsMapperFormatConfig.
+ */
+
+/**
+ * Class for testing "Text format" mapping configuration on text fields.
+ */
+class FeedsMapperFormatConfig extends FeedsMapperTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Mapper: Text format mapping configuration',
+      'description' => 'Test text format mapping configuration for text fields.',
+      'group' => 'Feeds',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp(array('list', 'taxonomy'));
+  }
+
+  /**
+   * Basic test for setting mapping configuration.
+   */
+  public function test() {
+    // Create content type with three fields. Two that support text formats
+    // and one that doesn't.
+    $typename = $this->createContentType(array(), array(
+      'alpha' => array(
+        'type' => 'text',
+        'instance_settings' => array(
+          'instance[settings][text_processing]' => 1,
+        ),
+      ),
+      'beta' => array(
+        'type' => 'text_long',
+        'instance_settings' => array(
+          'instance[settings][text_processing]' => 1,
+        ),
+      ),
+      'gamma' => array(
+        'type' => 'text',
+        'instance_settings' => array(
+          'instance[settings][text_processing]' => 0,
+        ),
+      ),
+    ));
+
+    // Create a new filter format.
+    $format = drupal_strtolower($this->randomName());
+    $edit = array(
+      'format' => $format,
+      'name' => $this->randomName(),
+      // Authenticated users.
+      'roles[2]' => TRUE,
+    );
+    $this->drupalPost('admin/config/content/formats/add', $edit, t('Save configuration'));
+
+    // Create and configure importer.
+    $this->createImporterConfiguration();
+    $this->setSettings('syndication', NULL, array('content_type' => ''));
+
+    $this->setPlugin('syndication', 'FeedsFileFetcher');
+    $this->setPlugin('syndication', 'FeedsCSVParser');
+    $this->setSettings('syndication', 'FeedsNodeProcessor', array('bundle' => $typename));
+
+    $this->addMappings('syndication', array(
+      0 => array(
+        'source' => 'title',
+        'target' => 'title',
+      ),
+      1 => array(
+        'source' => 'created',
+        'target' => 'created',
+      ),
+      2 => array(
+        'source' => 'body',
+        'target' => 'body',
+        'format' => $format,
+      ),
+      3 => array(
+        'source' => 'alpha',
+        'target' => 'field_alpha',
+        'format' => $format,
+      ),
+      4 => array(
+        'source' => 'beta',
+        'target' => 'field_beta',
+        'format' => $format,
+      ),
+      5 => array(
+        'source' => 'gamma',
+        'target' => 'field_gamma',
+      ),
+    ));
+    // Assert that for the gamma field no format can be chosen.
+    $this->assertNoText('Text format: Plain text');
+
+    // Import csv file.
+    $this->importFile('syndication', $this->absolutePath() . '/tests/feeds/content.csv');
+    $this->assertText('Created 2 nodes');
+
+    // Assert that fields body, alpha and beta got the expected text format.
+    $node = node_load(1);
+    $this->assertEqual($format, $node->body[LANGUAGE_NONE][0]['format'], 'The body field got the expected format.');
+    $this->assertEqual($format, $node->field_alpha[LANGUAGE_NONE][0]['format'], 'The alpha field got the expected format.');
+    $this->assertEqual($format, $node->field_beta[LANGUAGE_NONE][0]['format'], 'The beta field got the expected format.');
+    $this->assertEqual(filter_fallback_format(), $node->field_gamma[LANGUAGE_NONE][0]['format'], 'The gama field got the expected format.');
+  }
+
+  /**
+   * Tests the filter formats a user has access to.
+   */
+  public function testWithLimitedPrivileges() {
+    // Create content type with a field that uses a text format.
+    $typename = $this->createContentType(array(), array(
+      'alpha' => array(
+        'type' => 'text',
+        'instance_settings' => array(
+          'instance[settings][text_processing]' => 1,
+        ),
+      ),
+    ));
+
+    // Create a new user with limited privileges.
+    $account = $this->drupalCreateUser(array('administer feeds'));
+
+    // Create filter format the user may use.
+    $format1 = drupal_strtolower($this->randomName());
+    $edit1 = array(
+      'format' => $format1,
+      'name' => $this->randomName(),
+      // Authenticated users.
+      'roles[2]' => TRUE,
+    );
+    $this->drupalPost('admin/config/content/formats/add', $edit1, t('Save configuration'));
+
+    // Create filter format the user may NOT use.
+    $rid = $this->drupalCreateRole(array());
+    $format2 = drupal_strtolower($this->randomName());
+    $edit2 = array(
+      'format' => $format2,
+      'name' => $this->randomName(),
+      'roles[' . $rid . ']' => TRUE,
+    );
+    $this->drupalPost('admin/config/content/formats/add', $edit2, t('Save configuration'));
+
+    // Login as the user that may only use certain formats.
+    $this->drupalLogin($account);
+
+    // Create importer and ensure the user can use the first format.
+    $this->createImporterConfiguration();
+    $this->setSettings('syndication', NULL, array(
+      'content_type' => '',
+      'import_period' => FEEDS_SCHEDULE_NEVER,
+    ));
+    $this->setPlugin('syndication', 'FeedsFileFetcher');
+    $this->setPlugin('syndication', 'FeedsCSVParser');
+    $this->setSettings('syndication', 'FeedsNodeProcessor', array('bundle' => $typename));
+    $this->addMappings('syndication', array(
+      0 => array(
+        'source' => 'alpha',
+        'target' => 'field_alpha',
+        'format' => $format1,
+      ),
+    ));
+
+    // Check user can choose first, but not second format as an option.
+    $this->drupalPostAJAX(NULL, array(), 'mapping_settings_edit_0');
+    $xpath = $this->constructFieldXpath('name', 'config[0][settings][format]');
+    $fields = $this->xpath($xpath);
+    $field = reset($fields);
+    $format_options = $this->getAllOptions($field);
+    $format1_found = FALSE;
+    $format2_found = FALSE;
+    foreach ($format_options as $option) {
+      if ($option['value'] == $format1) {
+        $format1_found = TRUE;
+      }
+      if ($option['value'] == $format2) {
+        $format2_found = TRUE;
+      }
+    }
+    // Assert first format can be chosen.
+    $this->assertTrue($format1_found, format_string('Text format %format can be chosen.', array('%format' => $format1)));
+    // Assert second format can NOT be chosen.
+    $this->assertFalse($format2_found, format_string('Text format %format can NOT be chosen.', array('%format' => $format2)));
+  }
+
+  /**
+   * Tests if text format can be set for taxonomy descriptions.
+   */
+  public function testTaxonomyDescriptionTextFormat() {
+    // Create a vocabulary.
+    $edit = array(
+      'name' => 'Tags',
+      'machine_name' => 'tags',
+    );
+    $this->drupalPost('admin/structure/taxonomy/add', $edit, 'Save');
+
+    // Create a new filter format.
+    $format = drupal_strtolower($this->randomName());
+    $edit = array(
+      'format' => $format,
+      'name' => $this->randomName(),
+      // Authenticated users.
+      'roles[2]' => TRUE,
+    );
+    $this->drupalPost('admin/config/content/formats/add', $edit, t('Save configuration'));
+
+    // Create a taxonomy term importer.
+    $this->createImporterConfiguration();
+    $this->setSettings('syndication', NULL, array(
+      'content_type' => '',
+      'import_period' => FEEDS_SCHEDULE_NEVER,
+    ));
+    $this->setPlugin('syndication', 'FeedsFileFetcher');
+    $this->setPlugin('syndication', 'FeedsCSVParser');
+    $this->setPlugin('syndication', 'FeedsTermProcessor');
+    $this->setSettings('syndication', 'FeedsTermProcessor', array('bundle' => 'tags'));
+    $this->addMappings('syndication', array(
+      0 => array(
+        'source' => 'title',
+        'target' => 'name',
+      ),
+      1 => array(
+        'source' => 'body',
+        'target' => 'description',
+        'format' => $format,
+      ),
+    ));
+
+    // Import csv file.
+    $this->importFile('syndication', $this->absolutePath() . '/tests/feeds/content.csv');
+    $this->assertText('Created 2 terms');
+
+    // Assert that the term description got the expected text format.
+    $term = taxonomy_term_load(1);
+    $this->assertEqual($format, $term->format, 'The taxonomy term got the expected format.');
+  }
+
+}

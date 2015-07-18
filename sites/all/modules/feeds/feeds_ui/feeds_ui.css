@@ -1,0 +1,106 @@
+/* Feeds admin overview form. */
+table.feeds-admin-importers thead th {
+  border: none;
+}
+
+table.feeds-admin-importers td.disabled {
+  color: #aaa;
+}
+
+table.feeds-admin-importers tr.disabled.odd,
+table.feeds-admin-importers tr.disabled.even {
+  border-color: #eee;
+}
+
+table.feeds-admin-importers tr.disabled.odd {
+  background-color: #f5f5f5;
+}
+
+/* Feeds edit form layout. */
+div.feeds-settings {
+}
+
+div.left-bar {
+  float: left;
+  position: relative;
+  width: 240px;
+  border-right: 1px solid #DDD;
+  padding: 10px 10px 0 0;
+}
+
+div.configuration {
+  padding: 10px 0 0 250px;
+  margin-left: -240px;
+}
+
+div.configuration-squeeze {
+  margin-left: 250px;
+}
+
+/* Container theming. */
+div.feeds-container {
+
+}
+
+div.feeds-container h4 {
+  font-size: 1.2em;
+  font-weight: bold;
+}
+
+div.feeds-container.plain {
+  background-color: #EEE;
+  border-bottom: 1px solid #DDD;
+  border-top: 2px solid #DDD;
+  padding: 5px;
+  margin: 10px 0;
+}
+
+div.feeds-container.plain h4 {
+  font-size: 1.0em;
+  margin: 0;
+  padding: 0;
+}
+
+div.feeds-container-body p {
+  padding: 5px 0;
+  margin: 0;
+}
+
+div.feeds-container-body div.item-list ul {
+  margin: 0;
+}
+
+div.feeds-container-body div.item-list ul li {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  background-image: none;
+}
+
+ul.container-actions {
+  font-family: Arial, Helvetica;
+  float: right;
+  margin: 0;
+}
+
+ul.container-actions li {
+  list-style-type: none;
+  text-align: right;
+  background-image: none;
+  margin: 0;
+  padding: 0;
+  position: relative; /* Fix for IE 7 compatability mode. */
+}
+
+ul.container-actions .form-item,
+ul.container-actions li form,
+ul.container-actions li form input {
+  padding: 0;
+  margin: 0;
+  display: inline;
+}
+
+/* Mapping form. */
+#center table form {
+  margin: 0;
+}

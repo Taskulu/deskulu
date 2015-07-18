@@ -1,0 +1,200 @@
+<?php
+
+/**
+ * @file
+ * Feeds Tamper - basic API functions and hook implementations.
+ */
+
+/**
+ * Load version agnostic code.
+ */
+require_once dirname(__FILE__) . '/feeds_tamper.inc';
+
+/**
+ * Implements hook_feeds_after_parse().
+ *
+ * This is the meat of the whole deal. After every Feeds run, before going into
+ * processing, this gets called and modifies the feed items.
+ *
+ * @todo Add support for source plugins.
+ */
+function feeds_tamper_feeds_after_parse(FeedsSource $source, FeedsParserResult $result) {
+  $importer_instances = feeds_tamper_load_by_importer($source->importer->id, FALSE);
+
+  // Don't go through all of the nonsense if we don't have anything to do.
+  if (empty($importer_instances)) {
+    return;
+  }
+
+  $parser = $source->importer->parser;
+  $is_csv = $parser instanceof FeedsCSVParser;
+
+  $sources = array_fill_keys(feeds_tamper_get_unique_source_list($source->importer), '');
+
+  $plugins = feeds_tamper_get_plugins();
+  foreach (array_keys($result->items) as $item_key) {
+
+    // Initialize every source value.
+    $result->items[$item_key] += $sources;
+
+    foreach ($importer_instances as $element_key => $instances) {
+      // Break if the previous element's plugins removed the item, otherwise the
+      // value will be re-populated.
+      if (!isset($result->items[$item_key])) {
+        break;
+      }
+
+      if ($is_csv) {
+        $element_key = drupal_strtolower($element_key);
+      }
+
+      // Manually advance the current_item key since we can't use shiftItem().
+      // Plugins can change it, so re-set.
+      $result->current_item = $result->items[$item_key];
+
+      // Plugins assume that everything lives in the item array.
+      $result->items[$item_key][$element_key] = $parser->getSourceElement($source, $result, $element_key);
+
+      foreach ($instances as $instance) {
+        // If the item was unset by previous plugin, jump ahead.
+        if (!isset($result->items[$item_key])) {
+          break 2;
+        }
+
+        // Array-ness can change depending on what the plugin is doing.
+        $is_array = is_array($result->items[$item_key][$element_key]);
+        $plugin = $plugins[$instance->plugin_id];
+
+        if ($is_array && $plugin['multi'] === 'loop') {
+          foreach ($result->items[$item_key][$element_key] as &$i) {
+            $plugin['callback']($result, $item_key, $element_key, $i, $instance->settings, $source);
+          }
+        }
+        elseif ($is_array && $plugin['multi'] === 'direct') {
+          $plugin['callback']($result, $item_key, $element_key, $result->items[$item_key][$element_key], $instance->settings, $source);
+        }
+        elseif (!$is_array && $plugin['single'] !== 'skip') {
+          $plugin['callback']($result, $item_key, $element_key, $result->items[$item_key][$element_key], $instance->settings, $source);
+        }
+      }
+    }
+  }
+
+  $result->current_item = NULL;
+}
+
+/**
+ * Implements hook_feeds_parser_sources_alter().
+ */
+function feeds_tamper_feeds_parser_sources_alter(&$sources, $content_type) {
+  $sources['Blank source 1'] = array(
+    'description' => t("A source provided by Feeds Tamper with no value of it's own."),
+  );
+}
+
+/**
+ * Implements hook_feeds_processor_targets_alter().
+ */
+function feeds_tamper_feeds_processor_targets_alter(&$targets, $entity_type, $bundle_name) {
+  $targets['Temporary target 1'] = array(
+    'description' => t('A field that stores the source data temporarily so that it can be used with the Feeds Tamper rewrite plugin.'),
+  );
+}
+
+/**
+ * Core hooks.
+ */
+
+/**
+ * Implements hook_permission().
+ */
+function feeds_tamper_permission() {
+  $perms = array(
+    'administer feeds_tamper' => array(
+      'title' => t('Administer Feeds Tamper'),
+      'description' => t('Create, edit and delete plugins for any importer.'),
+    ),
+  );
+
+  // For whatever reason, this gets called withtout the Feeds module being
+  // loaded in certain odd circumstances.
+  if (function_exists('feeds_importer_load_all')) {
+    foreach (feeds_importer_load_all() as $importer) {
+      $name = array('%name' => $importer->config['name']);
+      $perms['tamper ' . $importer->id] = array(
+        'title' => t('Tamper %name feeds', $name),
+        'description' => t('Create, edit and delete plugins for %name feeds.', $name),
+      );
+    }
+  }
+  return $perms;
+}
+
+/**
+ * Implements hook_ctools_plugin_type().
+ */
+function feeds_tamper_ctools_plugin_type() {
+  return array(
+    'plugins' => array(
+      'use hooks' => FALSE,
+      'defaults' => array(
+        'validate' => FALSE,
+        'multi' => FALSE,
+        'category' => 'Other',
+        'single' => FALSE,
+        'default description' => '',
+        'defaults' => array(),
+      ),
+    ),
+  );
+}
+
+/**
+ * Exports a list of Feeds Tamper plugins to code.
+ *
+ * @param string $importer_id
+ *   The id of the importer to export plugins for.
+ * @param string $indent
+ *   The level of indentation. Defaults to no indentation.
+ *
+ * @return string
+ *   An exported list of plugins.
+ */
+function feeds_tamper_export($importer_id, $indent = '') {
+  ctools_include('export');
+  $result = ctools_export_load_object('feeds_tamper', 'conditions', array('importer' => $importer_id));
+
+  if (!empty($result)) {
+
+    $output = array('$export = array();' . "\n");
+
+    foreach ($result as $object) {
+      $output[] = ctools_export_object('feeds_tamper', $object, $indent);
+      $output[] = '$export[$feeds_tamper->id] = $feeds_tamper;' . "\n";
+    }
+
+    return trim(implode("\n", $output));
+  }
+}
+
+/**
+ * Implements hook_features_pipe_COMPONENT_alter().
+ */
+function feeds_tamper_features_pipe_feeds_importer_alter(&$pipe, $data, $export) {
+  // Automatically add tamper plugins when a Feed importer is selected in
+  // Features.
+  foreach ($data as $importer_id) {
+    // Find tamper plugins for this importer.
+    $tamper_plugins = feeds_tamper_load_by_importer($importer_id, TRUE);
+
+    if (!$tamper_plugins) {
+      continue;
+    }
+
+    foreach ($tamper_plugins as $source_plugins) {
+      foreach ($source_plugins as $plugin) {
+        $pipe['feeds_tamper'][] = $plugin->id;
+      }
+    }
+  }
+}

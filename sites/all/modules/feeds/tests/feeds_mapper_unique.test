@@ -1,0 +1,78 @@
+<?php
+
+/**
+ * @file
+ * Contains FeedsMapperUniqueTestCase.
+ */
+
+/**
+ * Class for testing Feeds unique callbacks.
+ */
+class FeedsMapperUniqueTestCase extends FeedsMapperTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Unique target callbacks',
+      'description' => 'Test unique target callbacks in mappers.',
+      'group' => 'Feeds',
+    );
+  }
+
+  /**
+   * Test mapping target "unique_callbacks".
+   */
+  public function test() {
+    // Create content type.
+    $typename = $this->createContentType(array(), array('alpha' => 'text'));
+
+    // Create two nodes. Put unique value into field field_alpha.
+    $node1 = $this->drupalCreateNode(array(
+      'type' => $typename,
+      'field_alpha' => array(
+        LANGUAGE_NONE => array(
+          0 => array(
+            'value' => 'Ut wisi',
+          ),
+        ),
+      ),
+    ));
+    $node2 = $this->drupalCreateNode(array(
+      'type' => $typename,
+      'field_alpha' => array(
+        LANGUAGE_NONE => array(
+          0 => array(
+            'value' => 'Lorem',
+          ),
+        ),
+      ),
+    ));
+
+    // Create and configure importer.
+    $this->createImporterConfiguration('Syndication', 'syndication');
+    $this->setPlugin('syndication', 'FeedsFileFetcher');
+    $this->setPlugin('syndication', 'FeedsCSVParser');
+    $this->setSettings('syndication', 'FeedsNodeProcessor', array('bundle' => $typename, 'update_existing' => 2));
+    $this->addMappings('syndication', array(
+      0 => array(
+        'source' => 'title',
+        'target' => 'title',
+      ),
+      1 => array(
+        'source' => 'alpha',
+        'target' => 'test_unique_target',
+        'unique' => TRUE,
+      ),
+    ));
+
+    // Import CSV file.
+    $this->importFile('syndication', $this->absolutePath() . '/tests/feeds/content.csv');
+    $this->assertText('Updated 2 nodes');
+
+    // Ensure the updated nodes have the expected title now.
+    $node1 = node_load($node1->nid, NULL, TRUE);
+    $this->assertEqual('Ut wisi enim ad minim veniam', $node1->title, 'Node 1 has the expected title.');
+    $node2 = node_load($node2->nid, NULL, TRUE);
+    $this->assertEqual('Lorem ipsum', $node2->title, 'Node 2 has the expected title.');
+  }
+
+}

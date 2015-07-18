@@ -1,0 +1,13 @@
+<?php
+
+/**
+ * @file
+ * Install, uninstall, and update functions for the feeds_ui module.
+ */
+
+/**
+ * Empty update function to trigger a menu rebuild.
+ */
+function feeds_ui_update_7000() {
+  // Do nothing.
+}
