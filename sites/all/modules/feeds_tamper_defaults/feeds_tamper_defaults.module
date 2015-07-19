@@ -1,0 +1,202 @@
+<?php
+
+function feeds_tamper_defaults_ctools_plugin_api($module = '', $api = '') {
+    if ($module == "feeds_tamper" && $api == "feeds_tamper_default") {
+        return array("version" => "2");
+    }
+}
+
+function feeds_tamper_defaults_feeds_tamper_default() {
+    $export = array();
+
+    $feeds_tamper = new stdClass();
+    $feeds_tamper->disabled = FALSE; /* Edit this to true to make a default feeds_tamper disabled initially */
+    $feeds_tamper->api_version = 2;
+    $feeds_tamper->id = 'freshdesk_users-xpathparser_0-strtotime';
+    $feeds_tamper->importer = 'freshdesk_users';
+    $feeds_tamper->source = 'xpathparser:0';
+    $feeds_tamper->plugin_id = 'strtotime';
+    $feeds_tamper->settings = '';
+    $feeds_tamper->weight = 0;
+    $feeds_tamper->description = 'String to Unix timestamp';
+
+    $export[$feeds_tamper->id] = $feeds_tamper;
+
+    $feeds_tamper = new stdClass();
+    $feeds_tamper->disabled = FALSE; /* Edit this to true to make a default feeds_tamper disabled initially */
+    $feeds_tamper->api_version = 2;
+    $feeds_tamper->id = 'freshdesk_users-xpathparser_5-find_replace';
+    $feeds_tamper->importer = 'freshdesk_users';
+    $feeds_tamper->source = 'xpathparser:5';
+    $feeds_tamper->plugin_id = 'find_replace';
+    $feeds_tamper->settings = array(
+      'find' => '@',
+      'replace' => '_',
+      'case_sensitive' => 0,
+      'word_boundaries' => 0,
+      'whole' => 0,
+      'regex' => FALSE,
+      'func' => 'str_ireplace',
+    );
+    $feeds_tamper->weight = 1;
+    $feeds_tamper->description = 'Find replace';
+
+    $export[$feeds_tamper->id] = $feeds_tamper;
+
+    $feeds_tamper = new stdClass();
+    $feeds_tamper->disabled = FALSE; /* Edit this to true to make a default feeds_tamper disabled initially */
+    $feeds_tamper->api_version = 2;
+    $feeds_tamper->id = 'freshdesk_users-xpathparser_5-find_replace_dot';
+    $feeds_tamper->importer = 'freshdesk_users';
+    $feeds_tamper->source = 'xpathparser:5';
+    $feeds_tamper->plugin_id = 'find_replace';
+    $feeds_tamper->settings = array(
+      'find' => '.',
+      'replace' => '',
+      'case_sensitive' => 0,
+      'word_boundaries' => 0,
+      'whole' => 0,
+      'regex' => FALSE,
+      'func' => 'str_ireplace',
+    );
+    $feeds_tamper->weight = 2;
+    $feeds_tamper->description = 'Find replace';
+
+    $export[$feeds_tamper->id] = $feeds_tamper;
+
+    $export = array();
+
+    $feeds_tamper = new stdClass();
+    $feeds_tamper->disabled = FALSE; /* Edit this to true to make a default feeds_tamper disabled initially */
+    $feeds_tamper->api_version = 2;
+    $feeds_tamper->id = 'freshdesk_tickets-xpathparser_11-lang_detector';
+    $feeds_tamper->importer = 'freshdesk_tickets';
+    $feeds_tamper->source = 'xpathparser:11';
+    $feeds_tamper->plugin_id = 'lang_detector';
+    $feeds_tamper->settings = '';
+    $feeds_tamper->weight = 0;
+    $feeds_tamper->description = 'Detect language of text';
+
+    $export[$feeds_tamper->id] = $feeds_tamper;
+
+    $feeds_tamper = new stdClass();
+    $feeds_tamper->disabled = FALSE; /* Edit this to true to make a default feeds_tamper disabled initially */
+    $feeds_tamper->api_version = 2;
+    $feeds_tamper->id = 'freshdesk_tickets-xpathparser_5-html_entity_decode';
+    $feeds_tamper->importer = 'freshdesk_tickets';
+    $feeds_tamper->source = 'xpathparser:5';
+    $feeds_tamper->plugin_id = 'html_entity_decode';
+    $feeds_tamper->settings = '';
+    $feeds_tamper->weight = 0;
+    $feeds_tamper->description = 'HTML entity decode';
+
+    $export[$feeds_tamper->id] = $feeds_tamper;
+
+    $feeds_tamper = new stdClass();
+    $feeds_tamper->disabled = FALSE; /* Edit this to true to make a default feeds_tamper disabled initially */
+    $feeds_tamper->api_version = 2;
+    $feeds_tamper->id = 'freshdesk_tickets-xpathparser_5-strip_tags';
+    $feeds_tamper->importer = 'freshdesk_tickets';
+    $feeds_tamper->source = 'xpathparser:5';
+    $feeds_tamper->plugin_id = 'strip_tags';
+    $feeds_tamper->settings = '';
+    $feeds_tamper->weight = 1;
+    $feeds_tamper->description = 'Strip tags and style attributes';
+
+    $export[$feeds_tamper->id] = $feeds_tamper;
+
+    $feeds_tamper = new stdClass();
+    $feeds_tamper->disabled = FALSE; /* Edit this to true to make a default feeds_tamper disabled initially */
+    $feeds_tamper->api_version = 2;
+    $feeds_tamper->id = 'freshdesk_tickets-xpathparser_6-efq_finder';
+    $feeds_tamper->importer = 'freshdesk_tickets';
+    $feeds_tamper->source = 'xpathparser:6';
+    $feeds_tamper->plugin_id = 'efq_finder';
+    $feeds_tamper->settings = array(
+      'update' => 'Update',
+      'entity_type' => 'user',
+      'bundle' => 'user',
+      'field' => 'field_external_id',
+      'column' => 'value',
+      'property' => FALSE,
+    );
+    $feeds_tamper->weight = 0;
+    $feeds_tamper->description = 'Entity Field Query finder';
+
+    $export[$feeds_tamper->id] = $feeds_tamper;
+
+    $feeds_tamper = new stdClass();
+    $feeds_tamper->disabled = FALSE; /* Edit this to true to make a default feeds_tamper disabled initially */
+    $feeds_tamper->api_version = 2;
+    $feeds_tamper->id = 'freshdesk_tickets-xpathparser_8-strtotime';
+    $feeds_tamper->importer = 'freshdesk_tickets';
+    $feeds_tamper->source = 'xpathparser:8';
+    $feeds_tamper->plugin_id = 'strtotime';
+    $feeds_tamper->settings = '';
+    $feeds_tamper->weight = 0;
+    $feeds_tamper->description = 'String to Unix timestamp';
+
+    $export[$feeds_tamper->id] = $feeds_tamper;
+
+    $export = array();
+
+    $feeds_tamper = new stdClass();
+    $feeds_tamper->disabled = FALSE; /* Edit this to true to make a default feeds_tamper disabled initially */
+    $feeds_tamper->api_version = 2;
+    $feeds_tamper->id = 'freshdesk_comments-xpathparser_0-html_entity_decode';
+    $feeds_tamper->importer = 'freshdesk_comments';
+    $feeds_tamper->source = 'xpathparser:0';
+    $feeds_tamper->plugin_id = 'html_entity_decode';
+    $feeds_tamper->settings = array();
+    $feeds_tamper->weight = 0;
+    $feeds_tamper->description = 'HTML entity decode';
+
+    $export[$feeds_tamper->id] = $feeds_tamper;
+
+    $feeds_tamper = new stdClass();
+    $feeds_tamper->disabled = FALSE; /* Edit this to true to make a default feeds_tamper disabled initially */
+    $feeds_tamper->api_version = 2;
+    $feeds_tamper->id = 'freshdesk_comments-xpathparser_0-strip_tags';
+    $feeds_tamper->importer = 'freshdesk_comments';
+    $feeds_tamper->source = 'xpathparser:0';
+    $feeds_tamper->plugin_id = 'strip_tags';
+    $feeds_tamper->settings = '';
+    $feeds_tamper->weight = 1;
+    $feeds_tamper->description = 'Strip tags and style attributes';
+
+    $export[$feeds_tamper->id] = $feeds_tamper;
+
+    $feeds_tamper = new stdClass();
+    $feeds_tamper->disabled = FALSE; /* Edit this to true to make a default feeds_tamper disabled initially */
+    $feeds_tamper->api_version = 2;
+    $feeds_tamper->id = 'freshdesk_comments-xpathparser_2-efq_finder';
+    $feeds_tamper->importer = 'freshdesk_comments';
+    $feeds_tamper->source = 'xpathparser:2';
+    $feeds_tamper->plugin_id = 'efq_finder';
+    $feeds_tamper->settings = array(
+      'update' => 'Update',
+      'entity_type' => 'user',
+      'bundle' => 'user',
+      'field' => 'field_external_id',
+      'column' => 'value',
+      'property' => FALSE,
+    );
+    $feeds_tamper->weight = 0;
+    $feeds_tamper->description = 'Entity Field Query finder';
+
+    $export[$feeds_tamper->id] = $feeds_tamper;
+
+    $feeds_tamper = new stdClass();
+    $feeds_tamper->disabled = FALSE; /* Edit this to true to make a default feeds_tamper disabled initially */
+    $feeds_tamper->api_version = 2;
+    $feeds_tamper->id = 'freshdesk_comments-xpathparser_3-strtotime';
+    $feeds_tamper->importer = 'freshdesk_comments';
+    $feeds_tamper->source = 'xpathparser:3';
+    $feeds_tamper->plugin_id = 'strtotime';
+    $feeds_tamper->settings = array();
+    $feeds_tamper->weight = 0;
+    $feeds_tamper->description = 'String to Unix timestamp';
+
+    $export[$feeds_tamper->id] = $feeds_tamper;
+    return $export;
+}
