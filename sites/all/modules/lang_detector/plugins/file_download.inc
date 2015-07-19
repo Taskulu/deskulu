@@ -17,6 +17,7 @@ function lang_detector_file_download_form($importer, $element_key, $settings) {
 }
 
 function lang_detector_file_download_callback($source, $item_key, $element_key, &$field, $settings) {
+  if (!$field) return;
   $file = system_retrieve_file($field, 'private://ticket', TRUE);
   if ($file != FALSE) {
     $field = $file->uri;
