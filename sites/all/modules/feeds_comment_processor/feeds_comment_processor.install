@@ -1,0 +1,135 @@
+<?php
+
+/**
+ * @file
+ * Update functions for feeds_comment_processor.module.
+ */
+
+/**
+ * Implements hook_enable().
+ */
+function feeds_comment_processor_enable() {
+  cache_clear_all('plugins:feeds:plugins', 'cache');
+}
+
+/**
+ * Migrate items from the {feeds_comment_item} table to {feeds_item}.
+ */
+function feeds_comment_processor_update_7101(array &$sandbox) {
+  if (!isset($sandbox['progress'])) {
+    $sandbox['progress'] = 0;
+    $sandbox['total'] = (int) db_query("SELECT COUNT(*) FROM {feeds_comment_item}")->fetchField();
+
+    // Nothing to do.
+    if (empty($sandbox['total'])) {
+      return;
+    }
+  }
+
+  $query = db_query_range("SELECT * FROM {feeds_comment_item}", 0, 50);
+
+  foreach ($query as $item) {
+    // Check if there's a matching entry in {feeds_item}.
+    $exists = db_select('feeds_item')
+      ->fields('feeds_item')
+      ->condition('entity_type', 'comment')
+      ->condition('entity_id', $item->cid)
+      ->condition('id', $item->id)
+      ->condition('feed_nid', $item->feed_nid)
+      ->execute();
+
+    if ($exists) {
+      db_update('feeds_item')
+        ->condition('entity_type', 'comment')
+        ->condition('entity_id', $item->cid)
+        ->condition('id', $item->id)
+        ->condition('feed_nid', $item->feed_nid)
+        ->fields(array('guid' => $item->guid))
+        ->execute();
+    }
+
+    db_delete('feeds_comment_item')->condition('cid', $item->cid)->execute();
+
+    $sandbox['progress']++;
+  }
+
+  if ($sandbox['progress'] === $sandbox['total']) {
+    $sandbox['#finished'] = 1.0;
+
+    return t('Migrated @count feed items.', array('@count' => $sandbox['total']));
+  }
+
+  $sandbox['#finished'] = (float) ($sandbox['progress'] / $sandbox['total']);
+
+  // Don't allow rounding errors if we're processing lots of items.
+  if ($sandbox['#finished'] === 1.0) {
+    $sandbox['#finished'] = 0.99;
+  }
+}
+
+/**
+ * Delete the {feeds_comment_item} table.
+ */
+function feeds_comment_processor_update_7102() {
+  if (db_table_exists('feeds_comment_item')) {
+    db_drop_table('feeds_comment_item');
+  }
+}
+
+/**
+ * Delete the feeds_comment_batch_size variable.
+ */
+function feeds_comment_processor_update_7103() {
+  variable_del('feeds_comment_batch_size');
+}
+
+/**
+ * Rename 'comment' to 'comment_body' in mappings.
+ */
+function feeds_comment_processor_update_7104(array &$sandbox) {
+  // First pass.
+  if (!isset($sandbox['progress'])) {
+    $sandbox['importers'] = array_keys(feeds_importer_load_all(TRUE));
+    $sandbox['progress'] = 0;
+    $sandbox['updated_count'] = 0;
+    $sandbox['total'] = count($sandbox['importers']);
+  }
+
+  if (empty($sandbox['importers'])) {
+    return t('No importers to process.');
+  }
+
+  // Load a single importer.
+  $importer = array_pop($sandbox['importers']);
+  $importer = feeds_importer($importer);
+
+  if (get_class($importer->processor) === 'FeedsCommentProcessor') {
+    $mappings = $importer->processor->getMappings();
+
+    $config = $importer->processor->getConfig();
+    $format = !empty($config['input_format']) ? $config['input_format'] : filter_default_format();
+
+    foreach ($mappings as $key => $mapping) {
+      if ($mapping['target'] === 'comment') {
+        $mappings[$key]['target'] = 'comment_body';
+        $mappings[$key]['format'] = $format;
+      }
+    }
+
+    // If importer has changed, add the updated config and save it.
+    if ($importer->processor->getMappings() !== $mappings) {
+      $importer->processor->addConfig(array('mappings' => $mappings));
+      $importer->save();
+      $sandbox['updated_count']++;
+    }
+  }
+
+  $sandbox['progress']++;
+
+  if (empty($sandbox['importers'])) {
+    $sandbox['#finished'] = 1;
+    return t('@importers total importers processed, @updated_count with fields that were updated.', array('@importers' => $sandbox['total'], '@updated_count' => $sandbox['updated_count']));
+  }
+
+  $sandbox['#finished'] = $sandbox['progress'] / $sandbox['total'];
+}

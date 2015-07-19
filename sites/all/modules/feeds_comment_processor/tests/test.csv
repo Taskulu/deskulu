@@ -1,0 +1,2 @@
+guid,subject,body,mail,status,hostname,title
+10,test subject,test body text,poor@example.com,1,example.com,Parent

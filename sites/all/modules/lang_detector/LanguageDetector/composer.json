@@ -1,0 +1,34 @@
+{
+    "authors": [
+        {
+            "email": "taak@php.net",
+            "name": "Nicholas Pisarro",
+            "role": "Lead"
+        }
+    ],
+    "autoload": {
+        "psr-0": {
+            "Text": "./"
+        }
+    },
+    "description": "More info available on: http://pear.php.net/package/Text_LanguageDetect",
+    "include-path": [
+        "./"
+    ],
+    "license": "BSD",
+    "name": "pear/text_languagedetect",
+    "support": {
+        "issues": "http://pear.php.net/bugs/search.php?cmd=display&package_name[]=Text_LanguageDetect",
+        "source": "https://github.com/pear/Text_LanguageDetect"
+    },
+    "type": "library",
+    "suggest": {
+        "ext-mbstring": "May require the mbstring PHP extension"
+    },
+    "require": {
+        "pear/pear_exception": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "*"
+    }
+}

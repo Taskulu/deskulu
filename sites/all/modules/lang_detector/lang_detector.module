@@ -1,0 +1,16 @@
+<?php
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function lang_detector_ctools_plugin_directory($owner, $plugin_type) {
+  if ($owner == 'feeds_tamper') {
+    return 'plugins';
+  }
+}
+
+function lang_detector_detect($text) {
+  $l = new Text_LanguageDetect();
+  $l->setNameMode(2);
+  return $l->detectSimple($text);
+}

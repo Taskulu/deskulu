@@ -1,0 +1,13 @@
+name = Feeds Comment Processor
+description = Create and update comments from parsed content.
+package = Feeds
+dependencies[] = feeds
+dependencies[] = comment
+core = 7.x
+
+; Information added by Drupal.org packaging script on 2015-07-11
+version = "7.x-1.0"
+core = "7.x"
+project = "feeds_comment_processor"
+datestamp = "1436625540"
+

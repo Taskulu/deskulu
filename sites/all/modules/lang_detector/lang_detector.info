@@ -1,0 +1,4 @@
+name = Language Detector
+package = Deskulu
+core = 7.x
+files[] = LanguageDetector/Text/LanguageDetect.php
