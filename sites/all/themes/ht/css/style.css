@@ -6214,6 +6214,8 @@ h4.subsection span {
   position: relative;
   border-radius: 5px;
   border: 1px solid #eaeaea; }
+  .conversation-msg img {
+    max-width: 100%; }
   .conversation-msg.private {
     background: #fffdda !important; }
     .conversation-msg.private:before {
