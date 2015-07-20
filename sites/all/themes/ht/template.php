@@ -126,6 +126,7 @@ function ht_preprocess_comment_wrapper(&$variables) {
   global $user;
   $is_agent = ht_user_is_agent($user);
   foreach($variables['content']['comments'] as $cid => &$el) {
+    if (!isset($el['#comment'])) continue;
     $comment = $el['#comment'];
     if ($is_agent && isset($comment->field_private[LANGUAGE_NONE][0]['value']) && $comment->field_private[LANGUAGE_NONE][0]['value']) {
       $el['#printed'] = true;
