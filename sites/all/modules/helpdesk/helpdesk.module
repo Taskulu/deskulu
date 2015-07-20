@@ -11,6 +11,7 @@ function helpdesk_views_query_alter(&$view, &$query) {
   if ($view->name == 'agent_tickets') {
     $query->add_field('node', 'nid', 'node_nid', array('function' => 'groupby'));
     $query->add_groupby('node.nid');
+    $query->distinct = TRUE;
   }
 }
 
