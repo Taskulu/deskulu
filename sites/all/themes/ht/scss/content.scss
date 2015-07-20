@@ -143,7 +143,7 @@ h4.subsection span {
   border-radius: 5px;
   border: 1px solid #eaeaea;
   &.private {
-    background: rgb(255, 253, 218);
+    background: rgb(255, 253, 218) !important;
     &:before {
       border-right-color: rgb(255, 253, 218);
     }
