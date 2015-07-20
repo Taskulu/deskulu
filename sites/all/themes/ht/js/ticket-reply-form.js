@@ -1,4 +1,9 @@
 (function ($) {
+    Drupal.behaviors.init = {
+        attach: function(context, settings) {
+            $.material.init();
+        }
+    };
     Drupal.behaviors.ticket_form_reply = {
         attach: function(context, settings) {
             $('body.node-type-ticket .field-name-field-ticket-type select').select2().removeClass('form-control');
