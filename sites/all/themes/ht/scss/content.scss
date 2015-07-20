@@ -142,6 +142,9 @@ h4.subsection span {
   position: relative;
   border-radius: 5px;
   border: 1px solid #eaeaea;
+  img {
+    max-width: 100%;
+  }
   &.private {
     background: rgb(255, 253, 218) !important;
     &:before {
