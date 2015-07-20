@@ -6266,7 +6266,8 @@ h4.subsection span {
     font-weight: bold;
     margin-bottom: 8px; }
     .node-type-ticket form.comment-form .title-wrapper span.name, .node-type-ticket form.comment-form .title-wrapper span.name a, .node-type-ticket form.comment-form .sender-name span.name, .node-type-ticket form.comment-form .sender-name span.name a {
-      color: #999; }
+      color: #999;
+      direction: ltr; }
   .node-type-ticket form.comment-form .form-type-textarea label, .node-type-ticket form.comment-form .form-type-textarea .form-required {
     display: none; }
 
@@ -6285,6 +6286,17 @@ h2.block-title {
 
 aside .views-exposed-form .views-exposed-widget {
   float: none; }
+
+#views-exposed-form-agent-tickets-all {
+  margin-bottom: 15px; }
+  #views-exposed-form-agent-tickets-all input.form-autocomplete {
+    background-image: linear-gradient(#009688, #009688), linear-gradient(#d2d2d2, #d2d2d2);
+    background-size: 0 2px,100% 1px;
+    background-repeat: no-repeat;
+    background-position: center bottom, center calc(100% - 1px);
+    background-color: transparent;
+    background-color: transparent;
+    transition: background 0s ease-out; }
 
 aside .view a {
   font-size: 14px;
