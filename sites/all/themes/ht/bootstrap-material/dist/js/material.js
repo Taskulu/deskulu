@@ -39,7 +39,7 @@
         ".withripple"
       ].join(","),
       "inputElements": "input.form-control, textarea.form-control, select.form-control",
-      "checkboxElements": ".checkbox > label > input[type=checkbox]",
+      "checkboxElements": ".checkbox input[type=checkbox]",
       "togglebuttonElements": ".togglebutton > label > input[type=checkbox]",
       "radioElements": ".radio > label > input[type=radio]"
     },
