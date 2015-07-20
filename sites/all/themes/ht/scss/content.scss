@@ -142,6 +142,12 @@ h4.subsection span {
   position: relative;
   border-radius: 5px;
   border: 1px solid #eaeaea;
+  &.private {
+    background-color: rgb(255, 253, 218);
+    &:before {
+      border-right-color: rgb(255, 253, 218);
+    }
+  }
   &:before {
     position: absolute;
     top: 24px;

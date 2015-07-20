@@ -70,6 +70,11 @@ h1,h2,h3,h4,h5 {
   margin-left: 0;
 }
 .conversation-msg {
+  &.private {
+    &:before {
+      border-left-color: rgb(255, 253, 218);
+    }
+  }
   .submitted {
     a {
       float: right;
