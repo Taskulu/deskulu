@@ -1,5 +1,19 @@
 <?php
 
+
+function helpdesk_views_api() {
+  return array(
+    'api' => 3,
+  );
+}
+
+function helpdesk_views_query_alter(&$view, &$query) {
+  if ($view->name == 'agent_tickets') {
+    $query->add_field('node', 'nid', 'node_nid', array('function' => 'groupby'));
+    $query->add_groupby('node.nid');
+  }
+}
+
 /**
  * Implements hook_field_extra_fields().
  */
