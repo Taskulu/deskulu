@@ -58,6 +58,10 @@
  *
  * @ingroup themeable
  */
+if (isset($comment->field_private[LANGUAGE_NONE][0]['value']) && $comment->field_private[LANGUAGE_NONE][0]['value'] ) {
+  $classes .= ' private';
+}
+
 ?>
 <div class="conversation-msg well <?php print $classes; ?> clearfix <?php echo $new ? 'new' : ''; ?>"<?php print $attributes; ?>>
   <?php print $picture ?>

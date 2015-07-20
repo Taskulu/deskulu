@@ -117,6 +117,22 @@ function ht_form_alter(&$form, &$form_state, $form_id) {
 
 }
 
+function ht_user_is_agent($user) {
+  $roles = array_intersect($user->roles, array('administrator', 'agent'));
+  return !empty($roles);
+}
+
+function ht_preprocess_comment_wrapper(&$variables) {
+  global $user;
+  $is_agent = ht_user_is_agent($user);
+  foreach($variables['content']['comments'] as $cid => &$el) {
+    $comment = $el['#comment'];
+    if ($is_agent && isset($comment->field_private[LANGUAGE_NONE][0]['value']) && $comment->field_private[LANGUAGE_NONE][0]['value']) {
+      $el['#printed'] = true;
+    }
+  }
+}
+
 function ht_preprocess_comment(&$variables) {
   $account = user_load($variables['elements']['#comment']->uid);
   $variables['submitted'] = t('!user replied @time ago (@longtime)', array('!user' => theme('username', ['account' => $account]), '@time' => format_interval(REQUEST_TIME - $variables['elements']['#comment']->created), '@longtime' => format_date($variables['elements']['#comment']->created)));
