@@ -6215,7 +6215,7 @@ h4.subsection span {
   border-radius: 5px;
   border: 1px solid #eaeaea; }
   .conversation-msg.private {
-    background-color: #fffdda; }
+    background: #fffdda; }
     .conversation-msg.private:before {
       border-right-color: #fffdda; }
   .conversation-msg:before {
