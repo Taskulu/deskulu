@@ -25,12 +25,12 @@ function incoming_mail_menu() {
  */
 function incoming_mail_create_ticket() {
   $input = file_get_contents('php://input');
+watchdog('incoming_mail', '<pre>' . $input . '</pre>');
   $dec_url = urldecode($input);
   $jsonready = substr($dec_url, 16);
   $data = json_decode($jsonready,true);
-
-//  watchdog('incoming_mail', '<pre>' . $input . '</pre>');
-//  watchdog('incoming_mail', '<pre>' . var_export($data, 1) . '</pre>');
+watchdog('incoming_mail', '<pre>' . var_export($_POST, 1) . '</pre>');
+  watchdog('incoming_mail', '<pre>' . var_export($data, 1) . '</pre>');
   foreach ($data as $datum) {
     $files = array();
     $msg = $datum['msg'];
@@ -189,12 +189,16 @@ function str_random($length = 32) {
  */
 function incoming_mail_strip_tags($body) {
   $doc = new DOMDocument('1.0', 'UTF-8');
+  libxml_use_internal_errors(true);
   $doc->loadHTML('<?xml encoding="UTF-8">' . $body);
+  libxml_clear_errors();
   $doc->encoding='UTF-8';
   incoming_mail_remove_element_by_tag_name('script', $doc);
   incoming_mail_remove_element_by_tag_name('style', $doc);
   incoming_mail_remove_element_by_tag_name('link', $doc);
-  incoming_mail_remove_element_attribute('div', 'style', $doc);
+  incoming_mail_remove_element_attribute('*', 'style', $doc);
+  incoming_mail_remove_element_attribute('div', 'id', $doc);
+  incoming_mail_remove_element_attribute('div', 'class', $doc);
   return strip_tags(html_entity_decode($doc->saveHtml()), '<div><br><br/><b><i><p><img><ul><li><ol><a><em><strong><blockquote><code><dl><dd><dt>');
 }
 
