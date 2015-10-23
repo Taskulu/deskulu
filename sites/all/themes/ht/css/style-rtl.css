@@ -5,6 +5,9 @@
  *     Project: bootstrap-rtl
  *   Copyright: Unlicensed Public Domain
  *******************************************************************************/
+span.file-size {
+    display: block;
+}
 html {
   direction: rtl; }
 
