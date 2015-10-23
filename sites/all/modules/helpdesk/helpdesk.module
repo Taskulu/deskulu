@@ -126,10 +126,12 @@ function helpdesk_menu_alter(&$items) {
  */
 function helpdesk_comment_access($cid) {
   $comment = comment_load($cid);
-  $node = node_load($comment->nid);
-  if ($node->type == 'ticket') {
-    global $user;
-    return ($user->uid == 1 || $user->uid == $node->uid || in_array('agent', $user->roles));
+  if (is_object($comment)) {
+    $node = node_load($comment->nid);
+    if (is_object($node) && $node->type == 'ticket') {
+      global $user;
+      return ($user->uid == 1 || $user->uid == $node->uid || in_array('agent', $user->roles));
+    }
   }
   return user_access('access comments');
 }
