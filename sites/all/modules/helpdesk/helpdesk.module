@@ -185,6 +185,7 @@ function helpdesk_new_ticket_form($form, &$form_state) {
   }
   else {
     $form['author']['name']['#default_value'] = $user->name;
+    $form_state['user'] = $user;
   }
   $form['actions']['submit']['#submit'][] = 'helpdesk_new_ticket_form_submit';
   $form['#validate'][] = 'helpdesk_ticket_form_validate';
