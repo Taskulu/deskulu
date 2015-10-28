@@ -133,7 +133,7 @@ function incoming_mail_get_user_by_email($email, $name = '') {
   }
   else {
     $fields = array(
-      'name' => substr($email, 0, strpos($email, '@')),
+      'name' => 'helpdesk_user' . user_password(),
       'mail' => $email,
       'pass' => user_password(8),
       'status' => 1,
@@ -154,6 +154,14 @@ function incoming_mail_get_user_by_email($email, $name = '') {
       );
     }
     $account = user_save('', $fields);
+
+    $name = email_registration_cleanup_username(substr($email, 0, strpos($email, '@')), $account->uid);
+    $new_name = email_registration_unique_username($name, $account->uid);
+    db_update('users')
+      ->fields(array('name' => $new_name))
+      ->condition('uid', $account->uid)
+      ->execute();
+
     watchdog('incoming_mail', 'user: <pre>@u</pre>', ['@u' => var_export($account, 1)]);
     drupal_mail('user', 'register_no_approval_required', $email, NULL, array('account' => $account), variable_get('site_mail', 'support@taskulu.com'));
     return array('user' => $account);
