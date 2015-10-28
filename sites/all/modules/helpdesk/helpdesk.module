@@ -257,6 +257,13 @@ function helpdesk_new_ticket_form_submit($form, &$form_state) {
   $node->uid = $form_state['user']->uid;
   field_attach_submit('node', $node, $form, $form_state);
   node_save($node);
+  if (user_is_anonymous()) {
+    drupal_set_message(t('Thanks! We\'ve received your ticket and will get back to you in a bit! You\'ll receive an email with a link to your ticket and more information shortly.'));
+  }
+  else {
+    $form_state['redirect'] = 'node/' . $node->nid;
+    drupal_set_message(t('Thanks! We\'ve received your ticket and will get back to you in a bit.'));
+  }
 }
 
 /**
