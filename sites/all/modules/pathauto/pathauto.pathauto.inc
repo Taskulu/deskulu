@@ -8,79 +8,6 @@
  */
 
 /**
- * Implements hook_path_alias_types().
- *
- * Used primarily by the bulk delete form.
- */
-function pathauto_path_alias_types() {
-  $objects['user/'] = t('Users');
-  $objects['node/'] = t('Content');
-  if (module_exists('blog')) {
-    $objects['blog/'] = t('User blogs');
-  }
-  if (module_exists('taxonomy')) {
-    $objects['taxonomy/term/'] = t('Taxonomy terms');
-  }
-  if (module_exists('forum')) {
-    $objects['forum/'] = t('Forums');
-  }
-  return $objects;
-}
-
-/**
- * Implements hook_pathauto().
- *
- * This function is empty so that the other core module implementations can be
- * defined in this file. This is because in pathauto_module_implements_alter()
- * we add pathauto to be included first. The module system then peforms a
- * check on any subsequent run if this function still exists. If this does not
- * exist, than this file will not get included and the core implementations
- * will never get run.
- *
- * @see pathauto_module_implements_alter().
- */
-function pathauto_pathauto() {
-  // Empty hook; see the above comment.
-}
-
-/**
- * Implements hook_pathauto().
- */
-function node_pathauto($op) {
-  switch ($op) {
-    case 'settings':
-      $settings = array();
-      $settings['module'] = 'node';
-      $settings['token_type'] = 'node';
-      $settings['groupheader'] = t('Content paths');
-      $settings['patterndescr'] = t('Default path pattern (applies to all content types with blank patterns below)');
-      $settings['patterndefault'] = 'content/[node:title]';
-      $settings['batch_update_callback'] = 'node_pathauto_bulk_update_batch_process';
-      $settings['batch_file'] = drupal_get_path('module', 'pathauto') . '/pathauto.pathauto.inc';
-
-      $languages = array();
-      if (module_exists('locale')) {
-        $languages = array(LANGUAGE_NONE => t('language neutral')) + locale_language_list('name');
-      }
-
-      foreach (node_type_get_names() as $node_type => $node_name) {
-        if (count($languages) && variable_get('language_content_type_' . $node_type, 0)) {
-          $settings['patternitems'][$node_type] = t('Default path pattern for @node_type (applies to all @node_type content types with blank patterns below)', array('@node_type' => $node_name));
-          foreach ($languages as $lang_code => $lang_name) {
-            $settings['patternitems'][$node_type . '_' . $lang_code] = t('Pattern for all @language @node_type paths', array('@node_type' => $node_name, '@language' => $lang_name));
-          }
-        }
-        else {
-          $settings['patternitems'][$node_type] = t('Pattern for all @node_type paths', array('@node_type' => $node_name));
-        }
-      }
-      return (object) $settings;
-    default:
-      break;
-  }
-}
-
-/**
  * Batch processing callback; Generate aliases for nodes.
  */
 function node_pathauto_bulk_update_batch_process(&$context) {
@@ -119,38 +46,6 @@ function node_pathauto_bulk_update_batch_process(&$context) {
 
   if ($context['sandbox']['count'] != $context['sandbox']['total']) {
     $context['finished'] = $context['sandbox']['count'] / $context['sandbox']['total'];
-  }
-}
-
-/**
- * Implements hook_pathauto().
- */
-function taxonomy_pathauto($op) {
-  switch ($op) {
-    case 'settings':
-      $settings = array();
-      $settings['module'] = 'taxonomy_term';
-      $settings['token_type'] = 'term';
-      $settings['groupheader'] = t('Taxonomy term paths');
-      $settings['patterndescr'] = t('Default path pattern (applies to all vocabularies with blank patterns below)');
-      $settings['patterndefault'] = '[term:vocabulary]/[term:name]';
-      $settings['batch_update_callback'] = 'taxonomy_pathauto_bulk_update_batch_process';
-      $settings['batch_file'] = drupal_get_path('module', 'pathauto') . '/pathauto.pathauto.inc';
-
-      $vocabularies = taxonomy_get_vocabularies();
-      if (count($vocabularies)) {
-        $settings['patternitems'] = array();
-        foreach ($vocabularies as $vid => $vocabulary) {
-          if ($vid == variable_get('forum_nav_vocabulary', '')) {
-            // Skip the forum vocabulary.
-            continue;
-          }
-          $settings['patternitems'][$vocabulary->machine_name] = t('Pattern for all %vocab-name paths', array('%vocab-name' => $vocabulary->name));
-        }
-      }
-      return (object) $settings;
-    default:
-      break;
   }
 }
 
@@ -201,26 +96,6 @@ function taxonomy_pathauto_bulk_update_batch_process(&$context) {
 }
 
 /**
- * Implements hook_pathauto() for forum module.
- */
-function forum_pathauto($op) {
-  switch ($op) {
-    case 'settings':
-      $settings = array();
-      $settings['module'] = 'forum';
-      $settings['token_type'] = 'term';
-      $settings['groupheader'] = t('Forum paths');
-      $settings['patterndescr'] = t('Pattern for forums and forum containers');
-      $settings['patterndefault'] = '[term:vocabulary]/[term:name]';
-      $settings['batch_update_callback'] = 'forum_pathauto_bulk_update_batch_process';
-      $settings['batch_file'] = drupal_get_path('module', 'pathauto') . '/pathauto.pathauto.inc';
-      return (object) $settings;
-    default:
-      break;
-  }
-}
-
-/**
  * Batch processing callback; Generate aliases for forums.
  */
 function forum_pathauto_bulk_update_batch_process(&$context) {
@@ -264,26 +139,6 @@ function forum_pathauto_bulk_update_batch_process(&$context) {
 }
 
 /**
- * Implements hook_pathauto().
- */
-function user_pathauto($op) {
-  switch ($op) {
-    case 'settings':
-      $settings = array();
-      $settings['module'] = 'user';
-      $settings['token_type'] = 'user';
-      $settings['groupheader'] = t('User paths');
-      $settings['patterndescr'] = t('Pattern for user account page paths');
-      $settings['patterndefault'] = 'users/[user:name]';
-      $settings['batch_update_callback'] = 'user_pathauto_bulk_update_batch_process';
-      $settings['batch_file'] = drupal_get_path('module', 'pathauto') . '/pathauto.pathauto.inc';
-      return (object) $settings;
-    default:
-      break;
-  }
-}
-
-/**
  * Batch processing callback; Generate aliases for users.
  */
 function user_pathauto_bulk_update_batch_process(&$context) {
@@ -322,26 +177,6 @@ function user_pathauto_bulk_update_batch_process(&$context) {
 
   if ($context['sandbox']['count'] != $context['sandbox']['total']) {
     $context['finished'] = $context['sandbox']['count'] / $context['sandbox']['total'];
-  }
-}
-
-/**
- * Implements hook_pathauto().
- */
-function blog_pathauto($op) {
-  switch ($op) {
-    case 'settings':
-      $settings = array();
-      $settings['module'] = 'blog';
-      $settings['token_type'] = 'user';
-      $settings['groupheader'] = t('Blog paths');
-      $settings['patterndescr'] = t('Pattern for blog page paths');
-      $settings['patterndefault'] = 'blogs/[user:name]';
-      $settings['batch_update_callback'] = 'blog_pathauto_bulk_update_batch_process';
-      $settings['batch_file'] = drupal_get_path('module', 'pathauto') . '/pathauto.pathauto.inc';
-      return (object) $settings;
-    default:
-      break;
   }
 }
 

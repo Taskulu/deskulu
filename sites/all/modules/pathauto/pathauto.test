@@ -55,9 +55,13 @@ class PathautoTestHelper extends DrupalWebTestCase {
     $this->assertEntityAlias($entity_type, $entity, $uri['path'], $language);
   }
 
-  function assertNoEntityAliasExists($entity_type, $entity) {
+  function assertNoEntityAliasExists($entity_type, $entity, $alias = NULL) {
     $uri = entity_uri($entity_type, $entity);
-    $this->assertNoAliasExists(array('source' => $uri['path']));
+    $path = array('source' => $uri['path']);
+    if (!empty($alias)) {
+      $path['alias'] = $alias;
+    }
+    $this->assertNoAliasExists($path);
   }
 
   function assertAlias($source, $expected_alias, $language = LANGUAGE_NONE) {
@@ -193,6 +197,23 @@ class PathautoUnitTestCase extends PathautoTestHelper {
   }
 
   /**
+   * Test pathauto_clean_alias().
+   */
+  function testCleanAlias() {
+    $tests = array();
+    $tests['one/two/three'] = 'one/two/three';
+    $tests['/one/two/three/'] = 'one/two/three';
+    $tests['one//two///three'] = 'one/two/three';
+    $tests['one/two--three/-/--/-/--/four---five'] = 'one/two-three/four-five';
+    $tests['one/-//three--/four'] = 'one/three/four';
+    foreach ($tests as $input => $expected) {
+      $output = pathauto_clean_alias($input);
+      $this->assertEqual($output, $expected, t("pathauto_clean_alias('@input') expected '@expected', actual '@output'", array('@input' => $input, '@expected' => $expected, '@output' => $output)));
+    }
+
+  }
+
+  /**
    * Test pathauto_path_delete_multiple().
    */
   function testPathDeleteMultiple() {
@@ -244,7 +265,7 @@ class PathautoUnitTestCase extends PathautoTestHelper {
     $node->title = 'Fifth title';
     pathauto_node_update($node);
     $this->assertEntityAlias('node', $node, 'content/fourth-title');
-    $this->assertNoAliasExists(array('alias' => 'content/fith-title'));
+    $this->assertNoAliasExists(array('alias' => 'content/fifth-title'));
 
     // Test PATHAUTO_UPDATE_ACTION_NO_NEW with unaliased node and 'update'.
     $this->deleteAllAliases();
@@ -289,6 +310,40 @@ class PathautoUnitTestCase extends PathautoTestHelper {
     $this->assertEntityAlias('taxonomy_term', $term2, 'My Crazy/Alias/child-term');
   }
 
+  /**
+   * Test using fields for path structures.
+   */
+  function testParentChildPathTokens() {
+    // First create a field which will be used to create the path. It must
+    // begin with a letter.
+    $fieldname = 'a' . drupal_strtolower($this->randomName());
+    field_create_field(array('field_name' => $fieldname, 'type' => 'text'));
+    field_create_instance(array('field_name' => $fieldname, 'entity_type' => 'taxonomy_term', 'bundle' => 'tags'));
+
+    // Make the path pattern of a field use the value of this field appended
+    // to the parent taxonomy term's pattern if there is one.
+    variable_set('pathauto_taxonomy_term_tags_pattern', '[term:parents:join-path]/[term:' . $fieldname . ']');
+
+    // Start by creating a parent term.
+    $parent = new stdClass();
+    $parent->$fieldname = array(LANGUAGE_NONE => array(array('value' => $parent->name = $this->randomName())));
+    $parent->vid = 1;
+    taxonomy_term_save($parent);
+
+    // Create the child term.
+    $child = new stdClass();
+    $child->name = $this->randomName();
+    $child->$fieldname = array(LANGUAGE_NONE => array(array('value' => $child->name = $this->randomName())));
+    $child->vid = 1;
+    $child->parent = $parent->tid;
+    taxonomy_term_save($child);
+    $this->assertEntityAlias('taxonomy_term', $child, drupal_strtolower($parent->name . '/' . $child->name));
+
+    // Re-saving the parent term should not modify the child term's alias.
+    taxonomy_term_save($parent);
+    $this->assertEntityAlias('taxonomy_term', $child, drupal_strtolower($parent->name . '/' . $child->name));
+  }
+
   function testEntityBundleRenamingDeleting() {
     // Create a vocabulary and test that it's pattern variable works.
     $vocab = $this->addVocabulary(array('machine_name' => 'old_name'));
@@ -315,23 +370,35 @@ class PathautoUnitTestCase extends PathautoTestHelper {
 
     // Check that Pathauto does not create an alias of '/admin'.
     $node = $this->drupalCreateNode(array('title' => 'Admin', 'type' => 'page'));
-    $this->assertNoEntityAlias('node', $node);
+    $this->assertEntityAlias('node', $node, 'admin-0');
 
     // Check that Pathauto does not create an alias of '/modules'.
     $node->title = 'Modules';
     node_save($node);
-    $this->assertNoEntityAlias('node', $node);
+    $this->assertEntityAlias('node', $node, 'modules-0');
 
     // Check that Pathauto does not create an alias of '/index.php'.
     $node->title = 'index.php';
     node_save($node);
-    $this->assertNoEntityAlias('node', $node);
+    $this->assertEntityAlias('node', $node, 'index.php-0');
 
     // Check that a safe value gets an automatic alias. This is also a control
     // to ensure the above tests work properly.
     $node->title = 'Safe value';
     node_save($node);
     $this->assertEntityAlias('node', $node, 'safe-value');
+  }
+
+  function testPathAliasUniquifyWordsafe() {
+    variable_set('pathauto_max_length', 25);
+
+    $node_1 = $this->drupalCreateNode(array('title' => 'thequick brownfox jumpedover thelazydog', 'type' => 'page'));
+    $node_2 = $this->drupalCreateNode(array('title' => 'thequick brownfox jumpedover thelazydog', 'type' => 'page'));
+
+    // Check that pathauto_alias_uniquify is calling truncate_utf8 with $wordsafe param set to TRUE.
+    // If it doesn't path alias result would be content/thequick-brownf-0
+    $this->assertEntityAlias('node', $node_1, 'content/thequick-brownfox');
+    $this->assertEntityAlias('node', $node_2, 'content/thequick-0');
   }
 }
 
@@ -408,13 +475,23 @@ class PathautoFunctionalTestCase extends PathautoFunctionalTestHelper {
     $this->drupalGet($automatic_alias);
     $this->assertText($title, 'Node accessible through automatic alias.');
 
+    // Disable the update action. The checkbox should not be visible.
+    variable_set('pathauto_update_action', 0);
+    $this->drupalGet("node/{$node->nid}/edit");
+    $this->assertNoFieldById('edit-path-pathauto');
+
+    // Reset the update action back to default. The checkbox should be visible.
+    variable_del('pathauto_update_action');
+    $this->drupalGet("node/{$node->nid}/edit");
+    $this->assertFieldChecked('edit-path-pathauto');
+
     // Manually set the node's alias.
     $manual_alias = 'content/' . $node->nid;
     $edit = array(
       'path[pathauto]' => FALSE,
       'path[alias]' => $manual_alias,
     );
-    $this->drupalPost("node/{$node->nid}/edit", $edit, t('Save'));
+    $this->drupalPost(NULL, $edit, t('Save'));
     $this->assertText("Basic page $title has been updated.");
 
     // Check that the automatic alias checkbox is now unchecked by default.
@@ -449,6 +526,26 @@ class PathautoFunctionalTestCase extends PathautoFunctionalTestHelper {
     $this->assertNoFieldById('edit-path-pathauto');
     $this->assertFieldByName('path[alias]', '');
     $this->assertNoEntityAlias('node', $node);
+
+    // Set the page pattern to use only tokens so we can test the checkbox
+    // behavior if none of the tokens have a value currently.
+    variable_set('pathauto_node_page_pattern', '[node:title]');
+
+    // Create a node with an empty title. The Pathauto checkbox should still be
+    // visible but unchecked.
+    $node = $this->drupalCreateNode(array('type' => 'page', 'title' => ''));
+    $this->drupalGet('node/' . $node->nid . '/edit');
+    $this->assertNoFieldChecked('edit-path-pathauto');
+    $this->assertFieldByName('path[alias]', '');
+    $this->assertNoEntityAlias('node', $node);
+
+    $edit = array();
+    $edit['title'] = 'Valid title';
+    $edit['path[pathauto]'] = TRUE;
+    $this->drupalPost(NULL, $edit, t('Save'));
+    $this->drupalGet('node/' . $node->nid . '/edit');
+    $this->assertFieldChecked('edit-path-pathauto');
+    $this->assertFieldByName('path[alias]', 'valid-title');
   }
 
   /**
@@ -470,6 +567,83 @@ class PathautoFunctionalTestCase extends PathautoFunctionalTestHelper {
 
     $this->assertEntityAlias('node', $node1, 'content/' . $node1->title);
     $this->assertEntityAlias('node', $node2, 'node/' . $node2->nid);
+  }
+
+  /**
+   * @todo Merge this with existing node test methods?
+   */
+  public function testNodeState() {
+    $nodeNoAliasUser = $this->drupalCreateUser(array('bypass node access'));
+    $nodeAliasUser = $this->drupalCreateUser(array('bypass node access', 'create url aliases'));
+
+    $node = $this->drupalCreateNode(array(
+      'title' => 'Node version one',
+      'type' => 'page',
+      'path' => array(
+        'pathauto' => FALSE,
+      ),
+    ));
+
+    $this->assertNoEntityAlias('node', $node);
+
+    // Set a manual path alias for the node.
+    $node->path['alias'] = 'test-alias';
+    node_save($node);
+
+    // Ensure that the pathauto field was saved to the database.
+    $node = node_load($node->nid, NULL, TRUE);
+    $this->assertFalse($node->path['pathauto']);
+
+    // Ensure that the manual path alias was saved and an automatic alias was not generated.
+    $this->assertEntityAlias('node', $node, 'test-alias');
+    $this->assertNoEntityAliasExists('node', $node, 'content/node-version-one');
+
+    // Save the node as a user who does not have access to path fieldset.
+    $this->drupalLogin($nodeNoAliasUser);
+    $this->drupalGet('node/' . $node->nid . '/edit');
+    $this->assertNoFieldByName('path[pathauto]');
+
+    $edit = array('title' => 'Node version two');
+    $this->drupalPost(NULL, $edit, 'Save');
+    $this->assertText('Basic page Node version two has been updated.');
+
+    $this->assertEntityAlias('node', $node, 'test-alias');
+    $this->assertNoEntityAliasExists('node', $node, 'content/node-version-one');
+    $this->assertNoEntityAliasExists('node', $node, 'content/node-version-two');
+
+    // Load the edit node page and check that the Pathauto checkbox is unchecked.
+    $this->drupalLogin($nodeAliasUser);
+    $this->drupalGet('node/' . $node->nid . '/edit');
+    $this->assertNoFieldChecked('edit-path-pathauto');
+
+    // Edit the manual alias and save the node.
+    $edit = array(
+      'title' => 'Node version three',
+      'path[alias]' => 'manually-edited-alias',
+    );
+    $this->drupalPost(NULL, $edit, 'Save');
+    $this->assertText('Basic page Node version three has been updated.');
+
+    $this->assertEntityAlias('node', $node, 'manually-edited-alias');
+    $this->assertNoEntityAliasExists('node', $node, 'test-alias');
+    $this->assertNoEntityAliasExists('node', $node, 'content/node-version-one');
+    $this->assertNoEntityAliasExists('node', $node, 'content/node-version-two');
+    $this->assertNoEntityAliasExists('node', $node, 'content/node-version-three');
+
+    // Programatically save the node with an automatic alias.
+    $node = node_load($node->nid, NULL, TRUE);
+    $node->path['pathauto'] = TRUE;
+    node_save($node);
+
+    // Ensure that the pathauto field was saved to the database.
+    $node = node_load($node->nid, NULL, TRUE);
+    $this->assertTrue($node->path['pathauto']);
+
+    $this->assertEntityAlias('node', $node, 'content/node-version-three');
+    $this->assertNoEntityAliasExists('node', $node, 'manually-edited-alias');
+    $this->assertNoEntityAliasExists('node', $node, 'test-alias');
+    $this->assertNoEntityAliasExists('node', $node, 'content/node-version-one');
+    $this->assertNoEntityAliasExists('node', $node, 'content/node-version-two');
   }
 
   /**
@@ -672,6 +846,14 @@ class PathautoLocaleTestCase extends PathautoFunctionalTestHelper {
     $this->assertEntityAlias('node', $node, 'content/english-node-0', 'en');
     $this->assertEntityAlias('node', $node, 'french-node', 'fr');
     $this->assertAliasExists(array('pid' => $english_alias['pid'], 'alias' => 'content/english-node-0'));
+
+    // Create a new node with the same title as before but without
+    // specifying a language.
+    $node = $this->drupalCreateNode(array('title' => 'English node'));
+
+    // Check that the new node had a unique alias generated with the '-1'
+    // suffix.
+    $this->assertEntityAlias('node', $node, 'content/english-node-1');
   }
 }
 
@@ -718,11 +900,11 @@ class PathautoBulkUpdateTestCase extends PathautoFunctionalTestHelper {
     // Add a new node.
     $new_node = $this->drupalCreateNode(array('path' => array('alias' => '', 'pathauto' => FALSE)));
 
-    // Run the update again which should only run against the new node.
+    // Run the update again which should not run against any nodes.
     $this->drupalPost('admin/config/search/path/update_bulk', $edit, t('Update'));
-    $this->assertText('Generated 1 URL alias.'); // 1 node + 0 users
+    $this->assertText('No new URL aliases to generate.');
 
-    $this->assertEntityAliasExists('node', $new_node);
+    $this->assertNoEntityAliasExists('node', $new_node);
   }
 }
 

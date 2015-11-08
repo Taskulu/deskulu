@@ -23,3 +23,10 @@ function email_registration_requirements() {
 
   return $requirements;
 }
+
+/**
+ * Implements hook_uninstall().
+ */
+function email_registration_uninstall() {
+  variable_del('email_registration_login_with_username');
+}

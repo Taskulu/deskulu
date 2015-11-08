@@ -51,6 +51,111 @@ class DateTimezoneTestCase extends DateFieldBasic {
   }
 
   /**
+   * Validates timezone handling with a multi-value date field.
+   */
+  public function testMultiUserTimezone() {
+    // Create date fields with combinations of various types and granularity
+    // using the "Date's Timezone" strategy.
+    $field_type = 'datetime';
+    $tz_handling = 'date';
+    $max_granularity = 'minute';
+
+    // Create date field
+    $field_name = "field_test";
+    $label = 'Test';
+    $options = array(
+      'label' => $label,
+      'widget_type' => 'date_text',
+      'field_name' => $field_name,
+      'field_type' => $field_type,
+      'input_format' => 'custom',
+      'input_format_custom' => 'm/d/Y - H:i:s T',
+      'cardinality' => 3,
+      'tz_handling' => $tz_handling,
+    );
+    $this->createMultiDateField($options);
+
+    // Submit a date field form with multiple values
+    $this->dateMultiValueForm($field_name, $field_type, $max_granularity, $tz_handling);
+
+
+    $this->deleteDateField($label);
+  }
+
+  /**
+   * Tests the submission of a date field's widget form when using unlimited
+   * cardinality
+   */
+  public function dateMultiValueForm($field_name, $field_type, $max_granularity, $tz_handling) {
+    variable_set('date_format_long', 'D, m/d/Y - H:i:s T');
+
+    $edit = array();
+    $should_be = array();
+    $edit['title'] = $this->randomName(8);
+    $timezones = array('America/Chicago', 'America/Los_Angeles', 'America/New_York');
+
+    switch ($max_granularity) {
+      case 'hour':
+        $edit[$field_name . '[und][0][value][date]'] = '10/07/2010 - 10:30';
+        $edit[$field_name . '[und][0][timezone][timezone]'] = 'America/Chicago';
+        $should_be[0] = 'Thu, 10/07/2010 - 10 CDT';
+
+        $edit[$field_name . '[und][1][value][date]'] = '10/07/2010 - 10:30';
+        $edit[$field_name . '[und][1][timezone][timezone]'] = 'America/Los_Angeles';
+        $should_be[1] = 'Thu, 10/07/2010 - 10 PDT';
+
+        $edit[$field_name . '[und][2][value][date]'] = '10/07/2010 - 10:30';
+        $edit[$field_name . '[und][2][timezone][timezone]'] = 'America/New_York';
+        $should_be[2] = 'Thu, 10/07/2010 - 10 EDT';
+
+        break;
+      case 'minute':
+        $edit[$field_name . '[und][0][value][date]'] = '10/07/2010 - 10:30';
+        $edit[$field_name . '[und][0][timezone][timezone]'] = 'America/Chicago';
+        $should_be[0] = 'Thu, 10/07/2010 - 10:30 CDT';
+
+        $edit[$field_name . '[und][1][value][date]'] = '10/07/2010 - 10:30';
+        $edit[$field_name . '[und][1][timezone][timezone]'] = 'America/Los_Angeles';
+        $should_be[1] = 'Thu, 10/07/2010 - 10:30 PDT';
+
+        $edit[$field_name . '[und][2][value][date]'] = '10/07/2010 - 10:30';
+        $edit[$field_name . '[und][2][timezone][timezone]'] = 'America/New_York';
+        $should_be[2] = 'Thu, 10/07/2010 - 10:30 EDT';
+
+        break;
+      case 'second':
+        $edit[$field_name . '[und][0][value][date]'] = '10/07/2010 - 10:30';
+        $edit[$field_name . '[und][0][timezone][timezone]'] = 'America/Chicago';
+        $should_be[0] = 'Thu, 10/07/2010 - 10:30:30 CDT';
+
+        $edit[$field_name . '[und][1][value][date]'] = '10/07/2010 - 10:30';
+        $edit[$field_name . '[und][1][timezone][timezone]'] = 'America/Los_Angeles';
+        $should_be[1] = 'Thu, 10/07/2010 - 10:30:30 PDT';
+
+        $edit[$field_name . '[und][2][value][date]'] = '10/07/2010 - 10:30';
+        $edit[$field_name . '[und][2][timezone][timezone]'] = 'America/New_York';
+        $should_be[2] = 'Thu, 10/07/2010 - 10:30:30 EDT';
+        break;
+    }
+
+    $this->drupalPost('node/add/story', $edit, t('Save'));
+    $this->assertText($edit['title'], "Node has been created");
+
+    foreach ($should_be as $assertion) {
+      $this->assertText($assertion, "Found the correct date for a $field_type field using $max_granularity granularity with $tz_handling timezone handling.");
+    }
+
+    // Goto the edit page and save the node again.
+    $node = $this->drupalGetNodeByTitle($edit['title']);
+    $this->drupalGet('node/' . $node->nid . '/edit');
+
+    // Re-assert the proper date timezones.
+    foreach ($timezones as $key => $timezone) {
+      $this->assertOptionSelected('edit-field-test-und-' . $key . '-timezone-timezone', $timezone, "Found the correct timezone $timezone for a $field_type field using $max_granularity granularity with $tz_handling timezone handling.");
+    }
+  }
+
+  /**
    * @todo.
    */
   public function dateForm($field_name, $field_type, $max_granularity, $tz_handling) {

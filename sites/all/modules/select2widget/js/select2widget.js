@@ -69,6 +69,7 @@
                       search_string: term // search term
                     };
                   },
+                  quietMillis: (settings[el].delay) ? settings[el].delay : 100,
                   dataType: 'json',
                   results: function (data, page) {
                     // parse the results into the format expected by Select2.

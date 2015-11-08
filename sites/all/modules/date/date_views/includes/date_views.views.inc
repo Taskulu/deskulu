@@ -27,8 +27,9 @@
  *   links by date, requires the date argument and uses the current
  *   date argument default to set a starting point for the view.
  */
+
 /**
- * Implements hook_views_plugins
+ * Implements hook_views_plugins().
  */
 function date_views_views_plugins() {
   $path = drupal_get_path('module', 'date_views');
@@ -36,7 +37,8 @@ function date_views_views_plugins() {
   module_load_include('inc', 'date_views', 'theme/theme');
 
   return array(
-    'module' => 'date_views', // This just tells our themes are elsewhere.
+    // This just tells our themes are elsewhere.
+    'module' => 'date_views',
     'display' => array(
       // Display plugin for date navigation.
       'date_nav' => array(
@@ -83,7 +85,7 @@ function date_views_views_plugins() {
 }
 
 /**
- * Implements hook_views_data()
+ * Implements hook_views_data().
  */
 function date_views_views_data() {
   $data = array();
@@ -95,12 +97,12 @@ function date_views_views_data() {
     $data[$base_table]['date_argument'] = array(
       'group' => t('Date'),
       'title' => t('Date (!base_table)', array('!base_table' => $base_table)),
-      'help' => t('Filter any Views !base_table date field by a date argument, using any common ISO date/period format (i.e. YYYY, YYYY-MM, YYYY-MM-DD, YYYY-W99, YYYY-MM-DD--P3M, P90D, etc). ', array('!base_table' => $base_table)),
+      'help' => t('Filter any Views !base_table date field by a date argument, using any common ISO date/period format (i.e. YYYY, YYYY-MM, YYYY-MM-DD, YYYY-W99, YYYY-MM-DD--P3M, P90D, etc).', array('!base_table' => $base_table)),
       'argument' => array(
         'handler' => 'date_views_argument_handler',
         'empty field name' => t('Undated'),
         'is date' => TRUE,
-        //'skip base' => $base_table,
+        // 'skip base' => $base_table,
       ),
     );
     // The flexible date filter.
@@ -112,7 +114,7 @@ function date_views_views_data() {
         'handler' => 'date_views_filter_handler',
         'empty field name' => t('Undated'),
         'is date' => TRUE,
-        //'skip base' => $base_table,
+        // 'skip base' => $base_table,
       ),
     );
   }
@@ -140,8 +142,9 @@ function date_views_views_data_alter(&$data) {
 }
 
 /**
- * Central function for setting up the right timezone values
- * in the SQL date handler.
+ * Central function for setting up the right timezone values.
+ *
+ * In the SQL date handler.
  *
  * The date handler will use this information to decide if the
  * database value needs a timezone conversion.
@@ -152,30 +155,45 @@ function date_views_views_data_alter(&$data) {
  */
 function date_views_set_timezone(&$date_handler, &$view, $field) {
   switch ($field['tz_handling']) {
-    case 'date' :
+    case 'date':
       $date_handler->db_timezone = 'UTC';
       $date_handler->local_timezone_field = $field['timezone_field'];
       $date_handler->offset_field = $field['offset_field'];
       break;
+
     case 'none':
       $date_handler->db_timezone = date_default_timezone();
       $date_handler->local_timezone = date_default_timezone();
       break;
+
     case 'utc':
       $date_handler->db_timezone = 'UTC';
       $date_handler->local_timezone = 'UTC';
       break;
-    default :
+
+    default:
       $date_handler->db_timezone = 'UTC';
       $date_handler->local_timezone = date_default_timezone();
       break;
   }
 }
 
+/**
+ * Helper function to generate a query string.
+ *
+ * @param object $view
+ *   A View object.
+ *
+ * @param array $extra_params
+ *   An extra parameters.
+ *
+ * @return null/string
+ *   Return a query or NULL.
+ */
 function date_views_querystring($view, $extra_params = array()) {
   $query_params = array_merge($_GET, $extra_params);
   // Allow NULL params to be removed from the query string.
-  foreach ($extra_params AS $key => $value) {
+  foreach ($extra_params as $key => $value) {
     if (!isset($value)) {
       unset($query_params[$key]);
     }

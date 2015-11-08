@@ -420,7 +420,15 @@ abstract class SearchApiAbstractService implements SearchApiServiceInterface {
   public function preDelete() {
     $indexes = search_api_index_load_multiple(FALSE, array('server' => $this->server->machine_name));
     foreach ($indexes as $index) {
-      $this->removeIndex($index);
+      // removeIndex() might throw exceptions, but this method mustn't.
+      try {
+        $this->removeIndex($index);
+      }
+      catch (SearchApiException $e) {
+        $variables['%index'] = $index->name;
+        $variables['%server'] = $this->server->name;
+        watchdog_exception('search_api', $e, '%type while trying to remove index %index from deleted server %server: !message in %function (line %line of %file).', $variables);
+      }
     }
   }
 

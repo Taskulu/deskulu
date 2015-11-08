@@ -77,20 +77,3 @@ function ctools_node_comment_form_content_type_edit_form_submit($form, &$form_st
   }
 }
 
-/**
- * Alter the comment form to get a little more control over it.
- */
-function ctools_form_comment_form_alter(&$form, &$form_state) {
-  if (!empty($form_state['ctools comment alter'])) {
-    // Force the form to post back to wherever we are.
-    $form['#action'] = url($_GET['q'], array('fragment' => 'comment-form'));
-    if (empty($form['#submit'])) {
-      $form['#submit'] = array('comment_form_submit');
-    }
-    $form['#submit'][] = 'ctools_node_comment_form_submit';
-  }
-}
-
-function ctools_node_comment_form_submit(&$form, &$form_state) {
-  $form_state['redirect'][0] = $_GET['q'];
-}

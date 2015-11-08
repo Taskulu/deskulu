@@ -71,11 +71,12 @@ class SearchApiViewsHandlerArgumentMoreLikeThis extends SearchApiViewsHandlerArg
         $this->query->abort();
         return;
       }
-      $fields = $this->options['fields'] ? $this->options['fields'] : array();
-      if (empty($fields)) {
-        foreach ($this->query->getIndex()->options['fields'] as $key => $field) {
-          $fields[] = $key;
-        }
+      $index_fields = array_keys($this->query->getIndex()->options['fields']);
+      if (empty($this->options['fields'])) {
+        $fields = $index_fields;
+      }
+      else {
+        $fields = array_intersect($this->options['fields'], $index_fields);
       }
       $mlt = array(
         'id' => $this->argument,

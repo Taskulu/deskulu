@@ -1911,13 +1911,13 @@ function user_menu_link_alter(&$link) {
   // for authenticated users. Authenticated users should see "My account", but
   // anonymous users should not see it at all. Therefore, invoke
   // user_translated_menu_link_alter() to conditionally hide the link.
-  if ($link['link_path'] == 'user' && $link['module'] == 'system') {
+  if ($link['link_path'] == 'user' && isset($link['module']) && $link['module'] == 'system') {
     $link['options']['alter'] = TRUE;
   }
 
   // Force the Logout link to appear on the top-level of 'user-menu' menu by
   // default (i.e., unless it has been customized).
-  if ($link['link_path'] == 'user/logout' && $link['module'] == 'system' && empty($link['customized'])) {
+  if ($link['link_path'] == 'user/logout' && isset($link['module']) && $link['module'] == 'system' && empty($link['customized'])) {
     $link['plid'] = 0;
   }
 }
@@ -2488,7 +2488,9 @@ function user_cancel($edit, $uid, $method) {
 }
 
 /**
- * Last batch processing step for cancelling a user account.
+ * Implements callback_batch_operation().
+ *
+ * Last step for cancelling a user account.
  *
  * Since batch and session API require a valid user account, the actual
  * cancellation of a user account needs to happen last.
@@ -2536,6 +2538,8 @@ function _user_cancel($edit, $account, $method) {
 }
 
 /**
+ * Implements callback_batch_finished().
+ *
  * Finished batch processing callback for cancelling a user account.
  *
  * @see user_cancel()
@@ -3037,6 +3041,11 @@ function user_role_delete($role) {
   }
   else {
     $role = user_role_load_by_name($role);
+  }
+
+  // If this is the administrator role, delete the user_admin_role variable.
+  if ($role->rid == variable_get('user_admin_role')) {
+    variable_del('user_admin_role');
   }
 
   db_delete('role')

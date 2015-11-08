@@ -86,7 +86,7 @@ class views_plugin_argument_validate extends views_plugin {
   /**
    * Process the summary arguments for displaying.
    *
-   * Some plugins alter the argument so it uses something else interal.
+   * Some plugins alter the argument so it uses something else internally.
    * For example the user validation set's the argument to the uid,
    * for a faster query. But there are use cases where you want to use
    * the old value again, for example the summary.

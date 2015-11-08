@@ -51,7 +51,7 @@ function ctools_jump_menu($form, &$form_state, $select, $options = array()) {
     'hide' => TRUE,
   );
 
-  ctools_add_js('jump-menu');
+  $form['#attached']['js'][] = ctools_attach_js('jump-menu');
 
   if (!empty($options['choose'])) {
     $select = array('' => $options['choose']) + $select;

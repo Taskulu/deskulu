@@ -18,8 +18,8 @@ function ctools_term_description_content_type_render($subtype, $conf, $panel_arg
   $block = new stdClass();
   $block->module = 'node_type';
 
-  $block->title = $term->name;
-  if ($term) {
+  if (!empty($term)) {
+    $block->title = $term->name;
     $block->content = check_markup($term->description, $term->format, '', TRUE);
     $block->delta = $term->tid;
 
@@ -33,6 +33,7 @@ function ctools_term_description_content_type_render($subtype, $conf, $panel_arg
     }
   }
   else {
+    $block->title = '';
     $block->content = t('Term description goes here.');
     $block->delta = 'unknown';
   }

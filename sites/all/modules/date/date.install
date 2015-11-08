@@ -19,6 +19,7 @@ function date_field_schema($field) {
         'views' => TRUE,
       );
       break;
+
     case 'datetime':
       $db_columns['value'] = array(
         'type' => 'datetime',
@@ -31,6 +32,7 @@ function date_field_schema($field) {
         'views' => TRUE,
       );
       break;
+
     default:
       $db_columns['value'] = array(
         'type' => 'varchar',
@@ -66,7 +68,12 @@ function date_field_schema($field) {
       'views' => FALSE,
     );
     if (!empty($field['settings']['todate'])) {
-      $db_columns['offset2'] = array('type' => 'int', 'not null' => FALSE, 'sortable' => TRUE, 'views' => FALSE);
+      $db_columns['offset2'] = array(
+        'type' => 'int',
+        'not null' => FALSE,
+        'sortable' => TRUE,
+        'views' => FALSE
+      );
     }
   }
   if (isset($field['settings']['repeat']) && $field['settings']['repeat'] == 1) {
@@ -88,8 +95,9 @@ function date_update_last_removed() {
 }
 
 /**
- * Get rid of the individual formatters for each format type,
- * these are now settings in the default formatter.
+ * Get rid of the individual formatters for each format type.
+ *
+ * These are now settings in the default formatter.
  */
 function date_update_7000() {
   $instances = field_info_instances();
@@ -115,8 +123,9 @@ function date_update_7000() {
 }
 
 /**
- * Get rid of the separate widgets for repeating dates. The code now handles
- * repeating dates correctly using the regular widgets.
+ * Get rid of the separate widgets for repeating dates.
+ *
+ * The code now handles repeating dates correctly using the regular widgets.
  */
 function date_update_7001() {
   $query = db_select('field_config_instance', 'fci', array('fetch' => PDO::FETCH_ASSOC));
@@ -127,7 +136,11 @@ function date_update_7001() {
 
   foreach ($results as $record) {
     $instance = unserialize($record['data']);
-    if (in_array($instance['widget']['type'], array('date_popup_repeat', 'date_text_repeat', 'date_select_repeat'))) {
+    if (in_array($instance['widget']['type'], array(
+        'date_popup_repeat',
+        'date_text_repeat',
+        'date_select_repeat'
+      ))) {
       $instance['widget']['type'] = str_replace('_repeat', '', $instance['widget']['type']);
       db_update('field_config_instance')
         ->fields(array(
@@ -191,4 +204,3 @@ function date_update_7004() {
   field_cache_clear();
   drupal_set_message(t('Date text widgets have been updated to use an increment of 1.'));
 }
-

@@ -85,7 +85,7 @@ function search_api_db_update_7102() {
 /**
  * Changes date fields from int to big int.
  *
- * The purpose is give support to historical dates.
+ * The purpose is to support historical dates.
  */
 function search_api_db_update_7103() {
   $server_options = db_select('search_api_server', 's')
@@ -130,85 +130,51 @@ function search_api_db_update_7104() {
     list($key, $target) = explode(':', $options['database'], 2);
     if (!empty($options['indexes'][$server->machine_name])) {
       $connection = Database::getConnection($target, $key);
-      // Find name for table.
-      $text_table = _search_api_db_update_find_free_table('search_api_db_' . $server->machine_name . '_text', $connection);
+      $schema = $connection->schema();
+      $text_table = NULL;
 
-      // Add new table.
-      $table = array(
-        'name' => $text_table,
-        'module' => 'search_api_db',
-        'fields' => array(
-          'item_id' => array(
-            'description' => 'The primary identifier of the item.',
-            'not null' => TRUE,
-          ),
-          'field_name' => array(
-            'description' => "The name of the field in which the token appears, or an MD5 hash of the field.",
-            'not null' => TRUE,
-            'type' => 'varchar',
-            'length' => 255,
-          ),
-          'word' => array(
-            'description' => 'The text of the indexed token.',
-            'type' => 'varchar',
-            'length' => 50,
-            'not null' => TRUE,
-          ),
-          'score' => array(
-            'description' => 'The score associated with this token.',
-            'type' => 'float',
-            'not null' => TRUE,
-          ),
-        ),
-      );
-      // The type of the item_id field depends on the ID field's type.
-      $id_field = search_api_get_datasource_controller($server->item_type)->getIdFieldInfo();
-      switch ($id_field['type']) {
-        case 'text':
-        case 'string':
-        case 'uri':
-          $table['fields']['item_id'] += array('type' => 'varchar', 'length' => 50);
-          break;
-
-        case 'integer':
-        case 'duration':
-        case 'date':
-          // 'datetime' sucks. Therefore, we just store the timestamp.
-          $table['fields']['item_id'] += array('type' => 'int', 'size' => 'big');
-          break;
-
-        case 'decimal':
-          $table['fields']['item_id'] += array('type' => 'float');
-          break;
-
-        case 'boolean':
-          $table['fields']['item_id'] += array('type' => 'int', 'size' => 'tiny');
-          break;
-
-        default:
-          throw new DrupalUpdateException(t('Unknown field type @type. Database search module might be out of sync with Search API.', array('@type' => $id_field['type'])));
-      }
-      $connection->schema()->createTable($text_table, $table);
-      global $databases;
-      if ($databases[$key][$target]['driver'] === 'mysql') {
-        $connection->query("ALTER TABLE {{$text_table}} CONVERT TO CHARACTER SET 'utf8' COLLATE 'utf8_bin'");
-      }
-      // Migrate data.
+      // Migrate the index's fulltext data.
       foreach ($options['indexes'][$server->machine_name] as $name => $field) {
         if (search_api_is_text_type($field['type'])) {
-          $query = $connection->select($field['table'], 't')
-            ->fields('t', array('item_id', 'word', 'score'));
-          $query->addExpression(':field_name', 'field_name', array(':field_name' => strlen($name) > 255 ? md5($name) : $name));
-          $connection->insert($text_table)->from($query)->execute();
+          $field_name = strlen($name) > 255 ? md5($name) : $name;
+          if (!isset($text_table)) {
+            // Find a free name for the new table.
+            $text_table = _search_api_db_update_find_free_table('search_api_db_' . $server->machine_name . '_text', $connection);
+            // To avoid having to look up the index's ID field type, we just
+            // rename the first fulltext table we come across and add a
+            // "field_name" column.
+            $schema->renameTable($field['table'], $text_table);
+            // First, set a default for the field for the existing data, then
+            // remove it for future inserts.
+            $spec = array(
+              'description' => "The name of the field in which the token appears, or an MD5 hash of the field.",
+              'not null' => TRUE,
+              'type' => 'varchar',
+              'length' => 255,
+              'default' => $field_name,
+            );
+            $schema->addField($text_table, 'field_name', $spec);
+            unset($spec['default']);
+            $schema->changeField($text_table, 'field_name', 'field_name', $spec);
+            // Finally, replace the primary key and "word" index with new ones.
+            $schema->dropIndex($text_table, 'word');
+            $schema->dropPrimaryKey($text_table);
+            $schema->addIndex($text_table, 'word_field', array(array('word', 20), 'field_name'));
+            $schema->addPrimaryKey($text_table, array('item_id', 'field_name', 'word'));
+          }
+          else {
+            // Move the fulltext data to the new combined fulltext table, then
+            // drop the old table.
+            $query = $connection->select($field['table'], 't')
+              ->fields('t', array('item_id', 'word', 'score'));
+            $query->addExpression(':field_name', 'field_name', array(':field_name' => $field_name));
+            $connection->insert($text_table)->from($query)->execute();
 
-          $connection->schema()->dropTable($field['table']);
+            $schema->dropTable($field['table']);
+          }
           $server_options[$server->server]['indexes'][$server->machine_name][$name]['table'] = $text_table;
         }
       }
-
-      // Add keys.
-      $connection->schema()->addIndex($text_table, 'word_field', array(array('word', 20), 'field_name'));
-      $connection->schema()->addPrimaryKey($text_table, array('item_id', 'field_name', 'word'));
     }
   }
   // Save changes to fields.

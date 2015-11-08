@@ -108,7 +108,7 @@ function page_manager_node_edit($node) {
  * Callback to handle the process of adding a node.
  *
  * This creates a basic $node and passes that off to page_manager_node_edit().
- * It is modeled after Drupal's node_add() function.
+ * It is modelled after Drupal's node_add() function.
  *
  * Unlike node_add() we do not need to check node_access because that was
  * already checked by the menu system.

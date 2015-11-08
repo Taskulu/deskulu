@@ -6,9 +6,9 @@ package = Search
 
 files[] = search_api_db.test
 files[] = service.inc
-; Information added by Drupal.org packaging script on 2014-09-08
-version = "7.x-1.4"
+; Information added by Drupal.org packaging script on 2015-08-30
+version = "7.x-1.5"
 core = "7.x"
 project = "search_api_db"
-datestamp = "1410186261"
+datestamp = "1440962643"
 

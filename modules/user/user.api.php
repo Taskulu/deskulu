@@ -123,8 +123,8 @@ function hook_user_cancel($edit, $account, $method) {
  *   description is NOT used for the radio button, but instead should provide
  *   additional explanation to the user seeking to cancel their account.
  * - access: (optional) A boolean value indicating whether the user can access
- *   a method. If #access is defined, the method cannot be configured as default
- *   method.
+ *   a method. If access is defined, the method cannot be configured as the
+ *   default method.
  *
  * @param $methods
  *   An array containing user account cancellation methods, keyed by method id.
@@ -183,7 +183,23 @@ function hook_user_operations() {
 }
 
 /**
- * Retrieve a list of user setting or profile information categories.
+ * Define a list of user settings or profile information categories.
+ *
+ * There are two steps to using hook_user_categories():
+ * - Create the category with hook_user_categories().
+ * - Display that category on the form ID of "user_profile_form" with
+ *   hook_form_FORM_ID_alter().
+ *
+ * Step one builds out the category but it won't be visible on your form until
+ * you explicitly tell it to do so.
+ *
+ * The function in step two should contain the following code in order to
+ * display your new category:
+ * @code
+ * if ($form['#user_category'] == 'mycategory') {
+ *   // Return your form here.
+ * }
+ * @endcode
  *
  * @return
  *   An array of associative arrays. Each inner array has elements:

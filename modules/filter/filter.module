@@ -93,6 +93,14 @@ function filter_menu() {
     'type' => MENU_SUGGESTED_ITEM,
     'file' => 'filter.pages.inc',
   );
+  $items['filter/tips/%filter_format'] = array(
+    'title' => 'Compose tips',
+    'page callback' => 'filter_tips_long',
+    'page arguments' => array(2),
+    'access callback' => 'filter_access',
+    'access arguments' => array(2),
+    'file' => 'filter.pages.inc',
+  );
   $items['admin/config/content/formats'] = array(
     'title' => 'Text formats',
     'description' => 'Configure how content input by users is filtered, including allowed HTML tags. Also allows enabling of module-provided filters.',
@@ -1119,18 +1127,23 @@ function filter_dom_serialize($dom_document) {
   $body_node = $dom_document->getElementsByTagName('body')->item(0);
   $body_content = '';
 
-  foreach ($body_node->getElementsByTagName('script') as $node) {
-    filter_dom_serialize_escape_cdata_element($dom_document, $node);
-  }
+  if ($body_node !== NULL) {
+    foreach ($body_node->getElementsByTagName('script') as $node) {
+      filter_dom_serialize_escape_cdata_element($dom_document, $node);
+    }
 
-  foreach ($body_node->getElementsByTagName('style') as $node) {
-    filter_dom_serialize_escape_cdata_element($dom_document, $node, '/*', '*/');
-  }
+    foreach ($body_node->getElementsByTagName('style') as $node) {
+      filter_dom_serialize_escape_cdata_element($dom_document, $node, '/*', '*/');
+    }
 
-  foreach ($body_node->childNodes as $child_node) {
-    $body_content .= $dom_document->saveXML($child_node);
+    foreach ($body_node->childNodes as $child_node) {
+      $body_content .= $dom_document->saveXML($child_node);
+    }
+    return preg_replace('|<([^> ]*)/>|i', '<$1 />', $body_content);
   }
-  return preg_replace('|<([^> ]*)/>|i', '<$1 />', $body_content);
+  else {
+    return $body_content;
+  }
 }
 
 /**
@@ -1484,7 +1497,7 @@ function _filter_url($text, $filter) {
   $tasks['_filter_url_parse_full_links'] = $pattern;
 
   // Match e-mail addresses.
-  $url_pattern = "[A-Za-z0-9._-]{1,254}@(?:$domain)";
+  $url_pattern = "[A-Za-z0-9._+-]{1,254}@(?:$domain)";
   $pattern = "`($url_pattern)`";
   $tasks['_filter_url_parse_email_links'] = $pattern;
 

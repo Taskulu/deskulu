@@ -17,7 +17,9 @@ class i18nviews extends i18n_string_object_wrapper {
     $this->object->init_display();
     foreach ($this->object->display as $display_id => $display) {
       $translatables = array();
-      $display->handler->unpack_translatables($translatables);
+      if(is_object($display->handler)) {
+        $display->handler->unpack_translatables($translatables);
+      }
       foreach ($translatables as $translatable) {
         $key = implode(':', $translatable['keys']);
         $properties[$display_id][$key] = array(

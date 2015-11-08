@@ -191,6 +191,35 @@ function search_api_schema() {
     'primary key' => array('item_id', 'index_id'),
   );
 
+  $schema['search_api_item_string_id'] = array(
+    'description' => 'Stores the items which should be indexed for each index, and their status. Used only for items with string IDs.',
+    'fields' => array(
+      'item_id' => array(
+        'description' => "The item's ID.",
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+      ),
+      'index_id' => array(
+        'description' => 'The {search_api_index}.id this item belongs to.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'changed' => array(
+        'description' => 'Either a flag or a timestamp to indicate if or when the item was changed since it was last indexed.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+    ),
+    'indexes' => array(
+      'indexing' => array('index_id', 'changed'),
+    ),
+    'primary key' => array('item_id', 'index_id'),
+  );
+
   $schema['search_api_task'] = array(
     'description' => 'Stores pending tasks for servers.',
     'fields' => array(
@@ -1000,4 +1029,39 @@ function search_api_update_7117() {
       ->condition('id', $indexes)
       ->execute();
   }
+}
+
+/**
+ * Adds the {search_api_item_string_id} table for items with string IDs.
+ */
+function search_api_update_7118() {
+  $table = array(
+    'description' => 'Stores the items which should be indexed for each index, and their status. Used only for items with string IDs.',
+    'fields' => array(
+      'item_id' => array(
+        'description' => "The item's ID.",
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+      ),
+      'index_id' => array(
+        'description' => 'The {search_api_index}.id this item belongs to.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'changed' => array(
+        'description' => 'Either a flag or a timestamp to indicate if or when the item was changed since it was last indexed.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+    ),
+    'indexes' => array(
+      'indexing' => array('index_id', 'changed'),
+    ),
+    'primary key' => array('item_id', 'index_id'),
+  );
+  db_create_table('search_api_item_string_id', $table);
 }

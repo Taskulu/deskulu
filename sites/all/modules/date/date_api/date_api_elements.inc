@@ -116,15 +116,19 @@ function date_default_date($element) {
       case 16:
         $format = 'Y-m-d H:i';
         break;
+
       case 13:
         $format = 'Y-m-d H';
         break;
+
       case 10:
         $format = 'Y-m-d';
         break;
+
       case 7:
         $format = 'Y-m';
         break;
+
       case 4:
         $format = 'Y';
         break;
@@ -170,7 +174,7 @@ function date_year_range_element_process($element, &$form_state, $form) {
   $element['#attached']['js'][] = drupal_get_path('module', 'date_api') . '/date_year_range.js';
 
   $context = array(
-   'form' => $form,
+    'form' => $form,
   );
   drupal_alter('date_year_range_process', $element, $form_state, $context);
 
@@ -256,7 +260,7 @@ function date_timezone_element_process($element, &$form_state, $form) {
   }
 
   $context = array(
-   'form' => $form,
+    'form' => $form,
   );
   drupal_alter('date_timezone_process', $element, $form_state, $context);
 
@@ -264,7 +268,7 @@ function date_timezone_element_process($element, &$form_state, $form) {
 }
 
 /**
- *  Validation for timezone input
+ * Validation for timezone input.
  *
  *  Move the timezone value from the nested field back to the original field.
  */
@@ -307,7 +311,6 @@ function date_text_element_value_callback($element, $input = FALSE, &$form_state
  *
  * The exact parts displayed in the field are those in #date_granularity.
  * The display of each part comes from #date_format.
- *
  */
 function date_text_element_process($element, &$form_state, $form) {
   if (date_hidden_element($element)) {
@@ -323,8 +326,17 @@ function date_text_element_process($element, &$form_state, $form) {
   $now = date_example_date();
   $element['date']['#title'] = t('Date');
   $element['date']['#title_display'] = 'invisible';
-  $element['date']['#description'] = ' ' . t('Format: @date', array('@date' => date_format_date(date_example_date(), 'custom', $element['#date_format'])));
+  $element['date']['#description'] = ' ' . t('Format: @date', array(
+    '@date' => date_format_date(date_example_date(), 'custom', $element['#date_format']
+  )));
   $element['date']['#ajax'] = !empty($element['#ajax']) ? $element['#ajax'] : FALSE;
+
+  // Make changes if instance is set to be rendered as a regular field.
+  if (!empty($element['#instance']['widget']['settings']['no_fieldset']) && $element['#field']['cardinality'] == 1) {
+    $element['date']['#title'] = check_plain($element['#instance']['label']);
+    $element['date']['#title_display'] = $element['#title_display'];
+    $element['date']['#required'] = $element['#required'];
+  }
 
   // Keep the system from creating an error message for the sub-element.
   // We'll set our own message on the parent element.
@@ -341,7 +353,7 @@ function date_text_element_process($element, &$form_state, $form) {
   }
 
   $context = array(
-   'form' => $form,
+    'form' => $form,
   );
   drupal_alter('date_text_process', $element, $form_state, $context);
 
@@ -349,12 +361,11 @@ function date_text_element_process($element, &$form_state, $form) {
 }
 
 /**
- *  Validation for text input.
+ * Validation for text input.
  *
  * When used as a Views widget, the validation step always gets triggered,
  * even with no form submission. Before form submission $element['#value']
  * contains a string, after submission it contains an array.
- *
  */
 function date_text_validate($element, &$form_state) {
   if (date_hidden_element($element)) {
@@ -366,6 +377,11 @@ function date_text_validate($element, &$form_state) {
   }
   $input_exists = NULL;
   $input = drupal_array_get_nested_value($form_state['values'], $element['#parents'], $input_exists);
+
+  // Trim extra spacing off user input of text fields.
+  if (isset($input['date'])) {
+    $input['date'] = trim($input['date']);
+  }
 
   drupal_alter('date_text_pre_validate', $element, $form_state, $input);
 
@@ -421,7 +437,14 @@ function date_text_input_date($element, $input) {
  * Element value callback for date_select element.
  */
 function date_select_element_value_callback($element, $input = FALSE, &$form_state = array()) {
-  $return = array('year' => '', 'month' => '', 'day' => '', 'hour' => '', 'minute' => '', 'second' => '');
+  $return = array(
+    'year' => '',
+    'month' => '',
+    'day' => '',
+    'hour' => '',
+    'minute' => '',
+    'second' => '',
+  );
   $date = NULL;
   if ($input !== FALSE) {
     $return = $input;
@@ -431,7 +454,14 @@ function date_select_element_value_callback($element, $input = FALSE, &$form_sta
     $date = date_default_date($element);
   }
   $granularity = date_format_order($element['#date_format']);
-  $formats = array('year' => 'Y', 'month' => 'n', 'day' => 'j', 'hour' => 'H', 'minute' => 'i', 'second' => 's');
+  $formats = array(
+    'year' => 'Y',
+    'month' => 'n',
+    'day' => 'j',
+    'hour' => 'H',
+    'minute' => 'i',
+    'second' => 's',
+  );
   foreach ($granularity as $field) {
     if ($field != 'timezone') {
       $return[$field] = date_is_date($date) ? $date->format($formats[$field]) : '';
@@ -449,7 +479,6 @@ function date_select_element_value_callback($element, $input = FALSE, &$form_sta
  *
  * The exact parts displayed in the field are those in #date_granularity.
  * The display of each part comes from ['#date_settings']['format'].
- *
  */
 function date_select_element_process($element, &$form_state, $form) {
   if (date_hidden_element($element)) {
@@ -473,7 +502,14 @@ function date_select_element_process($element, &$form_state, $form) {
 
   // Store a hidden value for all date parts not in the current display.
   $granularity = date_format_order($element['#date_format']);
-  $formats = array('year' => 'Y', 'month' => 'n', 'day' => 'j', 'hour' => 'H', 'minute' => 'i', 'second' => 's');
+  $formats = array(
+    'year' => 'Y',
+    'month' => 'n',
+    'day' => 'j',
+    'hour' => 'H',
+    'minute' => 'i',
+    'second' => 's',
+  );
   foreach (date_nongranularity($granularity) as $field) {
     if ($field != 'timezone') {
       $element[$field] = array(
@@ -490,7 +526,7 @@ function date_select_element_process($element, &$form_state, $form) {
   }
 
   $context = array(
-   'form' => $form,
+    'form' => $form,
   );
   drupal_alter('date_select_process', $element, $form_state, $context);
 
@@ -521,7 +557,7 @@ function date_parts_element($element, $date, $format) {
   $sub_element = array('#granularity' => $granularity);
   $order = array_flip($granularity);
 
-  $hours_format  = strpos(strtolower($element['#date_format']), 'a') ? 'g': 'G';
+  $hours_format  = strpos(strtolower($element['#date_format']), 'a') ? 'g' : 'G';
   $month_function  = strpos($element['#date_format'], 'F') !== FALSE ? 'date_month_names' : 'date_month_names_abbr';
   $count = 0;
   $increment = min(intval($element['#date_increment']), 1);
@@ -539,26 +575,29 @@ function date_parts_element($element, $date, $format) {
     switch ($field) {
       case 'year':
         $range = date_range_years($element['#date_year_range'], $date);
-        $min_year = $range[0];
-        $max_year = $range[1];
+        $start_year = $range[0];
+        $end_year = $range[1];
 
         $sub_element[$field]['#default_value'] = is_object($date) ? $date->format('Y') : '';
         if ($part_type == 'select') {
-          $sub_element[$field]['#options'] = drupal_map_assoc(date_years($min_year, $max_year, $part_required));
+          $sub_element[$field]['#options'] = drupal_map_assoc(date_years($start_year, $end_year, $part_required));
         }
         break;
+
       case 'month':
         $sub_element[$field]['#default_value'] = is_object($date) ? $date->format('n') : '';
         if ($part_type == 'select') {
           $sub_element[$field]['#options'] = $month_function($part_required);
         }
         break;
+
       case 'day':
         $sub_element[$field]['#default_value'] = is_object($date) ? $date->format('j') : '';
         if ($part_type == 'select') {
           $sub_element[$field]['#options'] = drupal_map_assoc(date_days($part_required));
         }
         break;
+
       case 'hour':
         $sub_element[$field]['#default_value'] = is_object($date) ? $date->format($hours_format) : '';
         if ($part_type == 'select') {
@@ -566,6 +605,7 @@ function date_parts_element($element, $date, $format) {
         }
         $sub_element[$field]['#prefix'] = theme('date_part_hour_prefix', $element);
         break;
+
       case 'minute':
         $sub_element[$field]['#default_value'] = is_object($date) ? $date->format('i') : '';
         if ($part_type == 'select') {
@@ -573,6 +613,7 @@ function date_parts_element($element, $date, $format) {
         }
         $sub_element[$field]['#prefix'] = theme('date_part_minsec_prefix', $element);
         break;
+
       case 'second':
         $sub_element[$field]['#default_value'] = is_object($date) ? $date->format('s') : '';
         if ($part_type == 'select') {

@@ -647,8 +647,9 @@ function search_api_search_api_index_insert(SearchApiIndex $index) {
  * Implements hook_search_api_index_update().
  */
 function search_api_search_api_index_update(SearchApiIndex $index) {
-  // Call the datasource update function with the table this module provides.
+  // Call the datasource update function with the tables this module provides.
   search_api_index_update_datasource($index, 'search_api_item');
+  search_api_index_update_datasource($index, 'search_api_item_string_id');
 
   // If the server was changed, we have to call the appropriate service class
   // hook methods.
@@ -857,6 +858,8 @@ function search_api_entity_insert($entity, $type) {
   list($id) = entity_extract_ids($type, $entity);
   if (isset($id)) {
     search_api_track_item_insert($type, array($id));
+    $combined_id = $type . '/' . $id;
+    search_api_track_item_insert('multiple', array($combined_id));
   }
 }
 
@@ -889,6 +892,8 @@ function search_api_entity_update($entity, $type) {
 
   if (isset($id)) {
     search_api_track_item_change($type, array($id));
+    $combined_id = $type . '/' . $id;
+    search_api_track_item_change('multiple', array($combined_id));
   }
 }
 
@@ -910,6 +915,8 @@ function search_api_entity_delete($entity, $type) {
   list($id) = entity_extract_ids($type, $entity);
   if (isset($id)) {
     search_api_track_item_delete($type, array($id));
+    $combined_id = $type . '/' . $id;
+    search_api_track_item_delete('multiple', array($combined_id));
   }
 }
 
@@ -967,15 +974,18 @@ function search_api_flush_caches() {
 function search_api_search_api_item_type_info() {
   $types = array();
 
-  foreach (entity_get_property_info() as $type => $property_info) {
-    if ($info = entity_get_info($type)) {
-      $types[$type] = array(
-        'name' => $info['label'],
-        'datasource controller' => 'SearchApiEntityDataSourceController',
-        'entity_type' => $type,
-      );
-    }
+  foreach (search_api_entity_type_options_list() as $type => $label) {
+    $types[$type] = array(
+      'name' => $label,
+      'datasource controller' => 'SearchApiEntityDataSourceController',
+      'entity_type' => $type,
+    );
   }
+
+  $types['multiple'] = array(
+    'name' => t('Multiple types'),
+    'datasource controller' => 'SearchApiCombinedEntityDataSourceController',
+  );
 
   return $types;
 }
@@ -1057,6 +1067,11 @@ function search_api_search_api_alter_callback_info() {
     'name' => t('Exclude unpublished nodes'),
     'description' => t('Exclude unpublished nodes from the index. <strong>Caution:</strong> This only affects the indexed nodes themselves. If an enabled node has references to disabled nodes, those will still be indexed (or displayed) normally.'),
     'class' => 'SearchApiAlterNodeStatus',
+  );
+  $callbacks['search_api_alter_user_status'] = array(
+    'name' => t('Exclude blocked users'),
+    'description' => t('Exclude blocked users from the index. <strong>Caution:</strong> This only affects the indexed users themselves. If an active user account includes a reference to a disabled user, that reference will still be indexed (or displayed) normally.'),
+    'class' => 'SearchApiAlterUserStatus',
   );
 
   return $callbacks;
@@ -1172,7 +1187,10 @@ function search_api_track_item_change($type, array $item_ids) {
     return;
   }
   try {
-    search_api_get_datasource_controller($type)->trackItemChange($item_ids, $indexes);
+    $returned_indexes = search_api_get_datasource_controller($type)->trackItemChange($item_ids, $indexes);
+    if (isset($returned_indexes)) {
+      $indexes = $returned_indexes;
+    }
     foreach ($indexes as $index) {
       if (!empty($index->options['index_directly'])) {
         // For indexes with the index_directly option set, queue the items to be
@@ -1247,7 +1265,10 @@ function search_api_track_item_delete($type, array $item_ids) {
   $indexes = search_api_index_load_multiple(FALSE, $conditions);
   if ($indexes) {
     try {
-      search_api_get_datasource_controller($type)->trackItemDelete($item_ids, $indexes);
+      $changed_indexes = search_api_get_datasource_controller($type)->trackItemDelete($item_ids, $indexes);
+      if (isset($changed_indexes)) {
+        $indexes = $changed_indexes;
+      }
     }
     catch (SearchApiException $e) {
       $vars['%item_type'] = $type;
@@ -1257,8 +1278,9 @@ function search_api_track_item_delete($type, array $item_ids) {
 
   // Then, delete it from all servers. Servers of disabled indexes have to be
   // considered, too!
-  unset($conditions['enabled']);
-  foreach (search_api_index_load_multiple(FALSE, $conditions) as $index) {
+  $conditions['enabled'] = 0;
+  $indexes = array_merge($indexes, search_api_index_load_multiple(FALSE, $conditions));
+  foreach ($indexes as $index) {
     try {
       if ($server = $index->server()) {
         $server->deleteItems($item_ids, $index);
@@ -2822,6 +2844,66 @@ function search_api_index_options_list() {
     $ret[$id] = $index->name;
   }
   return $ret;
+}
+
+/**
+ * Options list callback for entity types.
+ *
+ * Will only include entity types which specify entity property information.
+ *
+ * @return string[]
+ *   An array of entity type machine names mapped to their human-readable
+ *   names.
+ */
+function search_api_entity_type_options_list() {
+  $types = array();
+  foreach (array_keys(entity_get_property_info()) as $type) {
+    $info = entity_get_info($type);
+    if ($info) {
+      $types[$type] = $info['label'];
+    }
+  }
+  return $types;
+}
+
+/**
+ * Options list callback for entity type bundles.
+ *
+ * Will include all bundles for all entity types which specify entity property
+ * information, in a format combining both entity type and bundle.
+ *
+ * @return string[]
+ *   An array of bundle identifiers mapped to their human-readable names.
+ */
+function search_api_combined_bundle_options_list() {
+  $types = array();
+  foreach (array_keys(entity_get_property_info()) as $type) {
+    $info = entity_get_info($type);
+    if (!empty($info['bundles'])) {
+      foreach ($info['bundles'] as $bundle => $bundle_info) {
+        $types["$type:$bundle"] = $bundle_info['label'];
+      }
+    }
+  }
+  return $types;
+}
+
+/**
+ * Retrieves a human-readable label for a multi-type index item.
+ *
+ * Provided as a non-object alternative to
+ * SearchApiCombinedEntityDataSourceController::getItemLabel() so it can be used
+ * as a getter callback.
+ *
+ * @param object $item
+ *   An item of the "multiple" item type.
+ *
+ * @return string|null
+ *   Either a human-readable label for the item, or NULL if none is available.
+ */
+function search_api_get_multi_type_item_label($item) {
+  $label = entity_label($item->item_type, $item->{$item->item_type});
+  return $label ? $label : NULL;
 }
 
 /**

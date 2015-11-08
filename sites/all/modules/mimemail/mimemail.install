@@ -6,13 +6,6 @@
  */
 
 /**
- * Implements hook_install().
- */
-function mimemail_install() {
-  user_role_grant_permissions(DRUPAL_AUTHENTICATED_RID, array('edit mimemail user settings'));
-}
-
-/**
  * Implements hook_enable().
  */
 function mimemail_enable() {
@@ -23,6 +16,8 @@ function mimemail_enable() {
       'mimemail' => 'MimeMailSystem',
     )
   );
+
+  user_role_grant_permissions(DRUPAL_AUTHENTICATED_RID, array('edit mimemail user settings'));
 }
 
 /**

@@ -736,6 +736,15 @@ function ctools_edit_context_form_defaults($form, &$form_state) {
     '#default_value' => $conf['keyword'],
   );
 
+  if ($type_info['key'] == 'requiredcontexts') {
+    $form['optional'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Context is optional'),
+      '#default_value' => !empty($form_state['conf']['optional']),
+      '#description' => t('This context need not be present for the component to function.'),
+    );
+  }
+
   $form['#submit'][] = 'ctools_edit_context_form_defaults_submit';
 
   return $form;
@@ -751,6 +760,9 @@ function ctools_edit_context_form_defaults_submit(&$form, &$form_state) {
   if ($form_state['type info']['key'] == 'arguments') {
     $form_state['conf']['default'] = $form_state['values']['default'];
     $form_state['conf']['title'] = $form_state['values']['title'];
+  }
+  if ($form_state['type info']['key'] == 'requiredcontexts') {
+    $form_state['conf']['optional'] = $form_state['values']['optional'];
   }
 
   $form_state['conf']['identifier'] = $form_state['values']['identifier'];

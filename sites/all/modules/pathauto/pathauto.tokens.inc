@@ -35,7 +35,7 @@ function pathauto_tokens($type, $tokens, array $data = array(), array $options =
           $values = array();
           foreach (element_children($array) as $key) {
             $value = is_array($array[$key]) ? render($array[$key]) : (string) $array[$key];
-            $value = pathauto_cleanstring($value);
+            $value = pathauto_cleanstring($value, $options);
             $values[] = $value;
           }
           $replacements[$original] = implode('/', $values);

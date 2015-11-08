@@ -341,7 +341,16 @@ function ctools_content_editable($type, $subtype, $conf) {
     return FALSE;
   }
 
-  if ($function = ctools_plugin_get_function($subtype, 'check editable')) {
+  $function = FALSE;
+  
+  if (!empty($subtype['check editable'])) {
+    $function = ctools_plugin_get_function($subtype, 'check editable');
+  }
+  elseif (!empty($type['check editable'])) {
+    $function = ctools_plugin_get_function($type, 'check editable');
+  }
+
+  if ($function) {
     return $function($type, $subtype, $conf);
   }
 

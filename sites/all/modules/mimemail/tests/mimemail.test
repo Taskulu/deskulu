@@ -71,12 +71,16 @@ class MimeMailWebTestCase extends DrupalWebTestCase {
   public function setUp() {
     parent::setUp('mailsystem', 'mimemail');
 
-    // Create and login user.
-    $this->adminUser = $this->drupalCreateUser(array(
+    $permissions = array(
       'access administration pages',
       'administer site configuration',
-    ));
+    );
 
+    // Check to make sure that the array of permissions are valid.
+    $this->checkPermissions($permissions, TRUE);
+
+    // Create and login user.
+    $this->adminUser = $this->drupalCreateUser($permissions);
     $this->drupalLogin($this->adminUser);
   }
 

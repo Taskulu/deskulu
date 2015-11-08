@@ -114,6 +114,24 @@ can make Mandrill the default mail system and make that Template Map the
 default template, or you can clone the Template Map for each module/key pair
 and assign them individually.
 
+To send values from Drupal to Mandrill that will be used to substitute the
+template regions you should implement hook_mail_alter() and add your values in
+the 'mandrill_template_content' key in the $message array as an array with two
+keys: name and content.
+
+For example, for sending the value 'foo value' for the region 'foo' you
+can use this code:
+
+/**
+ * Implements hook_mail_alter();
+ */
+function mymodule_mail_alter(&$message) {
+  $message['mandrill_template_content'][] = array(
+    'name' => 'foo',
+    'content' => 'foo value',
+  );
+}
+
 You should also consider enabling the css-inline feature in your Mandrill
 account under Settings -> Sending Options. For more info, see
 "http://help.mandrill.com/entries/24460141-Does-Mandrill-inline-CSS-automatically-".

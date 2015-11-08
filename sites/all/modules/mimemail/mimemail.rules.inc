@@ -57,6 +57,12 @@ function mimemail_rules_action_info() {
           'description' => t("The address to reply to. Leave it empty to use the sender's address."),
           'optional' => TRUE,
         ),
+        'list_unsubscribe' => array(
+          'type' => 'text',
+          'label' => t('Unsubscription e-mail and/or URL'),
+          'description' => t("An e-mail address and/or a URL which can be used for unsubscription. Values must be enclosed by angel brackets and separated by a comma."),
+          'optional' => TRUE,
+        ),
         'subject' => array(
           'type' => 'text',
           'label' => t('Subject'),
@@ -66,7 +72,7 @@ function mimemail_rules_action_info() {
         'body' => array(
           'type' => 'text',
           'label' => t('Body'),
-          'description' => t("The mail's message HTML body."),
+          'description' => t('The mail\'s HTML body. Will be formatted using the text format selected on the <a href="@url">settings</a> page.', array('@url' => url('admin/config/system/mimemail'))),
           'sanitize' => TRUE,
           'optional' => TRUE,
           'translatable' => TRUE,
@@ -74,7 +80,7 @@ function mimemail_rules_action_info() {
         'plaintext' => array(
           'type' => 'text',
           'label' => t('Plain text body'),
-          'description' => t("The mail's message plaintext body."),
+          'description' => t("The mail's plaintext body."),
           'optional' => TRUE,
           'translatable' => TRUE,
         ),
@@ -238,7 +244,7 @@ function mimemail_rules_action_mail_to_users_of_role_upgrade($element, RulesPlug
 /**
  * Action Implementation: Send HTML mail.
  */
-function rules_action_mimemail($key, $to, $cc = NULL, $bcc = NULL, $from_name = NULL, $from_mail = NULL, $reply_to = NULL, $subject, $body, $plaintext = NULL, $attachments = array(), $langcode, $settings, RulesState $state, RulesPlugin $element) {
+function rules_action_mimemail($key, $to, $cc = NULL, $bcc = NULL, $from_name = NULL, $from_mail = NULL, $reply_to = NULL, $list_unsubscribe = NULL, $subject, $body, $plaintext = NULL, $attachments = array(), $langcode, $settings, RulesState $state, RulesPlugin $element) {
   module_load_include('inc', 'mimemail');
 
   // Set the sender name and from address.
@@ -268,6 +274,7 @@ function rules_action_mimemail($key, $to, $cc = NULL, $bcc = NULL, $from_name = 
     'cc' => $cc,
     'bcc' => $bcc,
     'reply-to' => $reply_to,
+    'list-unsubscribe' => $list_unsubscribe,
     'plaintext' => $plaintext,
     'attachments' => $attachments,
   );

@@ -359,17 +359,6 @@ function advanced_forum_preprocess_forum_list(&$variables) {
 /**
  * Preprocess views forum topic list.
  */
-function advanced_forum_preprocess_views_view_forum_topic_list__advanced_forum_topic_list(&$variables) {
-  _advanced_forum_add_files();
-  die("advanced_forum_preprocess_views_view_forum_topic_list__advanced_forum_topic_list");
-  advanced_forum_add_template_suggestions("topic_list_view", $variables);
-  // Set a variable for displaying the topic legend.
-  $variables['topic_legend'] = theme('advanced_forum_topic_legend');
-}
-
-/**
- * Preprocess views forum topic list.
- */
 function advanced_forum_preprocess_views_view__advanced_forum_topic_list(&$variables) {
   _advanced_forum_add_files();
   advanced_forum_add_template_suggestions("topic_list_outer_view", $variables);

@@ -11,6 +11,7 @@ configure = admin/config/development/testing/settings
 files[] = tests/actions.test
 files[] = tests/ajax.test
 files[] = tests/batch.test
+files[] = tests/boot.test
 files[] = tests/bootstrap.test
 files[] = tests/cache.test
 files[] = tests/common.test
@@ -56,8 +57,8 @@ files[] = tests/upgrade/update.trigger.test
 files[] = tests/upgrade/update.field.test
 files[] = tests/upgrade/update.user.test
 
-; Information added by Drupal.org packaging script on 2015-06-17
-version = "7.38"
+; Information added by Drupal.org packaging script on 2015-10-21
+version = "7.41"
 project = "drupal"
-datestamp = "1434567286"
+datestamp = "1445457729"
 

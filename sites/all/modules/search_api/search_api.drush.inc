@@ -121,6 +121,39 @@ function search_api_drush_command() {
     'aliases' => array('sapi-sis'),
   );
 
+  $items['search-api-server-list'] = array(
+    'description' => 'List all search servers.',
+    'examples' => array(
+      'drush search-api-server-list' => dt('List all search servers.'),
+      'drush sapi-sl' => dt('Alias to list all search servers.'),
+    ),
+    'aliases' => array('sapi-sl'),
+  );
+
+  $items['search-api-server-enable'] = array(
+    'description' => 'Enable a search server.',
+    'examples' => array(
+      'drush search-api-server-e my_solr_server' => dt('Enable the !server search server.', array('!server' => 'my_solr_server')),
+      'drush sapi-se my_solr_server' => dt('Alias to enable the !server search server.', array('!server' => 'my_solr_server')),
+    ),
+    'arguments' => array(
+      'server_id' => dt('The numeric ID or machine name of a search server to enable.'),
+    ),
+    'aliases' => array('sapi-se'),
+  );
+
+  $items['search-api-server-disable'] = array(
+    'description' => 'Disable a search server.',
+    'examples' => array(
+      'drush search-api-server-disable' => dt('Disable the !server search server.', array('!server' => 'my_solr_server')),
+      'drush sapi-sd' => dt('Alias to disable the !server search server.', array('!server' => 'my_solr_server')),
+    ),
+    'arguments' => array(
+      'server_id' => dt('The numeric ID or machine name of a search server to disable.'),
+    ),
+    'aliases' => array('sapi-sd'),
+  );
+
   return $items;
 }
 
@@ -508,7 +541,8 @@ function search_api_drush_get_server($server_id = NULL) {
   $servers = search_api_server_load_multiple($ids);
   if (empty($servers)) {
     drush_set_error(dt('Invalid server_id or no servers present.'));
-    // @todo: Maybe add logic to print table of all servers.
+    drush_print();
+    drush_search_api_server_list();
   }
   return $servers;
 }
@@ -532,4 +566,76 @@ function search_api_drush_static($function) {
   }
   $index[$function] = TRUE;
   return FALSE;
+}
+
+/**
+ * Lists all search servers.
+ */
+function drush_search_api_server_list() {
+  if (search_api_drush_static(__FUNCTION__)) {
+    return;
+  }
+  $servers = search_api_server_load_multiple(FALSE);
+  if (empty($servers)) {
+    drush_print(dt('There are no servers present.'));
+    return;
+  }
+  $rows[] = array(
+    dt('Machine name'),
+    dt('Name'),
+    dt('Status'),
+  );
+  foreach ($servers as $server) {
+    $row = array(
+      $server->machine_name,
+      $server->name,
+      $server->enabled ? dt('enabled') : dt('disabled'),
+    );
+    $rows[] = $row;
+  }
+  drush_print_table($rows);
+}
+
+/**
+ * Enables a search server.
+ *
+ * @param int|string $server_id
+ *   The numeric ID or machine name of the server to enable.
+ */
+function drush_search_api_server_enable($server_id = NULL) {
+  if (!isset($server_id)) {
+    drush_print(dt('Please provide a valid server id.'));
+    return;
+  }
+  $server = search_api_server_load($server_id);
+  if (empty($server)) {
+    drush_print(dt('The server was not able to load.'));
+    return;
+  }
+  else {
+    $server->update(array('enabled' => 1));
+    drush_print(dt('The server was enabled successfully.'));
+  }
+}
+
+/**
+ * Disables a search server.
+ *
+ * @param int|string $server_id
+ *   The numeric ID or machine name of the server to disable.
+ */
+function drush_search_api_server_disable($server_id = NULL) {
+  if (!isset($server_id)) {
+    drush_print(dt('Please provide a valid server id.'));
+    return;
+  }
+  $server = search_api_server_load($server_id);
+  if (empty($server)) {
+    drush_print(dt('The server was not able to load.'));
+    return;
+  }
+  else {
+    $server->update(array('enabled' => 0));
+    drush_print(dt('The server was disabled successfully.'));
+  }
 }

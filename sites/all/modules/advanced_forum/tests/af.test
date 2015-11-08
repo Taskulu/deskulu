@@ -64,8 +64,6 @@ class testAfFormsTestCase extends DrupalWebTestCase {
    * Implements admin form save.
    */
   public function testAfSaveConfig() {
-
-    $edit = array();
     $this->privileged_user = $this->drupalCreateUser(
       array(
         'administer advanced forum',
@@ -74,6 +72,8 @@ class testAfFormsTestCase extends DrupalWebTestCase {
       )
     );
     $this->drupalLogin($this->privileged_user);
+
+    $edit = array();
 
     // Let's test all admin forms.
     $this->drupalPost(
@@ -99,6 +99,21 @@ class testAfFormsTestCase extends DrupalWebTestCase {
     $this->drupalPost('forum/new', $edit2, t('Apply'));
     $this->drupalPost('forum/unanswered', $edit2, t('Apply'));
     $this->drupalPost('forum/active', $edit2, t('Apply'));
+
+    // Test the form to create forum with option to add fields from taxonomy term.
+    $edit3 = array(
+      'advanced_forum_forum_user_term_fields' => TRUE,
+    );
+
+    $this->drupalPost(
+      'admin/config/content/advanced-forum',
+      $edit3,
+      t('Save configuration')
+    );
+
+    $this->assertText(t('The configuration options have been saved.'));
+
+    $this->drupalGet('node/add/forum', array());
   }
 
 

@@ -84,6 +84,12 @@
     the mail.css file found anywhere in your theme folder or
     the combined CSS style sheets of your theme if enabled.
 
+  Since some email clients (namely Outlook 2007 and GMail) is tend to only regard
+  inline CSS, you can use the Compressor to convert CSS styles into inline style
+  attributes. It transmogrifies the HTML source by parsing the CSS and inserting the
+  CSS definitions into tags within the HTML based on the CSS selectors. To use the
+  Compressor, just enable it.
+
   To create a custom mail template copy the mimemail-message.tpl.php file from
   the mimemail/theme directory into your default theme's folder. Both general and
   by-mailkey theming can be performed:
@@ -100,17 +106,15 @@
   or any other active theme.
 
   Images with absolute URL will be available as remote content. To embed images
-  into emails you have to use a relative URL or an internal path.
+  into emails you have to use a relative URL or an internal path. Due to security
+  concerns, only files residing in the public file system (e.g sites/default/files)
+  can be used by default.
+
   For example:
     instead of http://www.mysite.com/sites/default/files/mypicture.jpg
     use /home/www/public_html/drupal/sites/default/files/mypicture.jpg
     or /sites/default/files/mypicture.jpg
-
-  Since some email clients (namely Outlook 2007 and GMail) is tend to only regard
-  inline CSS, you can use the Compressor to convert CSS styles into inline style
-  attributes. It transmogrifies the HTML source by parsing the CSS and inserting the
-  CSS definitions into tags within the HTML based on the CSS selectors. To use the
-  Compressor, just enable it.
+    or public://mypicture.jpg
 
   The 'send arbitrary files' permission allows you to attach or embed files located
   outside Drupal's public files directory. Note that this has security implications:

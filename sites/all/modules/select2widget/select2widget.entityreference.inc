@@ -17,7 +17,9 @@ function select2widget_entityreference_widget_settings_form($field, $instance) {
 
   $form = array();
   if ($widget['type'] == 'select2widgetajax') {
-    $view_mode_options = array();
+    $view_mode_options = array(
+      'select2widget_labels' => t('Entity labels (no render)'),
+    );
 
     $entity_info = entity_get_info();
     $entity_type = (isset($field['settings']['target_type'])) ? $field['settings']['target_type'] : NULL;
@@ -102,20 +104,32 @@ function _element_width_validate($element, &$form_state) {
  */
 function select2widget_entity_process_callback($element, &$form_state, $form) {
   // Send Drupal.settings a reference to this form element.
-  $cardinality = $form_state['field'][$element['#field_name']][$element['#language']]['field']['cardinality'];
+  $field_name = $element['#field_name'];
+  $langcode = $element['#language'];
+
+  if (!empty($form_state['field'][$field_name])) {
+    $cardinality = $form_state['field'][$field_name][$langcode]['field']['cardinality'];
+  }
+  else {
+    $parents = array_merge($element['#parents'], array($field_name));
+    $field = drupal_array_get_nested_value($form_state, $parents, $langcode);
+    $cardinality = $field['field']['cardinality'];
+  }
 
   $data['select2widgetajax']['elements'][$element['#id']] = array(
     'id' => $element['#id'],
     'url' => $element['#autocomplete_path'],
     'cardinality' => $cardinality,
     'init' => $element['#init'],
-    'placeholder' => $element['#settings']['select2widgetajax']['placeholder'],
+    'placeholder' => isset($element['#settings']['select2widgetajax']['placeholder']) ? $element['#settings']['select2widgetajax']['placeholder'] : '',
     'min_char' => $element['#settings']['select2widgetajax']['min_char']
   );
 
   if(isset($element['#settings']['select2widgetajax']['width'])){
     $data['select2widgetajax']['elements'][$element['#id']]['width'] = $element['#settings']['select2widgetajax']['width'];
   }
+
+  $data['select2widgetajax']['elements'][$element['#id']]['delay'] = variable_get('select2_delay', '100');
 
   // Attaching library, integration script, and settings array.
   $element['#attached']['library'][] = array('select2widget', 'select2');
@@ -157,10 +171,21 @@ function select2widget_entityreference_get_matches($field, $instance, $entity_ty
       return MENU_ACCESS_DENIED;
     }
   }
+  if ($instance['widget']['type'] == 'og_complex') {
+    $instance['field_mode'] = 'default';
+    // Set the current field mode if passed in.
+    if (!empty($_GET['field_mode']) && in_array($_GET['field_mode'], array('admin', 'default'))) {
+      $instance['field_mode'] = $_GET['field_mode'];
+    }
+    $settings = isset($instance['settings']['behaviors']['og_widget'][$instance['field_mode']]['widget_settings']['select2widgetajax']) ? $instance['settings']['behaviors']['og_widget'][$instance['field_mode']]['widget_settings']['select2widgetajax'] : array();
+  }
+  else {
+    $settings = $instance['widget']['settings']['select2widgetajax'];
+  }
 
   $handler = entityreference_get_selection_handler($field, $instance, $entity_type, $entity);
-  $entity_labels = $handler->getReferencableEntities($string, $instance['widget']['settings']['select2widgetajax']['match_operator'], 20);
-  $matches = select2widget_render_modes($entity_labels, $instance['widget']['settings']['select2widgetajax']['view_mode'], $field['settings']['target_type']);
+  $entity_labels = $handler->getReferencableEntities($string, $settings['match_operator'], 20);
+  $matches = select2widget_render_modes($entity_labels, $settings['view_mode'], $field['settings']['target_type']);
 
   drupal_json_output($matches);
 }
@@ -202,7 +227,22 @@ function select2widget_render_modes($entity_labels, $view_mode = "full", $entity
  */
 function select2widget_render_entity($entity_type, $entity, $view_mode = 'full') {
   $entity->select2widget = TRUE;
-  $entity_array = array('id', 'title', 'data');
+  $entity_array = array(
+    'id' => NULL,
+    'title' => NULL,
+    'data' => NULL,
+  );
+
+  // Allow just the entity label to be returned.
+  if ($view_mode == 'select2widget_labels') {
+    $entity_id = entity_id($entity_type, $entity);
+    $entity_label = entity_label($entity_type, $entity);
+    $entity_array['id'] = $entity_id;
+    $entity_array['title'] = $entity_label . " - " . $entity_id;
+    $entity_array['data'] = array('#markup' => $entity_label);
+    return $entity_array;
+  }
+
   switch ($entity_type) {
     case "node":
         $entity_array['id'] = $entity->nid;

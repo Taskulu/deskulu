@@ -31,7 +31,7 @@ function date_tools_help($section, $arg) {
  */
 function date_tools_permission() {
   return array(
-    'administer date tools' =>  array(
+    'administer date tools' => array(
       'title' => t('Administer date tools'),
     ),
   );
@@ -68,6 +68,7 @@ function date_tools_menu() {
     'file' => 'date_tools.wizard.inc',
   );
 
+  // @codingStandardsIgnoreStart
   /**
   $items['admin/config/date/tools/change'] = array(
     'title'    => 'Change type',
@@ -79,18 +80,18 @@ function date_tools_menu() {
     'file' => 'date_tools.change_type.inc',
   );
   */
+  // @codingStandardsIgnoreEnd
 
   return $items;
 }
 
 /**
- *  Main Date Tools page
+ * Main Date Tools page.
  */
 function date_tools_page() {
   $content = '';
 
-  $content .= t('Dates and calendars can be complicated to set up. The !date_wizard makes it easy to create a simple date content type and related calendar. ', array('!date_wizard' => l(t('Date wizard'), 'admin/config/date/tools/date_wizard')));
-
+  $content .= t('Dates and calendars can be complicated to set up. The !date_wizard makes it easy to create a simple date content type and related calendar.', array('!date_wizard' => l(t('Date wizard'), 'admin/config/date/tools/date_wizard')));
 
   return $content;
 }

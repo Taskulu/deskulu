@@ -29,6 +29,9 @@ $plugin = array(
  * Outputs the page title of the current page.
  */
 function ctools_page_title_content_type_render($subtype, $conf, $panel_args) {
+  if (!drupal_get_title()) {
+    return;
+  }
   // TODO: This should have a setting or something for the markup.
   if (empty($conf['markup'])) {
     $conf['markup'] = 'h1';

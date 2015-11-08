@@ -500,7 +500,7 @@ class ctools_stylizer_image_processor {
     $palette[$luminosity_input]['green'] = $green;
     $palette[$luminosity_input]['blue'] = $blue;
 
-    // Now we complete the palette, first we'll do it tothe black, and then to
+    // Now we complete the palette, first we'll do it to the black, and then to
     // the white.
 
     // From input to black

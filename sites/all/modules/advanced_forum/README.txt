@@ -21,7 +21,7 @@ INSTALLATION
    
 3. Enable the advanced forum module at ?q=admin/build/modules
 
-4. Visit the Advanced Forum settings page at ?q=admin/settings/advanced-forum 
+4. Visit the Advanced Forum settings page at ?q=admin/config/content/advanced-forum
    # General:
      * "Advanced forum style directory" Select the style you are using. 
        See http://drupal.org/node/234042 for more information on this.
@@ -29,6 +29,10 @@ INSTALLATION
         buttons (where available).
      * "Treat all site comments like forum comments" If you would like advanced forum to 
        take over the theming of all comments, even those outside the forum, choose yes.
+     * "Use fields from taxonomy term in forum" Allows to use fields from taxonomy term
+        on the form of creation or editing of the forum. You can add your own fields into
+        taxonomy term from vocabulary "Forums" and these fields will be available on the
+        creation/editing form of the Forum if this option is active.
    # Forum and topic lists
      * "Hide the created column on the topic list" This option hides the created column
        on the topic list page, which can't be done purely in theming due to the header

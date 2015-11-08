@@ -99,7 +99,7 @@ class SearchApiDbTest extends DrupalWebTestCase {
       'title' => 'bar baz',
       'body' => 'foo',
       'type' => 'article',
-      'keywords' => 'orange,strawberry,grape,banana',
+      'keywords' => 'orange,strawberry,grape,banana,orange,Orange',
     ));
     $count = db_query('SELECT COUNT(*) FROM {search_api_test}')->fetchField() - $count;
     $this->assertEqual($count, 5, "$count items inserted.");
@@ -454,6 +454,12 @@ class SearchApiDbTest extends DrupalWebTestCase {
     $this->assertEqual($results['ignored'], array(), 'No keys were ignored.');
     $this->assertEqual($results['warnings'], array(), 'Warning displayed.');
 
+    $results = $this->buildSearch()->condition('keywords', 'orange', '<>')->execute();
+    $this->assertEqual($results['result count'], 2, 'Negated filter on multi-valued field returned correct number of results.');
+    $this->assertEqual(array_keys($results['results']), array(3, 4), 'Negated filter on multi-valued field returned correct result.');
+    $this->assertEqual($results['ignored'], array(), 'No keys were ignored.');
+    $this->assertEqual($results['warnings'], array(), 'Warning displayed.');
+
     $filters = array(
       'keywords,orange',
       'keywords,apple',
@@ -467,6 +473,12 @@ class SearchApiDbTest extends DrupalWebTestCase {
     $results = $this->buildSearch()->condition('keywords', NULL)->execute();
     $this->assertEqual($results['result count'], 1, 'Query with NULL filter returned correct number of results.');
     $this->assertEqual(array_keys($results['results']), array(3), 'Query with NULL filter returned correct result.');
+    $this->assertEqual($results['ignored'], array(), 'No keys were ignored.');
+    $this->assertEqual($results['warnings'], array(), 'No warnings were displayed.');
+
+    $results = $this->buildSearch()->condition('keywords', NULL, '<>')->execute();
+    $this->assertEqual($results['result count'], 4, 'Query with NOT NULL filter returned correct number of results.');
+    $this->assertEqual(array_keys($results['results']), array(1, 2, 4, 5), 'Query with NOT NULL filter returned correct result.');
     $this->assertEqual($results['ignored'], array(), 'No keys were ignored.');
     $this->assertEqual($results['warnings'], array(), 'No warnings were displayed.');
   }
@@ -842,7 +854,27 @@ class SearchApiDbTest extends DrupalWebTestCase {
       array('count' => 1, 'filter' => '"article"'),
     );
     usort($results['search_api_facets']['type'], array($this, 'facetCompare'));
-    $this->assertEqual($results['search_api_facets']['type'], $expected, 'Correct facets were returned with partial matching');
+    $this->assertEqual($results['search_api_facets']['type'], $expected, 'Correct facets were returned with partial matching.');
+
+    // Regression tests for #2469547.
+    $query = $this->buildSearch();
+    $query->condition('id', 5, '<>');
+    $facets['body'] = array(
+      'field' => 'body',
+      'limit' => 0,
+      'min_count' => 1,
+      'missing' => FALSE,
+    );
+    $query->setOption('search_api_facets', $facets);
+    $query->range(0, 0);
+    $results = $query->execute();
+    $expected = array(
+      array('count' => 4, 'filter' => '"test"'),
+      array('count' => 1, 'filter' => '"bar"'),
+      array('count' => 1, 'filter' => '"foobar"'),
+    );
+    usort($results['search_api_facets']['body'], array($this, 'facetCompare'));
+    $this->assertEqual($results['search_api_facets']['body'], $expected, 'Correct facets were returned for a fulltext field.');
   }
 
   /**

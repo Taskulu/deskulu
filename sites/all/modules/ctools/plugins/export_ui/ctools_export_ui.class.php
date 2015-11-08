@@ -724,7 +724,13 @@ class ctools_export_ui {
       // Export the handler, which is a fantastic way to clean database IDs out of it.
       $export = ctools_export_crud_export($this->plugin['schema'], $original);
       $item = ctools_export_crud_import($this->plugin['schema'], $export);
-      $item->{$this->plugin['export']['key']} = 'clone_of_' . $item->{$this->plugin['export']['key']};
+
+      if (!empty($input[$this->plugin['export']['key']])) {
+        $item->{$this->plugin['export']['key']} = $input[$this->plugin['export']['key']];
+      }
+      else {
+        $item->{$this->plugin['export']['key']} = 'clone_of_' . $item->{$this->plugin['export']['key']};
+      }
     }
 
     // Tabs and breadcrumb disappearing, this helps alleviate through cheating.

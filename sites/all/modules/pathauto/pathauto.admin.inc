@@ -64,17 +64,11 @@ function pathauto_patterns_form($form, $form_state) {
       }
     }
 
-    // Display the user documentation of placeholders supported by
-    // this module, as a description on the last pattern
+    // Show the token help relevant to this pattern type.
     $form[$module]['token_help'] = array(
-      '#title' => t('Replacement patterns'),
-      '#type' => 'fieldset',
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-    );
-    $form[$module]['token_help']['help'] = array(
       '#theme' => 'token_tree',
       '#token_types' => array($settings->token_type),
+      '#dialog' => TRUE,
     );
   }
 
@@ -144,7 +138,7 @@ function pathauto_settings_form($form) {
 
   $description = t('What should Pathauto do when updating an existing content item which already has an alias?');
   if (module_exists('redirect')) {
-    $description .= ' ' . t('The <a href="!url">Redirect module settings</a> affect whether a redirect is created when an alias is deleted.', array('!url' => url('admin/config/search/redirect')));
+    $description .= ' ' . t('The <a href="!url">Redirect module settings</a> affect whether a redirect is created when an alias is deleted.', array('!url' => url('admin/config/search/redirect/settings')));
   }
   else {
     $description .= ' ' . t('Considering installing the <a href="!url">Redirect module</a> to get redirects when your aliases change.', array('!url' => 'http://drupal.org/project/redirect'));
@@ -165,7 +159,7 @@ function pathauto_settings_form($form) {
     '#type' => 'checkbox',
     '#title' => t('Transliterate prior to creating alias'),
     '#default_value' => variable_get('pathauto_transliterate', FALSE) && module_exists('transliteration'),
-    '#description' => t('When a pattern includes certain characters (such as those with accents) should Pathauto attempt to transliterate them into the ASCII-96 alphabet? Transliteration is handled by the Transliteration module.'),
+    '#description' => t('When a pattern includes certain characters (such as those with accents) should Pathauto attempt to transliterate them into the US-ASCII alphabet? Transliteration is handled by the Transliteration module.'),
     '#access' => module_exists('transliteration'),
   );
 

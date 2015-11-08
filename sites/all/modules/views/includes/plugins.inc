@@ -408,7 +408,7 @@ function views_views_plugins() {
  */
 function views_discover_plugins() {
   $cache = array('display' => array(), 'style' => array(), 'row' => array(), 'argument default' => array(), 'argument validator' => array(), 'access' => array(), 'cache' => array(), 'exposed_form' => array());
-  // Get plugins from all mdoules.
+  // Get plugins from all modules.
   foreach (module_implements('views_plugins') as $module) {
     $function = $module . '_views_plugins';
     $result = $function();
@@ -526,6 +526,9 @@ class views_plugin extends views_object {
    * Provide a full list of possible theme templates used by this style.
    */
   function theme_functions() {
+    if (empty($this->definition['theme'])) {
+      $this->definition['theme'] = 'views_view';
+    }
     return views_theme_functions($this->definition['theme'], $this->view, $this->display);
   }
 

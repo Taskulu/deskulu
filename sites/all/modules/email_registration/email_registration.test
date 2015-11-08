@@ -6,23 +6,26 @@
  */
 
 class EmailRegistrationTestCase extends DrupalWebTestCase {
+
   /**
-   * Implementation of getInfo().
+   * Implement getInfo().
    */
   public static function getInfo() {
     return array(
-      'name' => t('Email registration.'),
-      'description' => t('Test the email registration module.'),
-      'group' => t('Email registration'),
+      'name' => 'Email registration.',
+      'description' => 'Test the email registration module.',
+      'group' => 'Email registration',
     );
   }
 
   /**
-   * Implementation of setUp().
+   * {@inheritdoc}
    */
   public function setUp() {
     parent::setUp('email_registration');
 
+    // Allow user registration.
+    variable_set('user_register', USER_REGISTER_VISITORS);
     // Configure to allow set password.
     variable_set('user_email_verification', FALSE);
   }
@@ -31,7 +34,6 @@ class EmailRegistrationTestCase extends DrupalWebTestCase {
    * Test various behaviors for anonymous users.
    */
   public function testRegistration() {
-    variable_set('user_register', USER_REGISTER_VISITORS);
     // Try to register a user.
     $name = $this->randomName();
     $pass = $this->randomName(10);
@@ -49,16 +51,15 @@ class EmailRegistrationTestCase extends DrupalWebTestCase {
     );
     $this->drupalPost('user/login', $login, t('Log in'));
 
-    // Get the uid.
-    $accounts = user_load_multiple(array(), array('mail' => $name . '@example.com'));
-    $new_user = reset($accounts);
+    // Get the account to get uid.
+    $new_user = user_load_by_mail($name . '@example.com');
+    $new_name = $name . '_' . $new_user->uid;
 
     // Confirm the user was created and logged in with expected username.
-    $this->assertRaw('<title>' . $name . '_' . $new_user->uid . ' | Drupal</title>', t('User properly created, logged in.'));
+    $this->assertTitle($new_name . ' | Drupal', 'User properly created, logged in.');
 
     // Now try the immediate login.
     $this->drupalLogout();
-    variable_set('user_email_verification', 0);
     $name = $this->randomName();
     $pass = $this->randomName(10);
     $register = array(
@@ -67,7 +68,27 @@ class EmailRegistrationTestCase extends DrupalWebTestCase {
       'pass[pass2]' => $pass,
     );
     $this->drupalPost('/user/register', $register, t('Create new account'));
-    $this->assertRaw('Registration successful. You are now logged in.', t('User properly created, immediately logged in.'));
+    $this->assertRaw('Registration successful. You are now logged in.', 'User properly created, immediately logged in.');
+
+    // Try to login with just username, should succeed by default.
+    $this->drupalLogout();
+
+    // User name appended with UID see email_registration_cleanup_username().
+    $new_user = user_load_by_mail($name . '@example.com');
+    $new_name = $name . '_' . $new_user->uid;
+    $login = array(
+      'name' => $new_name,
+      'pass' => $pass,
+    );
+    $this->drupalPost('user/login', $login, t('Log in'));
+
+    $this->assertTitle($new_name . ' | Drupal', 'By default, username can log in.');
+    $this->drupalLogout();
+
+    // Disallow logins with username and try to login with just username, should fail.
+    variable_set('email_registration_login_with_username', FALSE);
+    $this->drupalPost('user/login', $login, t('Log in'));
+    $this->assertTitle('User account | Drupal', 'When disabled, a user cannot login with just their username.');
   }
 
 }

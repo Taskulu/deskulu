@@ -61,7 +61,7 @@ function page_manager_page_menu(&$items, $task) {
     }
 
     $path             = array();
-    $page_arguments   = array($subtask_id);
+    $page_arguments   = array((string) $subtask_id);
     $access_arguments = array($subtask->access);
     $load_arguments   = array($subtask_id, '%index', '%map');
 
@@ -566,7 +566,7 @@ function page_manager_page_form_basic_validate(&$form, &$form_state) {
   if (strpos($path, '%') === FALSE) {
     $alias = db_query('SELECT alias, source FROM {url_alias} WHERE alias = :path', array(':path' => $path))->fetchObject();
     if ($alias) {
-      form_error($form['path'], t('That path is currently assigned to be an alias for @alias. This system cannot override existing aliases.', array('@alias' => $alias->src)));
+      form_error($form['path'], t('That path is currently assigned to be an alias for @alias. This system cannot override existing aliases.', array('@alias' => $alias->source)));
     }
   }
   else {

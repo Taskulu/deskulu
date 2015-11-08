@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * @file
+ * Date Views module.
+ */
 
 /**
  * Implements hook_menu().
@@ -11,7 +15,7 @@ function date_views_menu() {
     'description' => 'Configure settings for date views.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('date_views_settings'),
-    'access arguments' => array('administer site configuration '),
+    'access arguments' => array('administer site configuration'),
     'type' => MENU_LOCAL_TASK,
   );
 
@@ -86,13 +90,30 @@ function date_views_theme() {
     'file' => 'theme.inc',
     'path' => "$path/theme",
   );
-  return array(
-    'date_nav_title' => $base + array('variables' => array('granularity' => NULL, 'view' => NULL, 'link' => NULL, 'format' => NULL)),
-    'date_views_filter_form' => $base + array('template' => 'date-views-filter-form', 'render element' => 'form'),
-    'date_calendar_day' => $base + array('variables' => array('date' => NULL)),
 
+  return array(
+    'date_nav_title' => $base + array(
+      'variables' => array(
+        'granularity' => NULL,
+        'view' => NULL,
+        'link' => NULL,
+        'format' => NULL,
+      ),
+    ),
+    'date_views_filter_form' => $base + array(
+      'template' => 'date-views-filter-form',
+      'render element' => 'form',
+    ),
+    'date_calendar_day' => $base + array(
+      'variables' => array(
+        'date' => NULL,
+      ),
+    ),
     'date_views_pager' => $base + array(
-      'variables' => array('plugin' => NULL, 'input' => NULL),
+      'variables' => array(
+        'plugin' => NULL,
+        'input' => NULL,
+      ),
       // Register a pattern so that it can work like all views templates.
       'pattern' => 'date_views_pager__',
       'template' => 'date-views-pager',
@@ -100,6 +121,9 @@ function date_views_theme() {
   );
 }
 
+/**
+ * Implements hook_views_api().
+ */
 function date_views_views_api() {
   return array(
     'api' => 3,
@@ -119,7 +143,7 @@ function date_views_views_fetch_fields($base, $type) {
 }
 
 /**
- *  Identify all potential date/timestamp fields and cache the data.
+ * Identify all potential date/timestamp fields and cache the data.
  */
 function date_views_fields($base = 'node', $reset = FALSE) {
   static $fields = array();
@@ -141,8 +165,8 @@ function date_views_fields($base = 'node', $reset = FALSE) {
 
 /**
  * Implements hook_date_views_entities().
- * Map extra Views tables to the entity that holds its date fields,
- * needed for Views tables other than the primary tables identified in entity_info().
+ *
+ * Map extra Views tables to the entity that holds its date fields, needed for Views tables other than the primary tables identified in entity_info().
  */
 function date_views_date_views_extra_tables() {
   return array(
@@ -151,14 +175,13 @@ function date_views_date_views_extra_tables() {
 }
 
 /**
- * Helper function to map entity types to the Views base table they use,
- * to make it easier to infer the entity type from a base table.
+ * Helper function to map entity types to the Views base table they use, to make it easier to infer the entity type from a base table.
  *
- * Views has a new handler called views_handler_field_entity() that loads
- * entities, and you can use something like the following to get the
- * entity type from a view, but not all our base tables contain the
- * entity information we need, (i.e. revisions) so it won't work here
- * and we resort to creating information from entity_get_info().
+ * Views has a new handler called views_handler_field_entity() that loads entities.
+ *
+ * And you can use something like the following to get the entity type from a view, but not all our base tables contain the entity information we need, (i.e. revisions).
+ *
+ * So it won't work here and we resort to creating information from entity_get_info().
  *
  *   // A method to get the entity type for a base table.
  *   $table_data = views_fetch_data($base_table);
@@ -193,11 +216,7 @@ function date_views_base_tables() {
 /**
  * Implements hook_date_views_fields().
  *
- * All modules that create custom fields that use the
- * 'views_handler_field_date' handler can provide
- * additional information here about the type of
- * date they create so the date can be used by
- * the Date API views date argument and date filter.
+ * All modules that create custom fields that use the 'views_handler_field_date' handler can provide additional information here about the type of date they create so the date can be used by the Date API views date argument and date filter.
  */
 function date_views_date_views_fields($field) {
   $values = array(
@@ -263,12 +282,15 @@ function date_pager_url($view, $date_type = NULL, $date_arg = NULL, $force_view_
       case 'year':
         $args[$pos] = date_pad($view->date_info->year, 4);
         break;
+
       case 'week':
         $args[$pos] = date_pad($view->date_info->year, 4) . '-W' . date_pad($view->date_info->week);
         break;
+
       case 'day':
         $args[$pos] = date_pad($view->date_info->year, 4) . '-' . date_pad($view->date_info->month) . '-' . date_pad($view->date_info->day);
         break;
+
       default:
         $args[$pos] = date_pad($view->date_info->year, 4) . '-' . date_pad($view->date_info->month);
         break;
@@ -298,9 +320,14 @@ function date_pager_url($view, $date_type = NULL, $date_arg = NULL, $force_view_
   // if they use exposed filters.
   return url($view->get_url($args), array(
     'query' => date_views_querystring($view),
-    'absolute' => $absolute));
+    'absolute' => $absolute,
+    )
+  );
 }
 
+/**
+ * Identifier of a date block.
+ */
 function date_block_identifier($view) {
   if (!empty($view->block_identifier)) {
     return $view->block_identifier;
@@ -311,12 +338,9 @@ function date_block_identifier($view) {
 /**
  * Implements hook_field_views_data_alter().
  *
- * Create a Views field for each date column we care about
- * to supplement the generic 'entity_id' and 'revision_id'
- * fields that are automatically created.
+ * Create a Views field for each date column we care about to supplement the generic 'entity_id' and 'revision_id' fields that are automatically created.
  *
- * Also use friendlier labels to distinguish the start date
- * and end date in listings (for fields that use both).
+ * Also use friendlier labels to distinguish the start date and end date in listings (for fields that use both).
  */
 function date_views_field_views_data_alter(&$result, $field, $module) {
   if ($module == 'date') {
@@ -336,8 +360,8 @@ function date_views_field_views_data_alter(&$result, $field, $module) {
           $result[$table][$column]['field']['is date'] = TRUE;
           // Not sure yet if we still need a custom field handler in D7 now that custom formatters are available.
           // Might still need it to handle grouping of multiple value dates.
-          //$result[$table][$column]['field']['handler'] = 'date_handler_field_date';
-          //$result[$table][$column]['field']['add fields to query'] = TRUE;
+          // $result[$table][$column]['field']['handler'] = 'date_handler_field_date';
+          // $result[$table][$column]['field']['add fields to query'] = TRUE;
         }
 
         // For filters, arguments, and sorts, determine if this column is for
@@ -395,12 +419,25 @@ function date_views_field_views_data_alter(&$result, $field, $module) {
               // translatable string. This is a hack to get it to appear right
               // before 'end date' in the listing (i.e., in a non-alphabetical,
               // but more user friendly, order).
-              $result[$table][$column]['title'] = t('@label -  start date (!name)', array('@label' => $label, '!name' => $field['field_name']));
-              $result[$table][$column]['title short'] = t('@label -  start date', array('@label' => $label));
+              $result[$table][$column]['title'] = t('@label -  start date (!name)', array(
+                '@label' => $label,
+                '!name' => $field['field_name'],
+              ));
+              $result[$table][$column]['title short'] = t('@label -  start date', array(
+                '@label' => $label,
+              ));
               break;
+
             case 'value2':
-              $result[$table][$column]['title'] = t('@label - end date (!name:!column)', array('@label' => $label, '!name' => $field['field_name'], '!column' => $this_column));
-              $result[$table][$column]['title short'] = t('@label - end date:!column', array('@label' => $label, '!column' => $this_column));
+              $result[$table][$column]['title'] = t('@label - end date (!name:!column)', array(
+                '@label' => $label,
+                '!name' => $field['field_name'],
+                '!column' => $this_column,
+              ));
+              $result[$table][$column]['title short'] = t('@label - end date:!column', array(
+                '@label' => $label,
+                '!column' => $this_column,
+              ));
               break;
           }
         }
@@ -421,18 +458,15 @@ function date_views_form_views_ui_edit_form_alter(&$form, &$form_state, $form_id
 }
 
 /**
- * The instanceof function makes this work for any handler that was derived
- * from 'views_handler_filter_date' or 'views_handler_argument_date',
- * which includes core date fields like the node updated field.
+ * The instanceof function makes this work for any handler that was derived from 'views_handler_filter_date' or 'views_handler_argument_date', which includes core date fields like the node updated field.
  *
- * The test for $handler->min_date tells us that this is an argument that
- * not only is derived from the views date handler but also has been processed
- * by the Date Views filter or argument code.
-*/
+ * The test for $handler->min_date tells us that this is an argument that not only is derived from the views date handler but also has been processed by the Date Views filter or argument code.
+ */
 function date_views_handler_is_date($handler, $type = 'argument') {
   switch ($type) {
     case 'filter':
       return $handler instanceof views_handler_filter_date && !empty($handler->min_date);
+
     case 'argument':
       return $handler instanceof views_handler_argument_date && !empty($handler->min_date);
   }
@@ -441,8 +475,8 @@ function date_views_handler_is_date($handler, $type = 'argument') {
 
 /**
  * Validation hook for exposed filters that use the select widget.
- * This is to ensure the the user completes all parts of the date
- * not just some parts. Only needed for the select widget.
+ *
+ * This is to ensure the the user completes all parts of the date not just some parts. Only needed for the select widget.
  */
 function date_views_select_validate(&$form, &$form_state) {
   // If there are no values just return.
@@ -453,7 +487,7 @@ function date_views_select_validate(&$form, &$form_state) {
   $filled = array();
   $value = drupal_array_get_nested_value($form_state['input'], $form['#parents']);
   foreach ($granularity as $part) {
-    if (!empty($value['value'][$part])) {
+    if (isset($value['value']) && is_numeric($value['value'][$part])) {
       $filled[] = $part;
     }
   }
@@ -464,18 +498,23 @@ function date_views_select_validate(&$form, &$form_state) {
         case 'year':
           form_error($form['value'][$part], t('Please choose a year.'), $form_state);
           break;
+
         case 'month':
           form_error($form['value'][$part], t('Please choose a month.'), $form_state);
           break;
+
         case 'day':
           form_error($form['value'][$part], t('Please choose a day.'), $form_state);
           break;
+
         case 'hour':
           form_error($form['value'][$part], t('Please choose an hour.'), $form_state);
           break;
+
         case 'minute':
           form_error($form['value'][$part], t('Please choose a minute.'), $form_state);
           break;
+
         case 'second':
           form_error($form['value'][$part], t('Please choose a second.'), $form_state);
           break;
@@ -487,8 +526,7 @@ function date_views_select_validate(&$form, &$form_state) {
 /**
  * Implements hook_date_formatter_view_alter().
  *
- * If we are displaying a date from a view, see if we have information about
- * which multiple value to display. If so, set the date_id in the entity.
+ * If we are displaying a date from a view, see if we have information about which multiple value to display. If so, set the date_id in the entity.
  */
 function date_views_date_formatter_pre_view_alter(&$entity, &$variables) {
   // Some views have no row index.

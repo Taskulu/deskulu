@@ -229,7 +229,7 @@ class SearchApiEntityDataSourceController extends SearchApiAbstractDataSourceCon
       '#attributes' => array('class' => array('search-api-checkboxes-list')),
       '#disabled' => !empty($form_state['index']),
     );
-    if (!empty($form_state['index'])) {
+    if (!empty($form_state['index']->options['datasource'])) {
       $form['bundles']['#default_value'] = drupal_map_assoc($form_state['index']->options['datasource']['bundles']);
     }
     return $form;

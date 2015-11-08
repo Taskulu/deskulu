@@ -8,18 +8,58 @@
  */
 
 /**
+ * Implements hook_schema().
+ */
+function pathauto_schema() {
+  $schema['pathauto_state'] = array(
+    'description' => 'The status of each entity alias (whether it was automatically generated or not).',
+    'fields' => array(
+      'entity_type' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'description' => 'An entity type.',
+      ),
+      'entity_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'An entity ID.',
+      ),
+      'pathauto' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The automatic alias status of the entity.',
+      ),
+    ),
+    'primary key' => array('entity_type', 'entity_id'),
+  );
+
+  return $schema;
+}
+
+
+/**
  * Implements hook_install().
  */
 function pathauto_install() {
   // Set some default variables necessary for the module to perform.
-  variable_set('pathauto_node_pattern', 'content/[node:title]');
-  variable_set('pathauto_taxonomy_term_pattern', '[term:vocabulary]/[term:name]');
-  variable_set('pathauto_forum_pattern', '[term:vocabulary]/[term:name]');
-  variable_set('pathauto_user_pattern', 'users/[user:name]');
-  variable_set('pathauto_blog_pattern', 'blogs/[user:name]');
-
-  // Set the default separator character to replace instead of remove (default).
-  variable_set('pathauto_punctuation_hyphen', 1);
+  $defaults = array(
+    'pathauto_node_pattern' => 'content/[node:title]',
+    'pathauto_taxonomy_term_pattern' => '[term:vocabulary]/[term:name]',
+    'pathauto_forum_pattern' => '[term:vocabulary]/[term:name]',
+    'pathauto_user_pattern' => 'users/[user:name]',
+    'pathauto_blog_pattern' => 'blogs/[user:name]',
+    // Set hyphen character to replace instead of remove.
+    'pathauto_punctuation_hyphen' => 1,
+  );
+  foreach ($defaults as $variable => $default) {
+    if (variable_get($variable) === NULL) {
+      variable_set($variable, $default);
+    }
+  }
 
   // Set the weight to 1
   db_update('system')
@@ -36,6 +76,23 @@ function pathauto_uninstall() {
   // Delete all the pathauto variables and then clear the variable cache.
   db_query("DELETE FROM {variable} WHERE name LIKE 'pathauto_%'");
   cache_clear_all('variables', 'cache');
+}
+
+/**
+ * Implements hook_requirements().
+ */
+function pathauto_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+  if ($phase == 'runtime' && module_exists('pathauto_persist')) {
+    $requirements['pathauto'] = array(
+      'title' => $t('Pathauto Persist'),
+      'value' => $t('Enabled'),
+      'description' => $t('Pathauto Persist is installed and enabled. As Pathauto Persist has been merged into Pathauto, the Pathauto Persist module can be safely disabled and removed. All Pathauto Persist settings have been migrated to the Pathauto implementation.'),
+      'severity' => REQUIREMENT_INFO,
+    );
+  }
+  return $requirements;
 }
 
 /**
@@ -166,6 +223,55 @@ function pathauto_update_7005() {
   }
 
   return 'Your Pathauto taxonomy and forum patterns have been corrected. You may wish to regenerate your taxonomy and forum term URL aliases.';
+}
+
+/**
+ * Create pathauto_state table, using data from pathauto_persist if it exists.
+ */
+function pathauto_update_7006() {
+  if (!db_table_exists('pathauto_state')) {
+
+    $schema['pathauto_state'] = array(
+      'description' => 'The status of each entity alias (whether it was automatically generated or not).',
+      'fields' => array(
+        'entity_type' => array(
+          'type' => 'varchar',
+          'length' => 32,
+          'not null' => TRUE,
+          'description' => 'The entity type.',
+        ),
+        'entity_id' => array(
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'description' => 'The entity ID.',
+        ),
+        'pathauto' => array(
+          'type' => 'int',
+          'size' => 'tiny',
+          'not null' => TRUE,
+          'default' => 0,
+          'description' => 'The automatic alias status of the entity.',
+        ),
+      ),
+      'primary key' => array('entity_type', 'entity_id'),
+    );
+
+    if (db_table_exists('pathauto_persist')) {
+      // Rename pathauto_persist's table, then create a new empty one just so
+      // that we can cleanly disable that module.
+      db_rename_table('pathauto_persist', 'pathauto_state');
+      db_create_table('pathauto_persist', $schema['pathauto_state']);
+      // Disable the module and inform the user.
+      if (module_exists('pathauto_persist')) {
+        module_disable(array('pathauto_persist'));
+      }
+      return t('The Pathauto Persist module and all of its data has been merged into Pathauto. The Pathauto Persist module has been disabled and can be safely uninstalled.');
+    }
+    else {
+      db_create_table('pathauto_state', $schema['pathauto_state']);
+    }
+  }
 }
 
 /**

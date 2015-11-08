@@ -77,13 +77,13 @@ function date_repeat_field_menu() {
           $path = field_collection_field_get_path($field);
           $count = count(explode('/', $path));
           $items[$path . '/%field_collection_item/repeats'] = array(
-           'title' => 'Repeats',
-           'page callback' => 'date_repeat_field_page',
-           'page arguments' => array($entity_type, $count),
-           'access callback' => 'date_repeat_field_show',
-           'access arguments' => array($entity_type, $count),
-           'type' => MENU_LOCAL_TASK,
-           'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+            'title' => 'Repeats',
+            'page callback' => 'date_repeat_field_page',
+            'page arguments' => array($entity_type, $count),
+            'access callback' => 'date_repeat_field_show',
+            'access arguments' => array($entity_type, $count),
+            'type' => MENU_LOCAL_TASK,
+            'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
           );
         }
       }
@@ -91,13 +91,13 @@ function date_repeat_field_menu() {
     else {
       $path = $entity_type . '/%' . $entity_type;
       $items[$path . '/repeats'] = array(
-       'title' => 'Repeats',
-       'page callback' => 'date_repeat_field_page',
-       'page arguments' => array($entity_type, 1),
-       'access callback' => 'date_repeat_field_show',
-       'access arguments' => array($entity_type, 1),
-       'type' => MENU_LOCAL_TASK,
-       'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+        'title' => 'Repeats',
+        'page callback' => 'date_repeat_field_page',
+        'page arguments' => array($entity_type, 1),
+        'access callback' => 'date_repeat_field_show',
+        'access arguments' => array($entity_type, 1),
+        'type' => MENU_LOCAL_TASK,
+        'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
       );
     }
   }
@@ -108,10 +108,12 @@ function date_repeat_field_menu() {
  * Implements hook_permission().
  */
 function date_repeat_field_permission() {
-  return array('view date repeats' => array(
-    'title' => t('View Repeating Dates'),
-    'description' => t('Allow user to see a page with all the times a date repeats.'),
-  ));
+  return array(
+    'view date repeats' => array(
+      'title' => t('View Repeating Dates'),
+      'description' => t('Allow user to see a page with all the times a date repeats.'),
+    ),
+  );
 }
 
 /**
@@ -195,6 +197,9 @@ function date_repeat_field_bundles() {
   return $values;
 }
 
+/**
+ * Check field is repeat.
+ */
 function date_is_repeat_field($field, $instance = NULL) {
   if (is_string($field)) {
     $field = field_info_field($field);
@@ -215,7 +220,7 @@ function date_is_repeat_field($field, $instance = NULL) {
   }
 }
 
-/*
+/**
  * Implements hook_date_field_insert_alter().
  */
 function date_repeat_field_date_field_insert_alter(&$items, $context) {
@@ -239,7 +244,7 @@ function date_repeat_field_date_field_insert_alter(&$items, $context) {
   }
 }
 
-/*
+/**
  * Implements hook_date_field_update_alter().
  */
 function date_repeat_field_date_field_update_alter(&$items, $context) {
@@ -279,6 +284,13 @@ function date_repeat_field_field_widget_form_alter(&$element, &$form_state, $con
         '#suffix' => '</div>',
         '#default_value' => isset($items[$delta]['rrule']) && !empty($items[$delta]['rrule']) ? 1 : 0,
       );
+
+      // Make changes if instance is set to be rendered as a regular field.
+      if (!empty($instance['widget']['settings']['no_fieldset'])) {
+        $element['#title'] = check_plain($instance['label']);
+        $element['#description'] = field_filter_xss($instance['description']);
+        $element['#theme_wrappers'] = array('date_form_element');
+      }
     }
   }
 }
@@ -340,13 +352,14 @@ function date_repeat_field_widget_validate($element, &$form_state) {
   // The RRULE has already been created by this point, so go back
   // to the posted values to see if this was filled out.
   $error_field_base = implode('][', $element['#parents']);
-  $error_field_until =  $error_field_base . '][rrule][until_child][datetime][';
+  $error_field_until = $error_field_base . '][rrule][until_child][datetime][';
   if (!empty($item['rrule']) && $rrule_values['range_of_repeat'] === 'UNTIL' && empty($rrule_values['UNTIL']['datetime'])) {
     switch ($instance['widget']['type']) {
       case 'date_text':
       case 'date_popup':
         form_set_error($error_field_until . 'date', t("Missing value in 'Range of repeat'. (UNTIL).", array(), array('context' => 'Date repeat')));
         break;
+
       case 'date_select':
         form_set_error($error_field_until . 'year', t("Missing value in 'Range of repeat': Year (UNTIL)", array(), array('context' => 'Date repeat')));
         form_set_error($error_field_until . 'month', t("Missing value in 'Range of repeat': Month (UNTIL)", array(), array('context' => 'Date repeat')));
@@ -382,8 +395,9 @@ function date_repeat_field_widget_validate($element, &$form_state) {
     // We only collect a date for UNTIL, but we need it to be inclusive,
     // so force it to a full datetime element at the last possible second of the day.
     if (!empty($rrule_values['UNTIL'])) {
+      $gran = array('year', 'month', 'day', 'hour', 'minute', 'second');
       $rrule_values['UNTIL']['datetime'] .= ' 23:59:59';
-      $rrule_values['UNTIL']['granularity'] = serialize(drupal_map_assoc(array('year', 'month', 'day', 'hour', 'minute', 'second')));
+      $rrule_values['UNTIL']['granularity'] = serialize(drupal_map_assoc($gran));
       $rrule_values['UNTIL']['all_day'] = 0;
     }
     $value = date_repeat_build_dates($rrule, $rrule_values, $field, $item);
@@ -418,9 +432,10 @@ function date_repeat_after_build(&$element, &$form_state) {
  * Pass in either the RRULE or the $form_values array for the RRULE,
  * whichever is missing will be created when needed.
  */
+// @codingStandardsIgnoreStart
 function date_repeat_build_dates($rrule = NULL, $rrule_values = NULL, $field, $item) {
-
-  include_once(DRUPAL_ROOT . '/' . drupal_get_path('module', 'date_api') . '/date_api_ical.inc');
+// @codingStandardsIgnoreEnd
+  include_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'date_api') . '/date_api_ical.inc';
   $field_name = $field['field_name'];
 
   if (empty($rrule)) {
@@ -497,8 +512,9 @@ function date_repeat_build_dates($rrule = NULL, $rrule_values = NULL, $field, $i
       'offset2' => date_offset_get($date_end),
       'timezone' => $timezone,
       'rrule' => $rrule,
-      );
+    );
   }
+
   return $value;
 }
 
@@ -681,9 +697,8 @@ function date_repeat_field_date_field_widget_settings_form_alter(&$form, $contex
       '#title' => t('Repeat display', array(), array('context' => 'Date repeat')),
       '#description' => t("Should the repeat options form start out expanded or collapsed? Set to 'Collapsed' to make those options less obtrusive.", array(), array('context' => 'Date repeat')),
       '#fieldset' => 'date_format',
-      );
+    );
   }
-
 }
 
 /**

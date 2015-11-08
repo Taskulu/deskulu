@@ -27,9 +27,9 @@ files[] = includes/i18nviews_handler_filter_term_node_tid_depth.inc
 files[] = includes/i18nviews_plugin_argument_validate_i18n_taxonomy_term.inc
 files[] = includes/i18nviews_plugin_localization_i18nstrings.inc
 
-; Information added by Drupal.org packaging script on 2014-10-23
+; Information added by Drupal.org packaging script on 2015-07-07
 version = "7.x-3.x-dev"
 core = "7.x"
 project = "i18nviews"
-datestamp = "1414081732"
+datestamp = "1436291369"
 

@@ -555,6 +555,27 @@ class FilterFormatAccessTestCase extends DrupalWebTestCase {
     $this->assertTrue(isset($options[$this->allowed_format->format]), 'The allowed text format appears as an option when adding a new node.');
     $this->assertFalse(isset($options[$this->disallowed_format->format]), 'The disallowed text format does not appear as an option when adding a new node.');
     $this->assertTrue(isset($options[filter_fallback_format()]), 'The fallback format appears as an option when adding a new node.');
+
+    // Check regular user access to the filter tips pages.
+    $this->drupalGet('filter/tips/' . $this->allowed_format->format);
+    $this->assertResponse(200);
+    $this->drupalGet('filter/tips/' . $this->disallowed_format->format);
+    $this->assertResponse(403);
+    $this->drupalGet('filter/tips/' . filter_fallback_format());
+    $this->assertResponse(200);
+    $this->drupalGet('filter/tips/invalid-format');
+    $this->assertResponse(404);
+
+    // Check admin user access to the filter tips pages.
+    $this->drupalLogin($this->admin_user);
+    $this->drupalGet('filter/tips/' . $this->allowed_format->format);
+    $this->assertResponse(200);
+    $this->drupalGet('filter/tips/' . $this->disallowed_format->format);
+    $this->assertResponse(200);
+    $this->drupalGet('filter/tips/' . filter_fallback_format());
+    $this->assertResponse(200);
+    $this->drupalGet('filter/tips/invalid-format');
+    $this->assertResponse(404);
   }
 
   /**
@@ -1273,6 +1294,7 @@ class FilterUnitTestCase extends DrupalUnitTestCase {
     // Create a e-mail that is too long.
     $long_email = str_repeat('a', 254) . '@example.com';
     $too_long_email = str_repeat('b', 255) . '@example.com';
+    $email_with_plus_sign = 'one+two@example.com';
 
 
     // Filter selection/pattern matching.
@@ -1286,12 +1308,13 @@ http://example.com or www.example.com
       ),
       // MAILTO URLs.
       '
-person@example.com or mailto:person2@example.com or ' . $long_email . ' but not ' . $too_long_email . '
+person@example.com or mailto:person2@example.com or ' . $email_with_plus_sign . ' or ' . $long_email . ' but not ' . $too_long_email . '
 ' => array(
         '<a href="mailto:person@example.com">person@example.com</a>' => TRUE,
         '<a href="mailto:person2@example.com">mailto:person2@example.com</a>' => TRUE,
         '<a href="mailto:' . $long_email . '">' . $long_email . '</a>' => TRUE,
         '<a href="mailto:' . $too_long_email . '">' . $too_long_email . '</a>' => FALSE,
+        '<a href="mailto:' . $email_with_plus_sign . '">' . $email_with_plus_sign . '</a>' => TRUE,
       ),
       // URI parts and special characters.
       '
@@ -1981,5 +2004,28 @@ class FilterSettingsTestCase extends DrupalWebTestCase {
         '%previous' => $saved_settings[$name]['weight'],
       )));
     }
+  }
+}
+
+/**
+ * Tests DOMDocument serialization.
+ */
+class FilterDOMSerializeTestCase extends DrupalWebTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Serialization',
+      'description' => 'Test serialization of DOMDocument objects.',
+      'group' => 'Filter',
+    );
+  }
+
+  /**
+   * Tests empty DOMDocument object.
+   */
+  function testFilterEmptyDOMSerialization() {
+    $document = new DOMDocument();
+    $result = filter_dom_serialize($document);
+    $this->assertEqual('', $result);
   }
 }

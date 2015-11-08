@@ -143,7 +143,7 @@
  * responsible for building the query. Instead, they are objects that are used
  * to display the view or make other modifications.
  *
- * There are 10 types of plugins in Views:
+ * There are several types of plugins in Views:
  * - Display: Display plugins are responsible for controlling *where* a view
  *   lives; that is, how they are being exposed to other parts of Drupal. Page
  *   and block are the most common displays, as well as the ubiquitous 'master'
@@ -431,7 +431,7 @@ function hook_views_data() {
       'label' => t('Published'),
       // This setting is used by the boolean filter handler, as possible option.
       'type' => 'yes-no',
-      // use boolean_field = 1 instead of boolean_field <> 0 in WHERE statment.
+      // use boolean_field = 1 instead of boolean_field <> 0 in WHERE statement.
       'use equal' => TRUE,
     ),
     'sort' => array(
@@ -602,7 +602,7 @@ function hook_field_views_data_views_data_alter(&$data, $field) {
  *   must be one of row, display, display_extender, style, argument default,
  *   argument validator, access, query, cache, pager, exposed_form or
  *   localization. The plugin name should be prefixed with your module name.
- *   The value for each entry is an associateive array that may contain the
+ *   The value for each entry is an associative array that may contain the
  *   following entries:
  *   - Used by all plugin types:
  *     - title (required): The name of the plugin, as shown in Views. Wrap in
@@ -723,7 +723,7 @@ function hook_views_plugins_alter(&$plugins) {
  *   - path: (optional) If includes are stored somewhere other than within the
  *     root module directory, specify its path here.
  *   - template path: (optional) A path where the module has stored it's views
- *     template files. When you have specificed this key views automatically
+ *     template files. When you have specified this key views automatically
  *     uses the template files for the views. You can use the same naming
  *     conventions like for normal views template files.
  */
@@ -859,7 +859,7 @@ function hook_views_default_views_alter(&$views) {
  *   The View being executed.
  * @return
  *   An array with keys being the strings to replace, and the values the strings
- *   to replace them with. The strings to replace are ofted surrounded with
+ *   to replace them with. The strings to replace are often surrounded with
  *   '***', as illustrated in the example implementation.
  */
 function hook_views_query_substitutions($view) {
@@ -924,7 +924,7 @@ function hook_views_pre_view(&$view, &$display_id, &$args) {
  *   The view object about to be processed.
  */
 function hook_views_pre_build(&$view) {
-  // Because of some unexplicable business logic, we should remove all
+  // Because of some inexplicable business logic, we should remove all
   // attachments from all views on Mondays.
   // (This alter could be done later in the execution process as well.)
   if (date('D') == 'Mon') {
@@ -1153,8 +1153,8 @@ function hook_views_ajax_data_alter(&$commands, $view) {
   // Replace Views' method for scrolling to the top of the element with your
   // custom scrolling method.
   foreach ($commands as &$command) {
-    if ($command['method'] == 'viewsScrollTop') {
-      $command['method'] .= 'myScrollTop';
+    if ($command['command'] == 'viewsScrollTop') {
+      $command['command'] .= 'myScrollTop';
     }
   }
 }

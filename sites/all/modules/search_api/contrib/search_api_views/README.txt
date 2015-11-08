@@ -24,6 +24,22 @@ When these are present, the normal keywords should be ignored and the related
 items be returned as results instead. Sorting, filtering and range restriction
 should all work normally.
 
+"Random sort" feature
+---------------------
+This module defines the "Random sort" feature (feature key:
+"search_api_random_sort") that allows to randomly sort the results returned by a
+search. With a server supporting this, you can use the "Global: Random" sort to
+sort the view's results randomly. Every time the query is run a different
+sorting will be provided.
+
+For developers:
+A service class that wants to support this feature has to check for a
+"search_api_random" field in the search query's sorts and insert a random sort
+in that position. If the query is sorted in this way, then the
+"search_api_random_sort" query option can contain additional options for the
+random sort, as an associative array with any of the following keys:
+- seed: A numeric seed value to use for the random sort.
+
 "Facets block" display
 ----------------------
 Most features should be clear to users of Views. However, the module also

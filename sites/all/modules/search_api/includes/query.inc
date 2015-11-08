@@ -153,7 +153,9 @@ interface SearchApiQueryInterface {
    *
    * @param string $field
    *   The field to sort by. The special fields 'search_api_relevance' (sort by
-   *   relevance) and 'search_api_id' (sort by item id) may be used.
+   *   relevance) and 'search_api_id' (sort by item id) may be used. Also, if
+   *   the search server supports the "search_api_random_sort" feature, the
+   *   "search_api_random_sort" special field can be used to sort randomly.
    * @param string $order
    *   The order to sort items in - either 'ASC' or 'DESC'.
    *
@@ -586,6 +588,10 @@ class SearchApiQuery implements SearchApiQueryInterface {
       'search_api_relevance' => array('type' => 'decimal'),
       'search_api_id' => array('type' => 'integer'),
     );
+    if ($this->getIndex()->server()->supportsFeature('search_api_random_sort')) {
+      $fields['search_api_random'] = array('type' => 'integer');
+    }
+
     if (empty($fields[$field])) {
       throw new SearchApiException(t('Trying to sort on unknown field @field.', array('@field' => $field)));
     }

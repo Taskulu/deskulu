@@ -24,6 +24,11 @@ class MandrillMailSystem implements MailSystemInterface {
     if (is_array($message['body'])) {
       $message['body'] = implode("\n\n", $message['body']);
     }
+    // Apply input format to body.
+    $format = variable_get('mandrill_filter_format', '');
+    if (!empty($format)) {
+      $message['body'] = check_markup($message['body'], $format);
+    }
     return $message;
   }
 
@@ -61,12 +66,6 @@ class MandrillMailSystem implements MailSystemInterface {
           );
         }
       }
-    }
-
-    // Apply input format to body.
-    $format = variable_get('mandrill_filter_format', '');
-    if (!empty($format)) {
-      $message['body'] = check_markup($message['body'], $format);
     }
 
     // Extract an array of recipients.
@@ -109,8 +108,14 @@ class MandrillMailSystem implements MailSystemInterface {
     // array as well.
     if (isset($message['params']['attachments']) && !empty($message['params']['attachments'])) {
       foreach ($message['params']['attachments'] as $attachment) {
-        if (isset($attachment['uri'])) {
-          $attachment_path = drupal_realpath($attachment['uri']);
+       if (isset($attachment['uri']) || isset($attachment['filepath'])) {
+         if (isset($attachment['uri'])) {
+           $attachment_path = $attachment['uri'];
+         }
+         else {
+           $attachment_path = $attachment['filepath'];
+         }
+         $attachment_path = drupal_realpath($attachment_path);
           if (is_file($attachment_path)) {
             $struct = $this->getAttachmentStruct($attachment_path);
             // Allow for customised filenames.
@@ -141,7 +146,7 @@ class MandrillMailSystem implements MailSystemInterface {
     // Get metadata.
     $metadata = isset($message['metadata']) ? $message['metadata'] : array();
 
-    $from = mandrill_from();
+    $from = mandrill_from($message['from']);
     $overrides = isset($message['params']['mandrill']['overrides']) ? $message['params']['mandrill']['overrides'] : array();
     $mandrill_message = $overrides + array(
       'html' => $message['body'],

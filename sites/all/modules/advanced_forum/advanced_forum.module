@@ -492,6 +492,35 @@ function advanced_forum_form_alter(&$form, &$form_state, $form_id) {
 }
 
 /**
+ * Implements hook_form_form_id_alter().
+ */
+function advanced_forum_form_forum_form_forum_alter(&$form, $form_state) {
+  if (variable_get('advanced_forum_forum_user_term_fields')) {
+    // Show fields from taxonomy term for forum.
+    if (!isset($form['tid'])) {
+      $voc = taxonomy_vocabulary_load($form['vid']['#value']);
+      $defaults = array(
+        'name' => '',
+        'description' => '',
+        'format' => NULL,
+        'vocabulary_machine_name' => $voc->machine_name,
+        'tid' => NULL,
+        'weight' => 0,
+      );
+
+      $term = (object) $defaults;
+    }
+    else {
+      $term = taxonomy_term_load($form['tid']['#value']);
+    }
+
+    $form['#term'] = (array) $term;
+    $form_state['term'] = $term;
+    field_attach_form('taxonomy_term', $term, $form, $form_state);
+  }
+}
+
+/**
  * Implements hook_views_api().
  */
 function advanced_forum_views_api() {

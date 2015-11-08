@@ -15,8 +15,10 @@
 .container-inline-date > .form-item {
   display: inline-block;
   margin-right: 0.5em; /* LTR */
-  margin-bottom: 10px;
   vertical-align: top;
+}
+fieldset.date-combo .container-inline-date > .form-item {
+  margin-bottom: 10px;
 }
 .container-inline-date .form-item .form-item {
   float: left; /* LTR */
@@ -52,8 +54,10 @@
 
 /* The exposed Views form doesn't need some of these styles */
 .container-inline-date .date-padding {
-  padding: 10px;
   float: left;
+}
+fieldset.date-combo .container-inline-date .date-padding {
+  padding: 10px;
 }
 .views-exposed-form .container-inline-date .date-padding {
   padding: 0;
@@ -116,7 +120,7 @@ span.date-display-end {
 }
 
 /* Add space between the date and time portions of the date_select widget. */
-.form-type-date-select .form-type-select[class$=hour] {
+.form-type-date-select .form-type-select[class*=hour] {
   margin-left: .75em; /* LTR */
 }
 
@@ -173,6 +177,10 @@ div.date-calendar-day span.year {
   padding: 2px;
 }
 
+.date-form-element-content-multiline {
+  padding: 10px;
+  border: 1px solid #CCC;
+}
 /* Admin styling */
 .form-item.form-item-instance-widget-settings-input-format-custom,
 .form-item.form-item-field-settings-enddate-required {

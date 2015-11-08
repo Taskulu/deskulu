@@ -440,13 +440,18 @@ function page_manager_cache_load($task_name) {
  */
 function page_manager_handler_get_name($task_name, $handlers, $handler) {
   $base = str_replace('-', '_', $task_name);
+  $name = '';
+
   // Optional machine name.
   if (!empty($handler->conf['name'])) {
     $name = $base . '__' . $handler->conf['name'];
+    if (count(ctools_export_load_object('page_manager_handlers', 'names', array($name)))) {
+      $name = '';
+    }
   }
 
-  // If no machine name was provided, generate a unique name.
-  else {
+  // If no machine name was provided or the name is in use, generate a unique name.
+  if (empty($name)) {
     $base .= '__' . $handler->handler;
 
     // Use the ctools uuid generator to generate a unique id.
@@ -472,6 +477,10 @@ function page_manager_handler_add_to_page(&$page, &$handler, $title = NULL) {
 
   if ($title) {
     $handler->conf['title'] = $title;
+    $handler->conf['name'] = trim(preg_replace('/[^a-z0-9_]+/', '-', strtolower($title)), '-');
+  }
+  else {
+    $handler->conf['name'] = '';
   }
 
   $name = page_manager_handler_get_name($page->task_name, $page->handlers, $handler);

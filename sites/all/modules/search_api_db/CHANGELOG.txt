@@ -1,4 +1,19 @@
-Search API Database Search 1.4 (09/08/2014):
+Search API Database Search 1.5 (2015-08-30):
+--------------------------------------------
+- #2469547 by drunken monkey: Fixed facets on fulltext fields.
+- #2483123 by drunken monkey: Fixed autocomplete suggestions for specific
+  field(s).
+- #2343371 by drunken monkey, hefox: Fixed problems with Features.
+- #2428693 by drunken monkey, adamsro: Fixed update hook 7104 to not invoke any
+  hooks.
+- #2403275 by drunken monkey: Fixed issue with too many indexed fields.
+- #2400795 by drunken monkey: Fixed partial words being suggested for
+  autocompletion.
+- #2361329 by drunken monkey: Fixed behavior of "is not" conditions on
+  multi-valued fields.
+- #2346459 by Proteo: Fixed PostgreSQL compatibility issue.
+
+Search API Database Search 1.4 (2014-09-08):
 --------------------------------------------
 - #2318865 by drunken monkey: Fixed error when Mbstring extension is not
   available.
@@ -12,7 +27,7 @@ Search API Database Search 1.4 (09/08/2014):
   altering of searches.
 - #2265353 by drunken monkey: Removed uses of _search_api_settings_equals().
 
-Search API Database Search 1.3 (05/23/2014):
+Search API Database Search 1.3 (2014-05-23):
 --------------------------------------------
 - #1299238 by Johnny vd Laar, drunken monkey, JeroenT: Added the option to
   return partial matches.
@@ -31,12 +46,12 @@ Search API Database Search 1.3 (05/23/2014):
 - #2155767 by drumm, drunken monkey: Added fulltext search performance
   improvement.
 
-Search API Database Search 1.2 (12/25/2013):
+Search API Database Search 1.2 (2013-12-25):
 --------------------------------------------
 - #2156151 by drunken monkey: Fixed exception when clearing a server.
 - Follow-up to #2147361 by drunken monkey: Fixed left-over pieces of old code.
 
-Search API Database Search 1.1 (12/09/2013):
+Search API Database Search 1.1 (2013-12-09):
 --------------------------------------------
 - #2138669 by drunken monkey, acouch: Fixed MS SQL error for primary key on
   nullable column.
@@ -52,7 +67,7 @@ Search API Database Search 1.1 (12/09/2013):
 - #1916474 by drunken monkey: Fixed indexing of multi-valued float fields.
 - #2111753 by drunken monkey: Added additional tests for ORed fulltext keywords.
 
-Search API Database Search 1.0 (10/23/2013):
+Search API Database Search 1.0 (2013-10-23):
 --------------------------------------------
 - #1155568 by bember, drunken monkey, fabsor: Fixed indexing of historical date
   fields.
@@ -61,7 +76,7 @@ Search API Database Search 1.0 (10/23/2013):
 - #2073443 by drunken monkey: Removed custom uninstall code for deleting
   dependent servers.
 
-Search API Database Search 1.0, RC 2 (07/21/2013):
+Search API Database Search 1.0, RC 2 (2013-07-21):
 --------------------------------------------------
 - #2040543 by drunken monkey: Fixed ignored "missing facet" setting.
 - #1809902 by drunken monkey: Added metadata to database queries.
@@ -83,7 +98,7 @@ Search API Database Search 1.0, RC 2 (07/21/2013):
   possibly empty fields.
 - #2006870 by drunken monkey: Fixed negated filters on fulltext fields.
 
-Search API Database Search 1.0, RC 1 (05/17/2013):
+Search API Database Search 1.0, RC 1 (2013-05-17):
 --------------------------------------------------
 - #1860028 by drunken monkey: Fixed fulltext filters with multiple words.
 - #1805640 by drunken monkey: Fixed improper handling of 'missing' facets for
@@ -100,6 +115,6 @@ Search API Database Search 1.0, RC 1 (05/17/2013):
 - #1649042 by drunken monkey, Jelle_S, DYdave, mortona2k, sardbaba: Fixed
   handling of NULL values when indexing.
 
-Search API Database Search 1.0, Beta 4 (10/30/2012):
+Search API Database Search 1.0, Beta 4 (2012-10-30):
 ----------------------------------------------------
 See respective release notes for details on earlier releases.

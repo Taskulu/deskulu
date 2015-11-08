@@ -14,9 +14,9 @@ files[] = tests/mimemail.test
 files[] = tests/mimemail_rules.test
 files[] = tests/mimemail_compress.test
 
-; Information added by Drupal.org packaging script on 2014-03-05
-version = "7.x-1.0-beta3"
+; Information added by Drupal.org packaging script on 2015-08-02
+version = "7.x-1.0-beta4"
 core = "7.x"
 project = "mimemail"
-datestamp = "1394018015"
+datestamp = "1438530555"
 

@@ -139,6 +139,7 @@ class MandrillTestCase extends DrupalWebTestCase {
   protected function getMessageTestData() {
     $message = array(
       'id' => 1,
+      'module' => NULL,
       'body' => '<p>Mail content</p>',
       'subject' => 'Mail Subject',
       'from_email' => 'sender@example.com',

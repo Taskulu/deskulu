@@ -12,10 +12,11 @@ files[] = lib/mandrill.mail.inc
 files[] = lib/mandrill.inc
 files[] = tests/includes/mandrill_test.inc
 files[] = tests/mandrill.test
+files[] = tests/mandrill_hooks.test
 
-; Information added by Drupal.org packaging script on 2015-01-09
-version = "7.x-2.1"
+; Information added by Drupal.org packaging script on 2015-09-09
+version = "7.x-2.2"
 core = "7.x"
 project = "mandrill"
-datestamp = "1420838882"
+datestamp = "1441823340"
 

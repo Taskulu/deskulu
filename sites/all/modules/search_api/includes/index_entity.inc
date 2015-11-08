@@ -439,7 +439,6 @@ class SearchApiIndex extends Entity {
     return $this->server()->query($this, $options);
   }
 
-
   /**
    * Indexes items on this index.
    *

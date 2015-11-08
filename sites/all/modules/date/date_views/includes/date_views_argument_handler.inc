@@ -3,12 +3,14 @@
  * @file
  * Date API views argument handler.
  * This argument combines multiple date arguments into a single argument
- * where all fields are controlled by the same date and can be combined with either AND or OR.
+ * where all fields are controlled by the same date and can be combined
+ * with either AND or OR.
  */
 
 /**
  * Date API argument handler.
  */
+// @codingStandardsIgnoreStart
 class date_views_argument_handler extends date_views_argument_handler_simple {
 
   /**
@@ -198,3 +200,4 @@ class date_views_argument_handler extends date_views_argument_handler_simple {
   }
 
 }
+// @codingStandardsIgnoreEnd

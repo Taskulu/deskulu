@@ -157,6 +157,7 @@ function mimemail_mail($key, &$message, $params) {
     'cc' => 'Cc',
     'bcc' => 'Bcc',
     'reply-to' => 'Reply-to',
+    'list-unsubscribe' => 'List-Unsubscribe',
   );
   foreach ($address_headers as $param_key => $address_header) {
     $params[$param_key] = empty($params[$param_key]) ? array() : explode(',', $params[$param_key]);

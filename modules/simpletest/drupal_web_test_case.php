@@ -1015,9 +1015,7 @@ class DrupalWebTestCase extends DrupalTestCase {
       'description' => '',
       'help' => '',
       'title_label' => 'Title',
-      'body_label' => 'Body',
       'has_title' => 1,
-      'has_body' => 1,
     );
     // Imposed values for a custom type.
     $forced = array(
@@ -1067,7 +1065,7 @@ class DrupalWebTestCase extends DrupalTestCase {
       $lines = array(16, 256, 1024, 2048, 20480);
       $count = 0;
       foreach ($lines as $line) {
-        simpletest_generate_file('text-' . $count++, 64, $line);
+        simpletest_generate_file('text-' . $count++, 64, $line, 'text');
       }
 
       // Copy other test files from simpletest.
@@ -2221,6 +2219,7 @@ class DrupalWebTestCase extends DrupalTestCase {
 
     // Submit the POST request.
     $return = drupal_json_decode($this->drupalPost(NULL, $edit, array('path' => $ajax_path, 'triggering_element' => $triggering_element), $options, $headers, $form_html_id, $extra_post));
+    $this->assertIdentical($this->drupalGetHeader('X-Drupal-Ajax-Token'), '1', 'Ajax response header found.');
 
     // Change the page content by applying the returned commands.
     if (!empty($ajax_settings) && !empty($return)) {

@@ -53,7 +53,7 @@ function views_ajax() {
       // Overwrite the destination.
       // @see drupal_get_destination()
       $origin_destination = $path;
-      $query = drupal_http_build_query($_REQUEST);
+      $query = drupal_http_build_query(drupal_get_query_parameters());
       if ($query != '') {
         $origin_destination .= '?' . $query;
       }

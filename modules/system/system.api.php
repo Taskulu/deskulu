@@ -113,21 +113,21 @@ function hook_hook_info_alter(&$hooks) {
  *     translation handlers. Array keys are the module names, array values
  *     can be any data structure the module uses to provide field translation.
  *     Any empty value disallows the module to appear as a translation handler.
- *   - entity keys: An array describing how the Field API can extract the
- *     information it needs from the objects of the type. Elements:
+ *   - entity keys: (optional) An array describing how the Field API can extract
+ *     the information it needs from the objects of the type. Elements:
  *     - id: The name of the property that contains the primary id of the
  *       entity. Every entity object passed to the Field API must have this
  *       property and its value must be numeric.
  *     - revision: The name of the property that contains the revision id of
  *       the entity. The Field API assumes that all revision ids are unique
  *       across all entities of a type. This entry can be omitted if the
- *       entities of this type are not versionable.
+ *       entities of this type are not versionable. Defaults to an empty string.
  *     - bundle: The name of the property that contains the bundle name for the
  *       entity. The bundle name defines which set of fields are attached to
  *       the entity (e.g. what nodes call "content type"). This entry can be
  *       omitted if this entity type exposes a single bundle (all entities have
  *       the same collection of fields). The name of this single bundle will be
- *       the same as the entity type.
+ *       the same as the entity type. Defaults to an empty string.
  *     - label: The name of the property that contains the entity label. For
  *       example, if the entity's label is located in $entity->subject, then
  *       'subject' should be specified here. If complex logic is required to
@@ -2632,6 +2632,8 @@ function hook_flush_caches() {
  * module_enable() for a detailed description of the order in which install and
  * enable hooks are invoked.
  *
+ * This hook should be implemented in a .module file, not in an .install file.
+ *
  * @param $modules
  *   An array of the modules that were installed.
  *
@@ -3173,7 +3175,9 @@ function hook_requirements($phase) {
  * creation and alteration of the supported database engines.
  *
  * See the Schema API Handbook at http://drupal.org/node/146843 for details on
- * schema definition structures.
+ * schema definition structures. Note that foreign key definitions are for
+ * documentation purposes only; foreign keys are not created in the database,
+ * nor are they enforced by Drupal.
  *
  * @return array
  *   A schema definition structure array. For each element of the
@@ -3225,6 +3229,8 @@ function hook_schema() {
       'nid_vid' => array('nid', 'vid'),
       'vid'     => array('vid'),
     ),
+    // For documentation purposes only; foreign keys are not created in the
+    // database.
     'foreign keys' => array(
       'node_revision' => array(
         'table' => 'node_revision',

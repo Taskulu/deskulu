@@ -5,13 +5,11 @@
  */
 
 /**
- *  Identify all potential date/timestamp fields.
+ * Identify all potential date/timestamp fields.
  *
- *  @return
- *    array with fieldname, type, and table.
- *  @see
- *    date_views_date_views_fields() which implements
- *    the hook_date_views_fields() for the core date fields.
+ * @return array
+ *   An array with fieldname, type, and table.
+ * @see date_views_date_views_fields()
  */
 function _date_views_fields($base = 'node') {
 
@@ -60,7 +58,7 @@ function _date_views_fields($base = 'node') {
     $handler = views_get_handler($table_name, $field_name, 'filter');
     $handler_name = $handler->definition['handler'];
 
-    // We don't care about anything but date handlers
+    // We don't care about anything but date handlers.
     if (empty($handler->definition['is date'])) {
       continue;
     }
@@ -72,14 +70,17 @@ function _date_views_fields($base = 'node') {
       $field = field_info_field($handler->definition['field_name']);
       $is_field = TRUE;
       switch ($field['type']) {
-       case 'date':
+        case 'date':
           $sql_type = DATE_ISO;
           break;
+
         case 'datestamp':
           break;
+
         case 'datetime':
           $sql_type = DATE_DATETIME;
           break;
+
         default:
           // If this is not a date field, nothing more to do.
           continue;
@@ -88,7 +89,8 @@ function _date_views_fields($base = 'node') {
       $revision = in_array($base, array('node_revision')) ? FIELD_LOAD_REVISION : FIELD_LOAD_CURRENT;
       $db_info = date_api_database_info($field, $revision);
       $name = $table_name . "." . $field_name;
-      $granularity = !empty($field['granularity']) ? $field['granularity'] : array('year', 'month', 'day', 'hour', 'minute', 'second');
+      $grans = array('year', 'month', 'day', 'hour', 'minute', 'second');
+      $granularity = !empty($field['granularity']) ? $field['granularity'] : $grans;
 
       $fromto = array(
         $table_name . '.' . $db_info['columns'][$table_name]['value'],

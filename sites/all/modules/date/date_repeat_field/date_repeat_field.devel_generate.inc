@@ -1,5 +1,5 @@
 <?php
-/*
+/**
  * @file
  * Handling of devel generate functionality for repeating dates.
  */
@@ -42,9 +42,11 @@ function date_repeat_field_date_field_insert(&$items, $context) {
     case 'date':
       $format = DATE_FORMAT_ISO;
       break;
+
     case 'datestamp':
       $format = DATE_FORMAT_UNIX;
       break;
+
     case 'datetime':
       $format = DATE_FORMAT_DATETIME;
       break;
@@ -78,6 +80,7 @@ function date_repeat_field_date_field_insert(&$items, $context) {
       }
       $form_values['BYMONTHDAY'] = array($mo);
       break;
+
     case 2:
       $mo = mt_rand(1, 12);
       $options = array('YEARLY', 'MONTHLY');
@@ -90,6 +93,7 @@ function date_repeat_field_date_field_insert(&$items, $context) {
       }
       $form_values['BYMONTH'] = array($mo);
       break;
+
     default:
       $dows = array_keys(date_content_repeat_dow_options());
       $day = date_content_generate_key($dows);
@@ -108,16 +112,18 @@ function date_repeat_field_date_field_insert(&$items, $context) {
     case 'YEARLY':
       $period = 'year';
       break;
+
     case 'MONTHLY':
       $period = 'month';
       break;
+
     case 'WEEKLY':
       $period = 'week';
       break;
+
     default:
       $period = 'day';
       break;
-
   }
 
   $form_values['UNTIL'] = array();
@@ -126,12 +132,15 @@ function date_repeat_field_date_field_insert(&$items, $context) {
   $rrule = date_api_ical_build_rrule($form_values);
   $items[0]['rrule'] = $rrule;
 
-  $values = date_repeat_build_dates($rrule, $form_values, $field, $item);
+  $values = date_repeat_build_dates($field, $item, $rrule, $form_values);
 
   $items += $values;
 
 }
 
+/**
+ * Generate a random content keys.
+ */
 function date_content_generate_key($array) {
   $keys = array_keys($array);
   $min = array_shift($keys);

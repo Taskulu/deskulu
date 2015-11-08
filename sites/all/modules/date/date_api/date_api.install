@@ -96,7 +96,7 @@ function date_api_uninstall() {
     'date_php_min_year',
     'date_db_tz_support',
     'date_api_use_iso8601',
-    );
+  );
   foreach ($variables as $variable) {
     variable_del($variable);
   }
@@ -118,8 +118,9 @@ function date_api_update_last_removed() {
 }
 
 /**
- * Move old date format data to new date format tables, and delete the old
- * tables. Insert only values that don't already exist in the new tables, in
+ * Move old date format to new date format tables,and delete the old tables.
+ *
+ * Insert only values that don't already exist in the new tables, in
  * case new version of those custom values have already been created.
  */
 function date_api_update_7000() {

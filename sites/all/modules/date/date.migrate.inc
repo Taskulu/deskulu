@@ -40,7 +40,7 @@ class DateMigrateFieldHandler extends MigrateFieldHandler {
    * @return array
    *   An array of the defined variables in this scope.
    */
-  static function arguments($timezone = 'UTC', $timezone_db = 'UTC', $rrule = NULL, $language = NULL) {
+  public static function arguments($timezone = 'UTC', $timezone_db = 'UTC', $rrule = NULL, $language = NULL) {
     return get_defined_vars();
   }
 
@@ -129,6 +129,7 @@ class DateMigrateFieldHandler extends MigrateFieldHandler {
       // timestamp for 'now'.
       if (empty($from)) {
         $return[$language][$delta]['value'] = NULL;
+        $return[$language][$delta]['timezone'] = NULL;
         if (!empty($field_info['settings']['todate'])) {
           $return[$language][$delta]['value2'] = NULL;
         }
@@ -151,6 +152,7 @@ class DateMigrateFieldHandler extends MigrateFieldHandler {
         case 'datestamp':
           // Already done.
           break;
+
         case 'datetime':
           // YYYY-MM-DD HH:MM:SS.
           $from = format_date($from, 'custom', 'Y-m-d H:i:s', $timezone);
@@ -158,6 +160,7 @@ class DateMigrateFieldHandler extends MigrateFieldHandler {
             $to = format_date($to, 'custom', 'Y-m-d H:i:s', $timezone);
           }
           break;
+
         case 'date':
           // ISO date: YYYY-MM-DDTHH:MM:SS.
           $from = format_date($from, 'custom', 'Y-m-d\TH:i:s', $timezone);
@@ -165,6 +168,7 @@ class DateMigrateFieldHandler extends MigrateFieldHandler {
             $to = format_date($to, 'custom', 'Y-m-d\TH:i:s', $timezone);
           }
           break;
+
         default:
           break;
       }
@@ -173,12 +177,17 @@ class DateMigrateFieldHandler extends MigrateFieldHandler {
       // created.
       if (function_exists('date_repeat_build_dates') && !empty($field_info['settings']['repeat']) && $rrule) {
         include_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'date_api') . '/date_api_ical.inc';
-        $item = array('value' => $from, 'value2' => $to, 'timezone' => $timezone);
+        $item = array(
+          'value' => $from,
+          'value2' => $to,
+          'timezone' => $timezone,
+        );
         // Can be de-uglified when http://drupal.org/node/1159404 is committed.
         $return[$language] = date_repeat_build_dates(NULL, date_ical_parse_rrule($field_info, $rrule), $field_info, $item);
       }
       else {
         $return[$language][$delta]['value'] = $from;
+        $return[$language][$delta]['timezone'] = $timezone;
         if (!empty($to)) {
           $return[$language][$delta]['value2'] = $to;
         }
@@ -190,6 +199,9 @@ class DateMigrateFieldHandler extends MigrateFieldHandler {
     return $return;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function fields($migration = NULL) {
     return array(
       'timezone' => t('Timezone'),

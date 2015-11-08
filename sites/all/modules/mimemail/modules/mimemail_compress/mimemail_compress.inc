@@ -145,7 +145,7 @@ class mimemail_compress {
 
         // Convert float to align for images.
         $float = preg_match ('/float:(left|right)/', $style, $matches);
-        if ($float) {
+        if ($node->nodeName == 'img' && $float) {
           $node->setAttribute('align', $matches[1]);
           $node->setAttribute('vspace', 5);
           $node->setAttribute('hspace', 5);

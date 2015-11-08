@@ -185,12 +185,14 @@ function mandrill_mailsend($message, $function, $args = array()) {
               $to = isset($result['email']) ? $result['email'] : 'recipient';
               $status = isset($result['status']) ? $result['status'] : 'message';
               $error_message = isset($result['message']) ? $result['message'] : 'no message';
-              watchdog('mandrill', 'Failed sending email from %from to %to. @status: @message',
+              $debug = print_r($result, TRUE);
+              watchdog('mandrill', 'Failed sending email from %from to %to. @status: @message <pre>@debug</pre>',
                 array(
                   '%from' => $message['from_email'],
                   '%to' => $to,
                   '@status' => $status,
                   '@message' => $error_message,
+                  '@debug' => $debug,
                 ),
                 WATCHDOG_ERROR
               );
@@ -365,7 +367,7 @@ function mandrill_get_templates() {
     }
   }
   catch (Mandrill_Error $e) {
-    drupal_set_message(t('Mandrill: %message', array('%message' => check_plain($e->getMessage()))), 'error');
+    drupal_set_message(t('Mandrill: %message', array('%message' => $e->getMessage())), 'error');
     watchdog_exception('mandrill', $e);
   }
   return $templates;
@@ -382,7 +384,7 @@ function mandrill_get_subaccounts() {
     }
   }
   catch (Mandrill_Error $e) {
-    drupal_set_message(t('Mandrill: %message', array('%message' => check_plain($e->getMessage()))), 'error');
+    drupal_set_message(t('Mandrill: %message', array('%message' => $e->getMessage())), 'error');
     watchdog_exception('mandrill', $e);
   }
 
@@ -400,7 +402,7 @@ function mandrill_get_webhooks() {
     }
   }
   catch (Mandrill_Error $e) {
-    drupal_set_message(t('Mandrill: %message', array('%message' => check_plain($e->getMessage()))), 'error');
+    drupal_set_message(t('Mandrill: %message', array('%message' => $e->getMessage())), 'error');
     watchdog_exception('mandrill', $e);
   }
 
@@ -421,7 +423,7 @@ function mandrill_get_inbound_domains() {
     }
   }
   catch (Mandrill_Error $e) {
-    drupal_set_message(t('Mandrill: %message', array('%message' => check_plain($e->getMessage()))), 'error');
+    drupal_set_message(t('Mandrill: %message', array('%message' => $e->getMessage())), 'error');
     watchdog_exception('mandrill', $e);
   }
 
@@ -439,7 +441,7 @@ function mandrill_get_inbound_routes($domain) {
     }
   }
   catch (Mandrill_Error $e) {
-    drupal_set_message(t('Mandrill: %message', array('%message' => check_plain($e->getMessage()))), 'error');
+    drupal_set_message(t('Mandrill: %message', array('%message' => $e->getMessage())), 'error');
     watchdog_exception('mandrill', $e);
   }
 
@@ -457,7 +459,7 @@ function mandrill_add_inbound_domain($domain) {
     }
   }
   catch (Mandrill_Error $e) {
-    drupal_set_message(t('Mandrill: %message', array('%message' => check_plain($e->getMessage()))), 'error');
+    drupal_set_message(t('Mandrill: %message', array('%message' => $e->getMessage())), 'error');
     watchdog_exception('mandrill', $e);
   }
 
@@ -465,7 +467,7 @@ function mandrill_add_inbound_domain($domain) {
 }
 
 /**
- * Create a new inbound domain.
+ * Create a new webhook.
  */
 function mandrill_add_webhook($path, $events, $description = 'Drupal Webhook') {
   $result = NULL;
@@ -475,7 +477,43 @@ function mandrill_add_webhook($path, $events, $description = 'Drupal Webhook') {
     }
   }
   catch (Mandrill_Error $e) {
-    drupal_set_message(t('Mandrill: %message', array('%message' => check_plain($e->getMessage()))), 'error');
+    drupal_set_message(t('Mandrill: %message', array('%message' => $e->getMessage())), 'error');
+    watchdog_exception('mandrill', $e);
+  }
+
+  return $result;
+}
+
+/**
+ * Update an existing webhook.
+ */
+function mandrill_update_webhook($id, $path, $events, $description = 'Drupal Webhook') {
+  $result = NULL;
+  try {
+    if ($mandrill = mandrill_get_api_object()) {
+      $result = $mandrill->webhooks->update($id, $GLOBALS['base_url'] . '/' . $path, $description, $events);
+    }
+  }
+  catch (Mandrill_Error $e) {
+    drupal_set_message(t('Mandrill: %message', array('%message' => $e->getMessage())), 'error');
+    watchdog_exception('mandrill', $e);
+  }
+
+  return $result;
+}
+
+/**
+ * Delete an existing webhook.
+ */
+function mandrill_delete_webhook($webhook_id) {
+  $result = NULL;
+  try {
+    if ($mandrill = mandrill_get_api_object()) {
+      $result = $mandrill->webhooks->delete($webhook_id);
+    }
+  }
+  catch (Mandrill_Error $e) {
+    drupal_set_message(t('Mandrill: %message', array('%message' => $e->getMessage())), 'error');
     watchdog_exception('mandrill', $e);
   }
 
@@ -493,7 +531,7 @@ function mandrill_delete_inbound_domain($domain) {
     }
   }
   catch (Mandrill_Error $e) {
-    drupal_set_message(t('Mandrill: %message', array('%message' => check_plain($e->getMessage()))), 'error');
+    drupal_set_message(t('Mandrill: %message', array('%message' => $e->getMessage())), 'error');
     watchdog_exception('mandrill', $e);
   }
 
@@ -511,7 +549,7 @@ function mandrill_add_inbound_route($domain, $pattern, $url) {
     }
   }
   catch (Mandrill_Error $e) {
-    drupal_set_message(t('Mandrill: %message', array('%message' => check_plain($e->getMessage()))), 'error');
+    drupal_set_message(t('Mandrill: %message', array('%message' => $e->getMessage())), 'error');
     watchdog_exception('mandrill', $e);
   }
 
@@ -569,18 +607,35 @@ function mandrill_process_async() {
 /**
  * Returns an array containing the from information for a Mandrill message.
  *
+ * @param string $from
+ *   (Optional) An optional string representing a specific e-mail address from
+ *   which a message should be sent. This will be merged in with defaults. It
+ *   can be of the form "Name <email@example.com>"
+ *
  * @return array
  *   array(
  *     'email' => 'admin@example.com',
  *     'name' => 'My Site',
  *   )
  */
-function mandrill_from() {
+function mandrill_from($from = '') {
+  $default = array();
+  $provided = array();
+
+  // Parse out the default "from" details.
   $default_from = variable_get('site_mail', ini_get('sendmail_from'));
-  $email = variable_get('mandrill_from', $default_from);
-  $name = variable_get('mandrill_from_name', variable_get('site_name'));
-  return array(
-    'email' => $email,
-    'name' => $name,
-  );
+  $default['email'] = variable_get('mandrill_from', $default_from);
+  $default['name'] = variable_get('mandrill_from_name', variable_get('site_name'));
+
+  // If a "from" string was explicitly provided, parse out the details.
+  if (preg_match_all('/(?:"?([^"]*)"?\s)?(?:<?(.+@[^>]+)>?)/', $from, $matches)) {
+    if (isset($matches[1][0]) && !empty($matches[1][0])) {
+      $provided['name'] = trim($matches[1][0]);
+    }
+    if (isset($matches[2][0]) && !empty($matches[2][0])) {
+      $provided['email'] = $matches[2][0];
+    }
+  }
+
+  return array_merge($default, $provided);
 }

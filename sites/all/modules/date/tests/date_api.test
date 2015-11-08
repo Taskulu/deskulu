@@ -132,11 +132,11 @@ class DateAPITestCase extends DrupalWebTestCase {
     // Test week range with calendar weeks.
     variable_set('date_first_day', 0);
     variable_set('date_api_use_iso8601', FALSE);
-    $expected = '2008-01-27 to 2008-02-03';
+    $expected = '2008-01-27 to 2008-02-02';
     $result = date_week_range(5, 2008);
     $value = $result[0]->format(DATE_FORMAT_DATE) . ' to ' . $result[1]->format(DATE_FORMAT_DATE);
     $this->assertEqual($expected, $value, "Test calendar date_week_range(5, 2008): should be $expected, found $value.");
-    $expected = '2009-01-25 to 2009-02-01';
+    $expected = '2009-01-25 to 2009-01-31';
     $result = date_week_range(5, 2009);
     $value = $result[0]->format(DATE_FORMAT_DATE) . ' to ' . $result[1]->format(DATE_FORMAT_DATE);
     $this->assertEqual($expected, $value, "Test calendar date_week_range(5, 2009): should be $expected, found $value.");
@@ -144,11 +144,11 @@ class DateAPITestCase extends DrupalWebTestCase {
     // And now with ISO weeks.
     variable_set('date_first_day', 1);
     variable_set('date_api_use_iso8601', TRUE);
-    $expected = '2008-01-28 to 2008-02-04';
+    $expected = '2008-01-28 to 2008-02-03';
     $result = date_week_range(5, 2008);
     $value = $result[0]->format(DATE_FORMAT_DATE) . ' to ' . $result[1]->format(DATE_FORMAT_DATE);
     $this->assertEqual($expected, $value, "Test ISO date_week_range(5, 2008): should be $expected, found $value.");
-    $expected = '2009-01-26 to 2009-02-02';
+    $expected = '2009-01-26 to 2009-02-01';
     $result = date_week_range(5, 2009);
     $value = $result[0]->format(DATE_FORMAT_DATE) . ' to ' . $result[1]->format(DATE_FORMAT_DATE);
     $this->assertEqual($expected, $value, "Test ISO date_week_range(5, 2009): should be $expected, found $value.");
@@ -396,6 +396,28 @@ class DateAPITestCase extends DrupalWebTestCase {
     $date = new dateObject($input, $timezone, $format);
     $this->assertNotEqual(count($date->errors), 0, '23 abc 2012 should be an invalid date');
 
+    // Test Granularity.
+    $input = '2005-06-01 10:30:45';
+    $timezone = NULL;
+    $format = 'Y-m-d H:i:s';
+
+    $date = new dateObject($input, $timezone, $format);
+    $date->removeGranularity('hour');
+    $date->removeGranularity('second');
+    $date->removeGranularity('minute');
+
+    $value = $date->format($format);
+    $expected = '2005-06-01';
+    $this->assertEqual($expected, $value, "The date with removed granularity should be $expected, found $value.");
+
+    $date->addGranularity('hour');
+    $date->addGranularity('second');
+    $date->addGranularity('minute');
+
+    $value = $date->format($format);
+    $expected = '2005-06-01 10:30:45';
+
+    $this->assertEqual($expected, $value, "The date with added granularity should be $expected, found $value.");
   }
 
   /**

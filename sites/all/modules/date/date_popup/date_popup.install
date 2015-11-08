@@ -5,6 +5,7 @@
  * Install, update and uninstall functions for the Date Popup module.
  */
 
+// @codingStandardsIgnoreStart
 /**
  * Implements hook_install().
  */
@@ -17,6 +18,7 @@ function date_popup_install() {
 function date_popup_uninstall() {
 
 }
+// @codingStandardsIgnoreEnd
 
 /**
  * Implements hook_enable().

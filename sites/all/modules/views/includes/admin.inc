@@ -4961,6 +4961,13 @@ function views_ui_admin_settings_advanced() {
     '#description' => t('Select a translation method to use for Views data like header, footer, and empty text.'),
   );
 
+  $form['locale']['views_localize_all'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use same translation method for exported views'),
+    '#description' => t('Exported views will use Core translation by default. Enable this to always use the configured translation method.'),
+    '#default_value' => variable_get('views_localize_all', FALSE),
+  );
+
   $regions = array();
   $regions['watchdog'] = t('Watchdog');
   if (module_exists('devel')) {

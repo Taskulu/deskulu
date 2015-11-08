@@ -1,6 +1,22 @@
 Mime Mail 7.x-1.x, xxxx-xx-xx
 -----------------------
 
+Mime Mail 7.x-1.0-beta4, 2015-08-02
+-----------------------
+- #2413495 by sgabe, siggi_kid: Public images not embedded when file default scheme is private
+- #2312747 by Lukas von Blarer: Remove 'itok' token from image URL
+- #2366659 by david_garcia: Attachments created by content generate warnings
+- #2404719 by alexp999: Missing space in RFC headers breaks DKIM
+- #1908318 by jvieille, zionduc, bisonbleu | anrkaid: Sender is double encoded.
+- #2359771 by PascalAnimateur: Support for OG membership tokens.
+- #2218037 by sgabe | pinkonomy: Fixed integrity constraint violation.
+- #2219609 by mitrpaka, sgabe: Convert float properties just for images.
+- #2057703 by New Zeal, sgabe: Warning: is_file() expects a valid path.
+- #2202127 by k.skarlatos: Added List-Unsubscribe header field for bulk mails.
+- #2297135 by tobiasb: Language prefix with absolute-path reference.
+- #2297091 by cameron1729: TLDs in Return-Path trimmed to 4 characters.
+- #2237109 by Dane Powell: Indicate text format for body in Rules.
+
 Mime Mail 7.x-1.0-beta3, 2014-03-05
 -----------------------
 - Public files test incorrect if similar path is not below root.

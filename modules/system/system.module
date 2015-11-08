@@ -359,7 +359,7 @@ function system_element_info() {
     '#size' => 60,
     '#maxlength' => 128,
     '#autocomplete_path' => FALSE,
-    '#process' => array('ajax_process_form'),
+    '#process' => array('form_process_autocomplete', 'ajax_process_form'),
     '#theme' => 'textfield',
     '#theme_wrappers' => array('form_element'),
   );
@@ -2411,6 +2411,10 @@ function _system_rebuild_module_data() {
     // Merge in defaults and save.
     $modules[$key]->info = $module->info + $defaults;
 
+    // The "name" key is required, but to avoid a fatal error in the menu system
+    // we set a reasonable default if it is not provided.
+    $modules[$key]->info += array('name' => $key);
+
     // Prefix stylesheets and scripts with module path.
     $path = dirname($module->uri);
     if (isset($module->info['stylesheets'])) {
@@ -2545,6 +2549,10 @@ function _system_rebuild_theme_data() {
   foreach ($themes as $key => $theme) {
     $themes[$key]->filename = $theme->uri;
     $themes[$key]->info = drupal_parse_info_file($theme->uri) + $defaults;
+
+    // The "name" key is required, but to avoid a fatal error in the menu system
+    // we set a reasonable default if it is not provided.
+    $themes[$key]->info += array('name' => $key);
 
     // Add the info file modification time, so it becomes available for
     // contributed modules to use for ordering theme lists.
@@ -2807,7 +2815,7 @@ function system_settings_form_submit($form, &$form_state) {
 function _system_sort_requirements($a, $b) {
   if (!isset($a['weight'])) {
     if (!isset($b['weight'])) {
-      return strcmp($a['title'], $b['title']);
+      return strcasecmp($a['title'], $b['title']);
     }
     return -$b['weight'];
   }

@@ -24,15 +24,20 @@ class MimeMailRulesTestCase extends DrupalWebTestCase {
   public function setUp() {
     parent::setUp('mailsystem', 'locale', 'entity', 'entity_token', 'rules', 'mimemail');
 
-    // Create and login user.
-    $this->adminUser = $this->drupalCreateUser(array(
+    $permissions = array(
       'access administration pages',
       'edit mimemail user settings',
       'administer languages',
       'administer rules',
       'bypass rules access',
       'access rules debug',
-    ));
+    );
+
+    // Check to make sure that the array of permissions are valid.
+    $this->checkPermissions($permissions, TRUE);
+
+    // Create and login user.
+    $this->adminUser = $this->drupalCreateUser($permissions);
     $this->drupalLogin($this->adminUser);
 
     // Enable another language too.

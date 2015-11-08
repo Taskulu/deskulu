@@ -1150,7 +1150,7 @@ class view extends views_db_object {
       $cache = $this->display_handler->get_plugin('cache');
     }
     if ($cache && $cache->cache_get('results')) {
-      if($this->query->pager->use_pager()) {
+      if($this->query->pager->use_pager() || !empty($this->get_total_rows)) {
         $this->query->pager->total_items = $this->total_rows;
         $this->query->pager->update_page_info();
       }
@@ -2102,6 +2102,10 @@ class view extends views_db_object {
    * Determine whether a view supports admin string translation.
    */
   function is_translatable() {
+    // Use translation no matter what type of view.
+    if (variable_get('views_localize_all', FALSE)) {
+      return TRUE;
+    }
     // If the view is normal or overridden, use admin string translation.
     // A newly created view won't have a type. Accept this.
     return (!isset($this->type) || in_array($this->type, array(t('Normal'), t('Overridden')))) ? TRUE : FALSE;
@@ -2566,7 +2570,7 @@ class views_display extends views_db_object {
   var $display_options;
 
   var $db_table = 'views_display';
-  function views_display($init = TRUE) {
+  function __construct($init = TRUE) {
     parent::init($init);
   }
 

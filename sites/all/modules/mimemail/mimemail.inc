@@ -37,7 +37,7 @@ function mimemail_rfc_headers($headers) {
         $value = wordwrap($value, 50, "$crlf ", FALSE);
       }
     }
-    $header .= $key . ":" . $value . $crlf;
+    $header .= $key . ": " . $value . $crlf;
   }
   return trim($header);
 }
@@ -66,7 +66,8 @@ function mimemail_headers($headers, $from = NULL) {
     }
     // This may not work. The MTA may rewrite the Return-Path.
     if (!isset($headers['Return-Path']) || $headers['Return-Path'] == $default_from) {
-      if (preg_match('/[a-z\d\-\.\+_]+@(?:[a-z\d\-]+\.)+[a-z\d]{2,4}/i', $from, $matches)) {
+      // According to IANA the current longest TLD is 23 characters.
+      if (preg_match('/[a-z\d\-\.\+_]+@(?:[a-z\d\-]+\.)+[a-z\d]{2,23}/i', $from, $matches)) {
         $headers['Return-Path'] = "<$matches[0]>";
       }
     }
@@ -80,7 +81,10 @@ function mimemail_headers($headers, $from = NULL) {
   // Run all headers through mime_header_encode() to convert non-ascii
   // characters to an rfc compliant string, similar to drupal_mail().
   foreach ($headers as $key => $value) {
-    $headers[$key] = mime_header_encode($value);
+    // According to RFC 2047 addresses MUST NOT be encoded.
+    if ($key !== 'From' && $key !== 'Sender') {
+      $headers[$key] = mime_header_encode($value);
+    }
   }
 
   return $headers;
@@ -187,19 +191,22 @@ function _mimemail_file($url = NULL, $content = NULL, $name = '', $type = '', $d
     $file = $content;
   }
 
-  if (isset($file) && (@is_file($file) || $content)) {
-    $public_path = file_default_scheme() . '://';
-    $no_access = !user_access('send arbitrary files');
-    $not_in_public_path = strpos(drupal_realpath($file), drupal_realpath($public_path)) !== 0;
-    if (@is_file($file) && $not_in_public_path && $no_access) {
-      return $url;
+  if (isset($file)) {
+    $is_file = @is_file($file);
+
+    if ($is_file) {
+      $access = user_access('send arbitrary files');
+      $in_public_path = strpos(@drupal_realpath($file), drupal_realpath('public://')) === 0;
+      if (!$in_public_path && !$access) {
+        return $url;
+      }
     }
 
     if (!$name) {
-      $name = (@is_file($file)) ? basename($file) : 'attachment.dat';
+      $name = $is_file ? basename($file) : 'attachment.dat';
     }
     if (!$type) {
-      $type = ($name) ? file_get_mimetype($name) : file_get_mimetype($file);
+      $type = $is_file ? file_get_mimetype($file) : file_get_mimetype($name);
     }
 
     $id = md5($file) .'@'. $_SERVER['HTTP_HOST'];
@@ -322,7 +329,7 @@ function mimemail_multipart_body($parts, $content_type = 'multipart/mixed; chars
       }
 
       if (isset($part['file'])) {
-        $file = (is_file($part['file'])) ? file_get_contents($part['file']) : $part['file'];
+        $file = (@is_file($part['file'])) ? file_get_contents($part['file']) : $part['file'];
         $part_body = chunk_split(base64_encode($file), 76, variable_get('mimemail_crlf', "\n"));
 
       }
@@ -457,17 +464,14 @@ function _mimemail_url($url, $to_embed = NULL) {
   else {
     $url = preg_replace('!^' . base_path() . '!', '', $url, 1);
     if ($is_image) {
+      // Remove security token from URL, this allows for styled image embedding.
+      // @see https://drupal.org/drupal-7.20-release-notes
+      $url = preg_replace('/\\?itok=.*$/', '', $url);
       if ($to_link) {
         // Exclude images from embedding if needed.
         $url = file_create_url($url);
         $url = str_replace(' ', '%20', $url);
       }
-      else {
-        // Remove security token from URL, this allows for styled image embedding.
-        // @see https://drupal.org/drupal-7.20-release-notes
-        $url = preg_replace('/\\?itok=.*$/', '', $url);
-      }
-
     }
     return $url;
   }
@@ -490,9 +494,10 @@ function _mimemail_url($url, $to_embed = NULL) {
   $language = language_default();
 
   // Check for language prefix.
+  $path = trim($path, '/');
   $args = explode('/', $path);
   foreach ($languages as $lang) {
-    if ($args[0] == $lang->prefix) {
+    if (!empty($args) && $args[0] == $lang->prefix) {
       $prefix = array_shift($args);
       $language = $lang;
       $path = implode('/', $args);

@@ -7,31 +7,11 @@ dependencies[] = field
 dependencies[] = options
 dependencies[] = libraries
 dependencies[] = jquery_update
+dependencies[] = entity
 
-; Information added by drupal.org packaging script on 2013-10-01
-version = "7.x-2.x-dev"
+; Information added by Drupal.org packaging script on 2015-10-21
+version = "7.x-2.8"
 core = "7.x"
 project = "select2widget"
-datestamp = "1380627078"
-
-
-; Information added by Drupal.org packaging script on 2014-01-29
-version = "7.x-2.x-dev"
-core = "7.x"
-project = "select2widget"
-datestamp = "1391019813"
-
-
-; Information added by Drupal.org packaging script on 2014-12-15
-version = "7.x-2.4+1-dev"
-core = "7.x"
-project = "select2widget"
-datestamp = "1418635982"
-
-
-; Information added by Drupal.org packaging script on 2015-02-11
-version = "7.x-2.7"
-core = "7.x"
-project = "select2widget"
-datestamp = "1423652884"
+datestamp = "1445411340"
 

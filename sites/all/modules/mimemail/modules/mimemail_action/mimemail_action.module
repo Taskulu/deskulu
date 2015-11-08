@@ -24,7 +24,11 @@ function mimemail_action_info() {
  */
 function mimemail_send_email_action($entity, $context) {
   if (empty($context['node'])) {
-    $context['node'] = $entity;
+    if (get_class($entity) == 'OgMembership') {
+      $context['user'] = user_load($entity->etid);
+    } else {
+      $context['node'] = $entity;
+    }
   }
 
   $to = token_replace($context['to'], $context);

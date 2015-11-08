@@ -30,13 +30,16 @@
  * BYSETPOS
  *   Seldom used anywhere, so no reason to complicated the code.
  */
+
 /**
  * Generate the repeat setting form.
  */
 function _date_repeat_rrule_process($element, &$form_state, $form) {
 
-  // If the RRULE field is not visible to the user, needs no processing or validation.
-  // The Date field module is not adding this element to forms if the field is hidden,
+  // If the RRULE field is not visible to the user,
+  // needs no processing or validation.
+  // The Date field module is not adding this element to forms
+  // if the field is hidden,
   // this test is just in case some other module attempts to do so.
 
   if (date_hidden_element($element)) {
@@ -67,16 +70,16 @@ function _date_repeat_rrule_process($element, &$form_state, $form) {
   $timezone = !empty($element['#date_timezone']) ? $element['#date_timezone'] : date_default_timezone();
   $merged_values = date_repeat_merge($rrule, $element);
 
-  $UNTIL = '';
+  $until = '';
   if (!empty($merged_values['UNTIL']['datetime'])) {
     $until_date = new DateObject($merged_values['UNTIL']['datetime'], $merged_values['UNTIL']['tz']);
     date_timezone_set($until_date, timezone_open($timezone));
-    $UNTIL = date_format($until_date, DATE_FORMAT_DATETIME);
+    $until = date_format($until_date, DATE_FORMAT_DATETIME);
   }
 
-  $COUNT = '';
+  $count = '';
   if (!empty($merged_values['COUNT'])) {
-    $COUNT = $merged_values['COUNT'];
+    $count = $merged_values['COUNT'];
   }
 
   $element['FREQ'] = array(
@@ -137,7 +140,7 @@ function _date_repeat_rrule_process($element, &$form_state, $form) {
   );
 
   list($prefix, $suffix) = explode('@interval', t('Every @interval days', array(), array('context' => 'Date repeat')));
-  $DAILY_INTERVAL = array(
+  $daily_interval = array(
     '#type' => 'textfield',
     '#title' => t('Repeats', array(), array('context' => 'Date repeat')),
     '#title_display' => 'invisible',
@@ -210,32 +213,34 @@ function _date_repeat_rrule_process($element, &$form_state, $form) {
     '#suffix' => '</div>',
   );
 
-  $DAILY_radios_default = 'INTERVAL';
+  $daily_radios_default = 'INTERVAL';
   if (isset($rrule['FREQ']) && $rrule['FREQ'] === 'DAILY' && !empty($rrule['BYDAY'])) {
     switch (count($rrule['BYDAY'])) {
       case 2:
-        $DAILY_radios_default = 'every_tu_th';
+        $daily_radios_default = 'every_tu_th';
         break;
+
       case 3:
-        $DAILY_radios_default = 'every_mo_we_fr';
+        $daily_radios_default = 'every_mo_we_fr';
         break;
+
       case 5:
-        $DAILY_radios_default = 'every_weekday';
+        $daily_radios_default = 'every_weekday';
         break;
     }
   }
 
-  $DAILY_every_weekday = array(
+  $daily_every_weekday = array(
     '#type' => 'item',
     '#markup' => '<div>' . t('Every weekday', array(), array('context' => 'Date repeat')) . '</div>',
   );
 
-  $DAILY_mo_we_fr = array(
+  $daily_mo_we_fr = array(
     '#type' => 'item',
     '#markup' => '<div>' . t('Every Mon, Wed, Fri', array(), array('context' => 'Date repeat')) . '</div>',
   );
 
-  $DAILY_tu_th = array(
+  $daily_tu_th = array(
     '#type' => 'item',
     '#markup' => '<div>' . t('Every Tue, Thu', array(), array('context' => 'Date repeat')) . '</div>',
   );
@@ -251,17 +256,17 @@ function _date_repeat_rrule_process($element, &$form_state, $form) {
         ":input[name=\"{$element['#name']}[FREQ]\"]" => array('value' => 'DAILY'),
       ),
     ),
-    '#default_value' => $DAILY_radios_default,
+    '#default_value' => $daily_radios_default,
     '#options' => array(
       'INTERVAL' => t('interval'),
       'every_weekday' => t('every weekday'),
       'every_mo_we_fr' => t('monday wednesday friday'),
       'every_tu_th' => t('tuesday thursday'),
     ),
-    'INTERVAL_child' => $DAILY_INTERVAL,
-    'every_weekday_child' => $DAILY_every_weekday,
-    'mo_we_fr_child' => $DAILY_mo_we_fr,
-    'tu_th_child' => $DAILY_tu_th,
+    'INTERVAL_child' => $daily_interval,
+    'every_weekday_child' => $daily_every_weekday,
+    'mo_we_fr_child' => $daily_mo_we_fr,
+    'tu_th_child' => $daily_tu_th,
     '#div_classes' => array(
       'container-inline interval',
       'container-inline weekday',
@@ -270,18 +275,18 @@ function _date_repeat_rrule_process($element, &$form_state, $form) {
     ),
   );
 
-  $MONTHLY_day_month_default = 'BYMONTHDAY_BYMONTH';
+  $monthly_day_month_default = 'BYMONTHDAY_BYMONTH';
   if (isset($rrule['FREQ']) && $rrule['FREQ'] === 'MONTHLY' && !empty($rrule['BYDAY'])) {
-    $MONTHLY_day_month_default = 'BYDAY_BYMONTH';
+    $monthly_day_month_default = 'BYDAY_BYMONTH';
   }
 
-  $MONTHLY_on_day_BYMONTHDAY_of_BYMONTH = array(
+  $monthly_on_day_bymonthday_of_bymonth = array(
     '#type' => 'container',
     '#tree' => TRUE,
   );
 
   list($bymonthday_title, $bymonthday_suffix) = explode('@bymonthday', t('On day @bymonthday of', array(), array('context' => 'Date repeat')));
-  $MONTHLY_on_day_BYMONTHDAY_of_BYMONTH['BYMONTHDAY'] = array(
+  $monthly_on_day_bymonthday_of_bymonth['BYMONTHDAY'] = array(
     '#type' => 'select',
     '#title' => $bymonthday_title,
     '#default_value' => !empty($rrule['BYMONTHDAY']) && $rrule['FREQ'] === 'MONTHLY' ? $rrule['BYMONTHDAY'] : '',
@@ -292,11 +297,11 @@ function _date_repeat_rrule_process($element, &$form_state, $form) {
     '#field_suffix' => $bymonthday_suffix,
   );
 
-  $MONTHLY_on_day_BYMONTHDAY_of_BYMONTH['BYMONTH'] = array(
+  $monthly_on_day_bymonthday_of_bymonth['BYMONTH'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Bymonth', array(), array('context' => 'Date repeat')),
     '#title_display' => 'invisible',
-    '#default_value' => !empty($rrule['BYMONTH']) && $rrule['FREQ'] === 'MONTHLY' && $MONTHLY_day_month_default === 'BYMONTHDAY_BYMONTH' ? $rrule['BYMONTH'] : array(),
+    '#default_value' => !empty($rrule['BYMONTH']) && $rrule['FREQ'] === 'MONTHLY' && $monthly_day_month_default === 'BYMONTHDAY_BYMONTH' ? $rrule['BYMONTH'] : array(),
     '#options' => date_month_names_abbr(TRUE),
     '#attributes' => array('class' => array('container-inline')),
     '#multiple' => TRUE,
@@ -304,45 +309,45 @@ function _date_repeat_rrule_process($element, &$form_state, $form) {
     '#suffix' => '</div>',
   );
 
-  $MONTHLY_on_the_BYDAY_of_BYMONTH = array(
+  $monthly_on_the_byday_of_bymonth = array(
     '#type' => 'container',
     '#tree' => TRUE,
   );
 
-  $MONTHLY_BYDAY_COUNT = '';
-  $MONTHLY_BYDAY_DAY = '';
+  $monthly_byday_count = '';
+  $monthly_byday_day = '';
   if (isset($rrule['BYDAY']) && !empty($rrule['BYDAY']) && $rrule['FREQ'] === 'MONTHLY') {
-    $MONTHLY_BYDAY_COUNT = substr($rrule['BYDAY'][0], 0, -2);
-    $MONTHLY_BYDAY_DAY = substr($rrule['BYDAY'][0], -2);;
+    $monthly_byday_count = substr($rrule['BYDAY'][0], 0, -2);
+    $monthly_byday_day = substr($rrule['BYDAY'][0], -2);;
   }
 
   list($byday_count_title, $byday_day_title) = explode('@byday', t('On the @byday of', array(), array('context' => 'Date repeat')));
-  $MONTHLY_on_the_BYDAY_of_BYMONTH['BYDAY_COUNT'] = array(
+  $monthly_on_the_byday_of_bymonth['BYDAY_COUNT'] = array(
     '#type' => 'select',
     '#title' => $byday_count_title,
-    '#default_value' => !empty($MONTHLY_BYDAY_COUNT) ? $MONTHLY_BYDAY_COUNT : '',
+    '#default_value' => !empty($monthly_byday_count) ? $monthly_byday_count : '',
     '#options' => date_order_translated(),
     '#multiple' => FALSE,
     '#prefix' => '<div class="date-repeat-input byday-count">',
     '#suffix' => '</div>',
   );
 
-  $MONTHLY_on_the_BYDAY_of_BYMONTH['BYDAY_DAY'] = array(
+  $monthly_on_the_byday_of_bymonth['BYDAY_DAY'] = array(
     '#type' => 'select',
     '#title' => $byday_day_title,
     '#title_display' => 'after',
-    '#default_value' => !empty($MONTHLY_BYDAY_DAY) ? $MONTHLY_BYDAY_DAY : '',
+    '#default_value' => !empty($monthly_byday_day) ? $monthly_byday_day : '',
     '#options' => date_repeat_dow_day_options(TRUE),
     '#multiple' => FALSE,
     '#prefix' => '<div class="date-repeat-input byday-day">',
     '#suffix' => '</div>',
   );
 
-  $MONTHLY_on_the_BYDAY_of_BYMONTH['BYMONTH'] = array(
+  $monthly_on_the_byday_of_bymonth['BYMONTH'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Bymonth', array(), array('context' => 'Date repeat')),
     '#title_display' => 'invisible',
-    '#default_value' => !empty($rrule['BYMONTH']) && $rrule['FREQ'] === 'MONTHLY' && $MONTHLY_day_month_default === 'BYDAY_BYMONTH' ? $rrule['BYMONTH'] : array(),
+    '#default_value' => !empty($rrule['BYMONTH']) && $rrule['FREQ'] === 'MONTHLY' && $monthly_day_month_default === 'BYDAY_BYMONTH' ? $rrule['BYMONTH'] : array(),
     '#options' => date_month_names_abbr(TRUE),
     '#attributes' => array('class' => array('container-inline')),
     '#multiple' => TRUE,
@@ -361,31 +366,31 @@ function _date_repeat_rrule_process($element, &$form_state, $form) {
       ),
     ),
     '#attributes' => array('class' => array('date-repeat-radios clearfix')),
-    '#default_value' => $MONTHLY_day_month_default,
+    '#default_value' => $monthly_day_month_default,
     '#options' => array(
       'BYMONTHDAY_BYMONTH' => t('On day ... of ...'),
       'BYDAY_BYMONTH' => t('On the ... of ...'),
     ),
-    'BYMONTHDAY_BYMONTH_child' => $MONTHLY_on_day_BYMONTHDAY_of_BYMONTH,
-    'BYDAY_BYMONTH_child' => $MONTHLY_on_the_BYDAY_of_BYMONTH,
+    'BYMONTHDAY_BYMONTH_child' => $monthly_on_day_bymonthday_of_bymonth,
+    'BYDAY_BYMONTH_child' => $monthly_on_the_byday_of_bymonth,
     '#div_classes' => array(
       'date-repeat-radios-item date-clear clearfix bymonthday-bymonth',
       'date-repeat-radios-item date-clear clearfix byday-bymonth',
     ),
   );
 
-  $YEARLY_day_month_default = 'BYMONTHDAY_BYMONTH';
+  $yearly_day_month_default = 'BYMONTHDAY_BYMONTH';
   if (isset($rrule['FREQ']) && $rrule['FREQ'] === 'YEARLY' && !empty($rrule['BYDAY'])) {
-    $YEARLY_day_month_default = 'BYDAY_BYMONTH';
+    $yearly_day_month_default = 'BYDAY_BYMONTH';
   }
 
-  $YEARLY_on_day_BYMONTHDAY_of_BYMONTH = array(
+  $yearly_on_day_bymonthday_of_bymonth = array(
     '#type' => 'container',
     '#tree' => TRUE,
   );
 
   list($bymonthday_title, $bymonthday_suffix) = explode('@bymonthday', t('On day @bymonthday of', array(), array('context' => 'Date repeat')));
-  $YEARLY_on_day_BYMONTHDAY_of_BYMONTH['BYMONTHDAY'] = array(
+  $yearly_on_day_bymonthday_of_bymonth['BYMONTHDAY'] = array(
     '#type' => 'select',
     '#title' => $bymonthday_title,
     '#default_value' => !empty($rrule['BYMONTHDAY']) && $rrule['FREQ'] === 'YEARLY' ? $rrule['BYMONTHDAY'] : '',
@@ -396,11 +401,11 @@ function _date_repeat_rrule_process($element, &$form_state, $form) {
     '#field_suffix' => $bymonthday_suffix,
   );
 
-  $YEARLY_on_day_BYMONTHDAY_of_BYMONTH['BYMONTH'] = array(
+  $yearly_on_day_bymonthday_of_bymonth['BYMONTH'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Bymonth', array(), array('context' => 'Date repeat')),
     '#title_display' => 'invisible',
-    '#default_value' => !empty($rrule['BYMONTH']) && $rrule['FREQ'] === 'YEARLY' && $YEARLY_day_month_default === 'BYMONTHDAY_BYMONTH' ? $rrule['BYMONTH'] : array(),
+    '#default_value' => !empty($rrule['BYMONTH']) && $rrule['FREQ'] === 'YEARLY' && $yearly_day_month_default === 'BYMONTHDAY_BYMONTH' ? $rrule['BYMONTH'] : array(),
     '#options' => date_month_names_abbr(TRUE),
     '#attributes' => array('class' => array('container-inline')),
     '#multiple' => TRUE,
@@ -408,45 +413,45 @@ function _date_repeat_rrule_process($element, &$form_state, $form) {
     '#suffix' => '</div>',
   );
 
-  $YEARLY_on_the_BYDAY_of_BYMONTH = array(
+  $yearly_on_the_byday_of_bymonth = array(
     '#type' => 'container',
     '#tree' => TRUE,
   );
 
-  $YEARLY_BYDAY_COUNT = '';
-  $YEARLY_BYDAY_DAY = '';
+  $yearly_byday_count = '';
+  $yearly_byday_day = '';
   if (isset($rrule['BYDAY']) && !empty($rrule['BYDAY']) && $rrule['FREQ'] === 'YEARLY') {
-    $YEARLY_BYDAY_COUNT = substr($rrule['BYDAY'][0], 0, -2);
-    $YEARLY_BYDAY_DAY = substr($rrule['BYDAY'][0], -2);;
+    $yearly_byday_count = substr($rrule['BYDAY'][0], 0, -2);
+    $yearly_byday_day = substr($rrule['BYDAY'][0], -2);;
   }
 
   list($byday_count_title, $byday_day_title) = explode('@byday', t('On the @byday of', array(), array('context' => 'Date repeat')));
-  $YEARLY_on_the_BYDAY_of_BYMONTH['BYDAY_COUNT'] = array(
+  $yearly_on_the_byday_of_bymonth['BYDAY_COUNT'] = array(
     '#type' => 'select',
     '#title' => $byday_count_title,
-    '#default_value' => !empty($YEARLY_BYDAY_COUNT) ? $YEARLY_BYDAY_COUNT : '',
+    '#default_value' => !empty($yearly_byday_count) ? $yearly_byday_count : '',
     '#options' => date_order_translated(),
     '#multiple' => FALSE,
     '#prefix' => '<div class="date-repeat-input byday-count">',
     '#suffix' => '</div>',
   );
 
-  $YEARLY_on_the_BYDAY_of_BYMONTH['BYDAY_DAY'] = array(
+  $yearly_on_the_byday_of_bymonth['BYDAY_DAY'] = array(
     '#type' => 'select',
     '#title' => $byday_day_title,
     '#title_display' => 'after',
-    '#default_value' => !empty($YEARLY_BYDAY_DAY) ? $YEARLY_BYDAY_DAY : '',
+    '#default_value' => !empty($yearly_byday_day) ? $yearly_byday_day : '',
     '#options' => date_repeat_dow_day_options(TRUE),
     '#multiple' => FALSE,
     '#prefix' => '<div class="date-repeat-input byday-day">',
     '#suffix' => '</div>',
   );
 
-  $YEARLY_on_the_BYDAY_of_BYMONTH['BYMONTH'] = array(
+  $yearly_on_the_byday_of_bymonth['BYMONTH'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Bymonth', array(), array('context' => 'Date repeat')),
     '#title_display' => 'invisible',
-    '#default_value' => !empty($rrule['BYMONTH']) && $rrule['FREQ'] === 'YEARLY' && $YEARLY_day_month_default === 'BYDAY_BYMONTH' ? $rrule['BYMONTH'] : array(),
+    '#default_value' => !empty($rrule['BYMONTH']) && $rrule['FREQ'] === 'YEARLY' && $yearly_day_month_default === 'BYDAY_BYMONTH' ? $rrule['BYMONTH'] : array(),
     '#options' => date_month_names_abbr(TRUE),
     '#attributes' => array('class' => array('container-inline')),
     '#multiple' => TRUE,
@@ -465,13 +470,13 @@ function _date_repeat_rrule_process($element, &$form_state, $form) {
       ),
     ),
     '#attributes' => array('class' => array('date-repeat-radios clearfix')),
-    '#default_value' => $YEARLY_day_month_default,
+    '#default_value' => $yearly_day_month_default,
     '#options' => array(
       'BYMONTHDAY_BYMONTH' => t('On day ... of ...'),
       'BYDAY_BYMONTH' => t('On the ... of ...'),
     ),
-    'BYMONTHDAY_BYMONTH_child' => $YEARLY_on_day_BYMONTHDAY_of_BYMONTH,
-    'BYDAY_BYMONTH_child' => $YEARLY_on_the_BYDAY_of_BYMONTH,
+    'BYMONTHDAY_BYMONTH_child' => $yearly_on_day_bymonthday_of_bymonth,
+    'BYDAY_BYMONTH_child' => $yearly_on_the_byday_of_bymonth,
     '#div_classes' => array(
       'date-repeat-radios-item date-clear clearfix bymonthday-bymonth',
       'date-repeat-radios-item date-clear clearfix byday-bymonth',
@@ -482,7 +487,7 @@ function _date_repeat_rrule_process($element, &$form_state, $form) {
   $count_form_element = array(
     '#type' => 'textfield',
     '#title' => t('Count', array(), array('context' => 'Date repeat')),
-    '#default_value' => $COUNT,
+    '#default_value' => $count,
     '#element_validate' => array('element_validate_integer_positive'),
     '#attributes' => array('placeholder' => array('#')),
     '#prefix' => $prefix,
@@ -499,21 +504,26 @@ function _date_repeat_rrule_process($element, &$form_state, $form) {
       '#type' => $element['#date_repeat_widget'],
       '#title' => t('Until', array(), array('context' => 'Date repeat')),
       '#title_display' => 'invisible',
-      '#default_value' => $UNTIL,
-      '#date_format' => !empty($element['#date_format']) ? date_limit_format($element['#date_format'], array('year', 'month', 'day')) : 'Y-m-d',
+      '#default_value' => $until,
+      '#date_format' => !empty($element['#date_format']) ?
+      date_limit_format($element['#date_format'], array('year', 'month', 'day')) : 'Y-m-d',
       '#date_timezone' => $timezone,
       '#date_text_parts'  => !empty($element['#date_text_parts']) ? $element['#date_text_parts'] : array(),
       '#date_year_range'  => !empty($element['#date_year_range']) ? $element['#date_year_range'] : '-3:+3',
-      '#date_label_position' => !empty($element['#date_label_position']) ? $element['#date_label_position'] : 'within',
+      '#date_label_position' => !empty($element['#date_label_position']) ?
+      $element['#date_label_position'] : 'within',
       '#date_flexible' => 0,
     ),
     'tz' => array('#type' => 'hidden', '#value' => $element['#date_timezone']),
     'all_day' => array('#type' => 'hidden', '#value' => 1),
-    'granularity' => array('#type' => 'hidden', '#value' => serialize(array('year', 'month', 'day'))),
+    'granularity' => array(
+      '#type' => 'hidden',
+      '#value' => serialize(array('year', 'month', 'day')),
+    ),
   );
 
   $range_of_repeat_default = 'COUNT';
-  if (!empty($UNTIL)) {
+  if (!empty($until)) {
     $range_of_repeat_default = 'UNTIL';
   }
   $element['range_of_repeat'] = array(
@@ -528,7 +538,7 @@ function _date_repeat_rrule_process($element, &$form_state, $form) {
         ":input[name=\"{$element['#name']}[FREQ]\"]" => array('value' => 'NONE'),
       ),
     ),
-    '#default_value' =>  $range_of_repeat_default,
+    '#default_value' => $range_of_repeat_default,
     '#options' => array(
       'COUNT' => t('Count'),
       'UNTIL' => t('Until'),
@@ -544,7 +554,8 @@ function _date_repeat_rrule_process($element, &$form_state, $form) {
   $parents = $element['#array_parents'];
   $instance = implode('-', $parents);
 
-  // Make sure this will work right either in the normal form or in an ajax callback from the 'Add more' button.
+  // Make sure this will work right either in the normal
+  // form or in an ajax callback from the 'Add more' button.
   if (empty($form_state['num_exceptions'][$instance])) {
     $form_state['num_exceptions'][$instance] = count($exceptions);
   }
@@ -576,33 +587,48 @@ function _date_repeat_rrule_process($element, &$form_state, $form) {
       ),
     ),
   );
-  for ($i = 0; $i < max($form_state['num_exceptions'][$instance], 1) ; $i++) {
-    $EXCEPT = '';
+  for ($i = 0; $i < max($form_state['num_exceptions'][$instance], 1); $i++) {
+    $except = '';
     if (!empty($exceptions[$i]['datetime'])) {
       $ex_date = new DateObject($exceptions[$i]['datetime'], $exceptions[$i]['tz']);
       date_timezone_set($ex_date, timezone_open($timezone));
-      $EXCEPT = date_format($ex_date, DATE_FORMAT_DATETIME);
+      $except = date_format($ex_date, DATE_FORMAT_DATETIME);
+    }
+    $date_format = 'Y-m-d';
+    if (!empty($element['#date_format'])) {
+      $grans = array('year', 'month', 'day');
+      $date_format = date_limit_format($element['#date_format'], $grans);
     }
     $element['exceptions']['EXDATE'][$i] = array(
       '#tree' => TRUE,
       'datetime' => array(
         '#name' => 'exceptions|' . $instance,
         '#type' => $element['#date_repeat_widget'],
-        '#default_value' => $EXCEPT,
-        '#date_timezone' => !empty($element['#date_timezone']) ? $element['#date_timezone'] : date_default_timezone(),
-        '#date_format' => !empty($element['#date_format']) ? date_limit_format($element['#date_format'], array('year', 'month', 'day')) : 'Y-m-d',
+        '#default_value' => $except,
+        '#date_timezone' => !empty($element['#date_timezone']) ?
+        $element['#date_timezone'] : date_default_timezone(),
+        '#date_format' => $date_format,
         '#date_text_parts'  => !empty($element['#date_text_parts']) ? $element['#date_text_parts'] : array(),
         '#date_year_range'  => !empty($element['#date_year_range']) ? $element['#date_year_range'] : '-3:+3',
         '#date_label_position' => !empty($element['#date_label_position']) ? $element['#date_label_position'] : 'within',
         '#date_flexible' => 0,
-        ),
-      'tz' => array('#type' => 'hidden', '#value' => $element['#date_timezone']),
-      'all_day' => array('#type' => 'hidden', '#value' => 1),
-      'granularity' => array('#type' => 'hidden', '#value' => serialize(array('year', 'month', 'day'))),
-      );
+      ),
+      'tz' => array(
+        '#type' => 'hidden',
+        '#value' => $element['#date_timezone'],
+      ),
+      'all_day' => array(
+        '#type' => 'hidden',
+        '#value' => 1,
+      ),
+      'granularity' => array(
+        '#type' => 'hidden',
+        '#value' => serialize(array('year', 'month', 'day')),
+      ),
+    );
   }
 
-  // collect additions in the same way as exceptions - implements RDATE.
+  // Collect additions in the same way as exceptions - implements RDATE.
   if (empty($form_state['num_additions'][$instance])) {
     $form_state['num_additions'][$instance] = count($additions);
   }
@@ -634,30 +660,45 @@ function _date_repeat_rrule_process($element, &$form_state, $form) {
       ),
     ),
   );
-  for ($i = 0; $i < max($form_state['num_additions'][$instance], 1) ; $i++) {
-    $RDATE = '';
+  for ($i = 0; $i < max($form_state['num_additions'][$instance], 1); $i++) {
+    $r_date = '';
     if (!empty($additions[$i]['datetime'])) {
       $rdate = new DateObject($additions[$i]['datetime'], $additions[$i]['tz']);
       date_timezone_set($rdate, timezone_open($timezone));
-      $RDATE = date_format($rdate, DATE_FORMAT_DATETIME);
+      $r_date = date_format($rdate, DATE_FORMAT_DATETIME);
+    }
+    $date_format = 'Y-m-d';
+    if (!empty($element['#date_format'])) {
+      $grans = array('year', 'month', 'day');
+      $date_format = date_limit_format($element['#date_format'], $grans);
     }
     $element['additions']['RDATE'][$i] = array(
       '#tree' => TRUE,
       'datetime' => array(
         '#type' => $element['#date_repeat_widget'],
         '#name' => 'additions|' . $instance,
-        '#default_value' => $RDATE,
-        '#date_timezone' => !empty($element['#date_timezone']) ? $element['#date_timezone'] : date_default_timezone(),
-        '#date_format' => !empty($element['#date_format']) ? date_limit_format($element['#date_format'], array('year', 'month', 'day')) : 'Y-m-d',
+        '#default_value' => $r_date,
+        '#date_timezone' => !empty($element['#date_timezone']) ?
+        $element['#date_timezone'] : date_default_timezone(),
+        '#date_format' => $date_format,
         '#date_text_parts'  => !empty($element['#date_text_parts']) ? $element['#date_text_parts'] : array(),
         '#date_year_range'  => !empty($element['#date_year_range']) ? $element['#date_year_range'] : '-3:+3',
         '#date_label_position' => !empty($element['#date_label_position']) ? $element['#date_label_position'] : 'within',
         '#date_flexible' => 0,
-        ),
-      'tz' => array('#type' => 'hidden', '#value' => $element['#date_timezone']),
-      'all_day' => array('#type' => 'hidden', '#value' => 1),
-      'granularity' => array('#type' => 'hidden', '#value' => serialize(array('year', 'month', 'day'))),
-      );
+      ),
+      'tz' => array(
+        '#type' => 'hidden',
+        '#value' => $element['#date_timezone'],
+      ),
+      'all_day' => array(
+        '#type' => 'hidden',
+        '#value' => 1,
+      ),
+      'granularity' => array(
+        '#type' => 'hidden',
+        '#value' => serialize(array('year', 'month', 'day')),
+      ),
+    );
   }
 
   $element['exceptions']['exceptions_add'] = array(
@@ -687,6 +728,9 @@ function _date_repeat_rrule_process($element, &$form_state, $form) {
   return $element;
 }
 
+/**
+ * Add callback to date repeat.
+ */
 function date_repeat_add_exception_callback($form, &$form_state) {
   $parents = $form_state['triggering_element']['#array_parents'];
   $button_key = array_pop($parents);
@@ -694,6 +738,9 @@ function date_repeat_add_exception_callback($form, &$form_state) {
   return $element;
 }
 
+/**
+ * Add addition callback to date repeat.
+ */
 function date_repeat_add_addition_callback($form, &$form_state) {
   $parents = $form_state['triggering_element']['#array_parents'];
   $button_key = array_pop($parents);
@@ -701,6 +748,9 @@ function date_repeat_add_addition_callback($form, &$form_state) {
   return $element;
 }
 
+/**
+ * Add exception to date repeat.
+ */
 function date_repeat_add_exception($form, &$form_state) {
   $parents = $form_state['triggering_element']['#array_parents'];
   $instance = implode('-', array_slice($parents, 0, count($parents) - 2));
@@ -708,6 +758,9 @@ function date_repeat_add_exception($form, &$form_state) {
   $form_state['rebuild'] = TRUE;
 }
 
+/**
+ * Add addition to date repeat.
+ */
 function date_repeat_add_addition($form, &$form_state) {
   $parents = $form_state['triggering_element']['#array_parents'];
   $instance = implode('-', array_slice($parents, 0, count($parents) - 2));
@@ -723,8 +776,14 @@ function date_repeat_merge($form_values, $element) {
     return $form_values;
   }
   if (array_key_exists('exceptions', $form_values) || array_key_exists('additions', $form_values)) {
-    if (!array_key_exists('exceptions', $form_values)) $form_values['exceptions'] = array();
-    if (!array_key_exists('additions', $form_values)) $form_values['additions'] = array();
+    if (!array_key_exists('exceptions', $form_values)) {
+      $form_values['exceptions'] = array();
+    }
+
+    if (!array_key_exists('additions', $form_values)) {
+      $form_values['additions'] = array();
+    }
+
     $form_values = array_merge($form_values, (array) $form_values['exceptions'], (array) $form_values['additions']);
     unset($form_values['exceptions']);
     unset($form_values['additions']);
@@ -738,18 +797,22 @@ function date_repeat_merge($form_values, $element) {
             case 'INTERVAL':
               $form_values['INTERVAL'] = $form_values['daily']['INTERVAL_child'];
               break;
+
             case 'every_weekday':
               $form_values['BYDAY'] = array('MO', 'TU', 'WE', 'TH', 'FR');
               break;
+
             case 'every_mo_we_fr':
               $form_values['BYDAY'] = array('MO', 'WE', 'FR');
               break;
+
             case 'every_tu_th':
               $form_values['BYDAY'] = array('TU', 'TH');
               break;
           }
         }
         break;
+
       case 'WEEKLY':
         if (array_key_exists('weekly', $form_values)) {
           $form_values = array_merge($form_values, (array) $form_values['weekly']);
@@ -758,12 +821,14 @@ function date_repeat_merge($form_values, $element) {
           }
         }
         break;
+
       case 'MONTHLY':
         if (array_key_exists('monthly', $form_values)) {
           switch ($form_values['monthly']['day_month']) {
             case 'BYMONTHDAY_BYMONTH':
               $form_values['monthly'] = array_merge($form_values['monthly'], (array) $form_values['monthly']['BYMONTHDAY_BYMONTH_child']);
               break;
+
             case 'BYDAY_BYMONTH':
               $form_values['monthly']['BYDAY_BYMONTH_child']['BYDAY'] = $form_values['monthly']['BYDAY_BYMONTH_child']['BYDAY_COUNT'] . $form_values['monthly']['BYDAY_BYMONTH_child']['BYDAY_DAY'];
               $form_values['monthly'] = array_merge($form_values['monthly'], (array) $form_values['monthly']['BYDAY_BYMONTH_child']);
@@ -783,12 +848,14 @@ function date_repeat_merge($form_values, $element) {
           }
         }
         break;
+
       case 'YEARLY':
         if (array_key_exists('yearly', $form_values)) {
           switch ($form_values['yearly']['day_month']) {
             case 'BYMONTHDAY_BYMONTH':
               $form_values['yearly'] = array_merge($form_values['yearly'], (array) $form_values['yearly']['BYMONTHDAY_BYMONTH_child']);
               break;
+
             case 'BYDAY_BYMONTH':
               $form_values['yearly']['BYDAY_BYMONTH_child']['BYDAY'] = $form_values['yearly']['BYDAY_BYMONTH_child']['BYDAY_COUNT'] . $form_values['yearly']['BYDAY_BYMONTH_child']['BYDAY_DAY'];
               $form_values['yearly'] = array_merge($form_values['yearly'], (array) $form_values['yearly']['BYDAY_BYMONTH_child']);
@@ -808,6 +875,7 @@ function date_repeat_merge($form_values, $element) {
           }
         }
         break;
+
       default:
         break;
     }
@@ -823,6 +891,7 @@ function date_repeat_merge($form_values, $element) {
       case 'COUNT':
         $form_values['COUNT'] = $form_values['count_child'];
         break;
+
       case 'UNTIL':
         $form_values['UNTIL'] = $form_values['until_child'];
         break;
@@ -832,14 +901,23 @@ function date_repeat_merge($form_values, $element) {
   unset($form_values['count_child']);
   unset($form_values['until_child']);
 
-  if (array_key_exists('BYDAY', $form_values) && is_array($form_values['BYDAY'])) unset($form_values['BYDAY']['']);
-  if (array_key_exists('BYMONTH', $form_values) && is_array($form_values['BYMONTH'])) unset($form_values['BYMONTH']['']);
-  if (array_key_exists('BYMONTHDAY', $form_values) && is_array($form_values['BYMONTHDAY'])) unset($form_values['BYMONTHDAY']['']);
+  if (array_key_exists('BYDAY', $form_values) && is_array($form_values['BYDAY'])) {
+    unset($form_values['BYDAY']['']);
+  }
+
+  if (array_key_exists('BYMONTH', $form_values) && is_array($form_values['BYMONTH'])) {
+    unset($form_values['BYMONTH']['']);
+  }
+
+  if (array_key_exists('BYMONTHDAY', $form_values) && is_array($form_values['BYMONTHDAY'])) {
+    unset($form_values['BYMONTHDAY']['']);
+  }
 
   if (array_key_exists('UNTIL', $form_values) && is_array($form_values['UNTIL']['datetime'])) {
     $function = $element['#date_repeat_widget'] . '_input_date';
     $until_element = $element;
-    $until_element['#date_format'] = !empty($element['#date_format']) ? date_limit_format($element['#date_format'], array('year', 'month', 'day')) : 'Y-m-d';
+    $until_element['#date_format'] = !empty($element['#date_format']) ?
+    date_limit_format($element['#date_format'], array('year', 'month', 'day')) : 'Y-m-d';
     $date = $function($until_element, $form_values['UNTIL']['datetime']);
     $form_values['UNTIL']['datetime'] = is_object($date) ? $date->format(DATE_FORMAT_DATETIME) : '';
   }
@@ -849,9 +927,14 @@ function date_repeat_merge($form_values, $element) {
   if (array_key_exists('EXDATE', $form_values) && is_array($form_values['EXDATE'])) {
     $function = $element['#date_repeat_widget'] . '_input_date';
     $exdate_element = $element;
+    $date_format = 'Y-m-d';
+    if (!empty($element['#date_format'])) {
+      $grans = array('year', 'month', 'day');
+      $date_format = date_limit_format($element['#date_format'], $grans);
+    }
     foreach ($form_values['EXDATE'] as $delta => $value) {
       if (is_array($value['datetime'])) {
-        $exdate_element['#date_format'] = !empty($element['#date_format']) ? date_limit_format($element['#date_format'], array('year', 'month', 'day')) : 'Y-m-d';
+        $exdate_element['#date_format'] = $date_format;
         $date = $function($exdate_element, $form_values['EXDATE'][$delta]['datetime']);
         $form_values['EXDATE'][$delta]['datetime'] = is_object($date) ? $date->format(DATE_FORMAT_DATETIME) : '';
       }
@@ -864,9 +947,14 @@ function date_repeat_merge($form_values, $element) {
   if (array_key_exists('RDATE', $form_values) && is_array($form_values['RDATE'])) {
     $function = $element['#date_repeat_widget'] . '_input_date';
     $rdate_element = $element;
+    $date_format = 'Y-m-d';
+    if (!empty($element['#date_format'])) {
+      $grans = array('year', 'month', 'day');
+      $date_format = date_limit_format($element['#date_format'], $grans);
+    }
     foreach ($form_values['RDATE'] as $delta => $value) {
       if (is_array($value['datetime'])) {
-        $rdate_element['#date_format'] = !empty($element['#date_format']) ? date_limit_format($element['#date_format'], array('year', 'month', 'day')) : 'Y-m-d';
+        $rdate_element['#date_format'] = $date_format;
         $date = $function($rdate_element, $form_values['RDATE'][$delta]['datetime']);
         $form_values['RDATE'][$delta]['datetime'] = is_object($date) ? $date->format(DATE_FORMAT_DATETIME) : '';
       }
@@ -910,7 +998,7 @@ function date_repeat_rrule_validate($element, &$form_state) {
 }
 
 /**
- * Theme the exception list as a table so the buttons line up
+ * Theme the exception list as a table so the buttons line up.
  */
 function theme_date_repeat_current_exceptions($vars) {
   $rows = $vars['rows'];
@@ -920,11 +1008,14 @@ function theme_date_repeat_current_exceptions($vars) {
       $rows_info[] = array(drupal_render($value['action']), drupal_render($value['display']));
     }
   }
-  return theme('table', array('header' => array(t('Delete'), t('Current exceptions')), 'rows' => $rows_info));
+  return theme('table', array(
+    'header' => array(t('Delete'), t('Current exceptions')),
+    'rows' => $rows_info)
+  );
 }
 
- /**
- * Theme the exception list as a table so the buttons line up
+/**
+ * Theme the exception list as a table so the buttons line up.
  */
 function theme_date_repeat_current_additions($rows = array()) {
   $rows_info = array();
@@ -933,7 +1024,10 @@ function theme_date_repeat_current_additions($rows = array()) {
       $rows_info[] = array(drupal_render($value['action']), drupal_render($value['display']));
     }
   }
-  return theme('table', array('header' => array(t('Delete'), t('Current additions')), 'rows' => $rows_info));
+  return theme('table', array(
+    'header' => array(t('Delete'), t('Current additions')),
+    'rows' => $rows_info)
+  );
 }
 
 /**
@@ -943,7 +1037,13 @@ function theme_date_repeat_rrule($vars) {
   $element = $vars['element'];
   $id = drupal_html_id('repeat-settings-fieldset');
   $parents = $element['#parents'];
-  $selector = "{$parents[0]}[{$parents[1]}][{$parents[2]}][show_repeat_settings]";
+
+  $selector = $parents[0];
+  for ($i = 1; $i < count($parents) - 1; $i++) {
+    $selector .= '[' . $parents[$i] . ']';
+  }
+  $selector .= '[show_repeat_settings]';
+
   $fieldset = array(
     '#type' => 'item',
     '#title' => t('Repeat settings'),
@@ -960,6 +1060,9 @@ function theme_date_repeat_rrule($vars) {
   return drupal_render($fieldset);
 }
 
+/**
+ * Filter non zero values.
+ */
 function date_repeat_filter_non_zero_value($value) {
   return $value !== 0;
 }

@@ -341,7 +341,7 @@ function hook_search_api_query_alter(SearchApiQueryInterface $query) {
   // Exclude entities with ID 0. (Assume the ID field is always indexed.)
   if ($query->getIndex()->getEntityType()) {
     $info = entity_get_info($query->getIndex()->getEntityType());
-    $query->condition($info['entity keys']['id'], 0, '!=');
+    $query->condition($info['entity keys']['id'], 0, '<>');
   }
 }
 

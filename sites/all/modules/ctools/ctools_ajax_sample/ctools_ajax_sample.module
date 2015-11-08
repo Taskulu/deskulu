@@ -524,7 +524,7 @@ function ctools_ajax_sample_wizard_next(&$form_state) {
 }
 
 /**
- * Handle the 'finish' click on teh add/edit pane form wizard.
+ * Handle the 'finish' click on the add/edit pane form wizard.
  *
  * All we need to do is set a flag so the return can handle adding
  * the pane.

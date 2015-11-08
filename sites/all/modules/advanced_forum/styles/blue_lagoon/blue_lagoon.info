@@ -4,9 +4,9 @@ description = Based on the Blue Lagoon colors of Garland.
 version = 2.x
 base style = naked
 
-; Information added by Drupal.org packaging script on 2015-02-10
-version = "7.x-2.5"
+; Information added by Drupal.org packaging script on 2015-10-26
+version = "7.x-2.6"
 core = "7.x"
 project = "advanced_forum"
-datestamp = "1423590792"
+datestamp = "1445848452"
 

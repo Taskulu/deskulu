@@ -34,14 +34,14 @@ function ctools_context_create_user_edit_form($empty, $user = NULL, $conf = FALS
   $category = !empty($conf['category']) ? $conf['category'] : FALSE;
   unset($conf['category']);
 
+  // If no category was specified, use the default 'account'.
+  if (!$category) {
+    $category = 'account';
+  }
   // Return previously created contexts, per category.
   static $created = array();
   if (!empty($created[$category])) {
     return $created[$category];
-  }
-  // If no category was specified, use the default 'account'.
-  if (!$category) {
-    $category = 'account';
   }
 
   $context = new ctools_context(array('form', 'user_edit', 'user_form', 'user_edit_form', 'user', 'entity:user'));

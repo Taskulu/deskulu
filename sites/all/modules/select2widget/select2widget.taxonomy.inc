@@ -6,7 +6,18 @@ function select2widget_taxonomy_process_callback($element, &$form_state, $form) 
   // Send Drupal.settings a reference to this form element.
 
   $settings = $element['#settings']['select2widgetajax'];
-  $cardinality = $form_state['field'][$element['#field_name']][$element['#language']]['field']['cardinality'];
+  $field_name = $element['#field_name'];
+  $langcode = $element['#language'];
+
+  if (!empty($form_state['field'][$field_name])) {
+    $cardinality = $form_state['field'][$field_name][$langcode]['field']['cardinality'];
+  }
+  else {
+    $parents = array_merge($element['#parents'], array($field_name));
+    $field = drupal_array_get_nested_value($form_state, $parents, $langcode);
+    $cardinality = $field['field']['cardinality'];
+  }
+
   $data['select2widgetajax']['elements'][$element['#id']] = array(
     'id' => $element['#id'],
     'url' => $element['#autocomplete_path'],
@@ -14,6 +25,7 @@ function select2widget_taxonomy_process_callback($element, &$form_state, $form) 
     'allow_new' => $settings['allow_new'],
     'separator' => $settings['separator'],
     'cardinality' => $cardinality,
+    'delay' => variable_get('select2_delay', '100'),
     'set_level' => $settings['set_level'],
     'min_char' => $settings['min_char'],
     'placeholder' => $settings['placeholder'],

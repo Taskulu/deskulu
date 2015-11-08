@@ -229,12 +229,20 @@ define('MENU_CONTEXT_INLINE', 0x0002);
 define('MENU_FOUND', 1);
 
 /**
- * Internal menu status code -- Menu item was not found.
+ * Menu status code -- Not found.
+ *
+ * This can be used as the return value from a page callback, although it is
+ * preferable to use a load function to accomplish this; see the hook_menu()
+ * documentation for details.
  */
 define('MENU_NOT_FOUND', 2);
 
 /**
- * Internal menu status code -- Menu item access is denied.
+ * Menu status code -- Access denied.
+ *
+ * This can be used as the return value from a page callback, although it is
+ * preferable to use an access callback to accomplish this; see the hook_menu()
+ * documentation for details.
  */
 define('MENU_ACCESS_DENIED', 3);
 
@@ -431,7 +439,7 @@ function menu_set_item($path, $router_item) {
  *
  * @param $path
  *   The path; for example, 'node/5'. The function will find the corresponding
- *   node/% item and return that.
+ *   node/% item and return that. Defaults to the current path.
  * @param $router_item
  *   Internal use only.
  *
@@ -1487,7 +1495,7 @@ function menu_tree_collect_node_links(&$tree, &$node_links) {
  *   menu_tree_collect_node_links().
  */
 function menu_tree_check_access(&$tree, $node_links = array()) {
-  if ($node_links) {
+  if ($node_links && (user_access('access content') || user_access('bypass node access'))) {
     $nids = array_keys($node_links);
     $select = db_select('node', 'n');
     $select->addField('n', 'nid');
@@ -2613,10 +2621,30 @@ function menu_get_active_breadcrumb() {
  */
 function menu_get_active_title() {
   $active_trail = menu_get_active_trail();
+  $local_task_title = NULL;
 
   foreach (array_reverse($active_trail) as $item) {
-    if (!(bool) ($item['type'] & MENU_IS_LOCAL_TASK)) {
-      return $item['title'];
+    // Local task titles are displayed as tabs and therefore should not be
+    // repeated as the page title. However, if the local task appears in a
+    // top-level menu, it is no longer a "local task" anymore (the front page
+    // of the site does not have tabs) so it is better to use the local task
+    // title in that case than to fall back on the front page link in the
+    // active trail (which is usually "Home" and would not make sense in this
+    // context).
+    if ((bool) ($item['type'] & MENU_IS_LOCAL_TASK)) {
+      // A local task title is being skipped; track it in case it needs to be
+      // used later.
+      $local_task_title = $item['title'];
+    }
+    else {
+      // This is not a local task, so use it for the page title (unless the
+      // conditions described above are met).
+      if (isset($local_task_title) && isset($item['href']) && $item['href'] == '<front>') {
+        return $local_task_title;
+      }
+      else {
+        return $item['title'];
+      }
     }
   }
 }

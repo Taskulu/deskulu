@@ -27,7 +27,7 @@ Drupal.date.EndDateHandler = function (widget) {
   this.$widget = $(widget);
   this.$start = this.$widget.find('.form-type-date-select[class$=value]');
   this.$end = this.$widget.find('.form-type-date-select[class$=value2]');
-  if (this.$end.length == 0) {
+  if (this.$end.length === 0) {
     return;
   }
   this.initializeSelects();
@@ -68,7 +68,7 @@ Drupal.date.EndDateHandler.prototype.endDateIsBlank = function () {
   var id;
   for (id in this.selects) {
     if (this.selects.hasOwnProperty(id)) {
-      if (this.selects[id].end.val() != '') {
+      if (this.selects[id].end.val() !== '') {
         return false;
       }
     }

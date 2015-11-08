@@ -3,9 +3,11 @@
  * @file
  * A flexible, configurable date filter.
  * This filter combines multiple date filters into a single filter
- * where all fields are controlled by the same date and can be combined with either AND or OR.
+ * where all fields are controlled by the same date and can be combined
+ * with either AND or OR.
  */
 
+// @codingStandardsIgnoreStart
 class date_views_filter_handler extends date_views_filter_handler_simple {
   function init(&$view, &$options) {
     parent::init($view, $options);
@@ -63,6 +65,9 @@ class date_views_filter_handler extends date_views_filter_handler_simple {
       // Respect relationships when determining the table alias.
       if ($field['table_name'] != $this->table || !empty($this->relationship)) {
         $this->related_table_alias = $this->query->ensure_table($field['table_name'], $this->relationship);
+      }
+      else {
+        $this->related_table_alias = null;
       }
       $table_alias = !empty($this->related_table_alias) ? $this->related_table_alias : $field['table_name'];
       $field_name = $table_alias . '.' . $field['field_name'];
@@ -179,3 +184,4 @@ class date_views_filter_handler extends date_views_filter_handler_simple {
     }
   }
 }
+// @codingStandardsIgnoreEnd
