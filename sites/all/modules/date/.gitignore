@@ -1,0 +1,4 @@
+*.patch
+*.diff
+.idea/
+.idea/*

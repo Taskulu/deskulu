@@ -1,0 +1,170 @@
+<?php
+
+/**
+ * @file
+ * Core and contrib hook implementations for Mime Mail Example module.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function mimemail_example_menu() {
+  $items['example/mimemail_example'] = array(
+    'title' => 'Mime Mail Example',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('mimemail_example_form'),
+    'access arguments' => array('access content'),
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_mail().
+ */
+function mimemail_example_mail($key, &$message, $params) {
+  $message['subject'] = $params['subject'];
+  $message['body'][] = $params['body'];
+}
+
+/**
+ * The example email contact form.
+ */
+function mimemail_example_form() {
+  global $user;
+
+  $form['intro'] = array(
+    '#markup' => t('Use this form to send a HTML message to an e-mail address. No spamming!'),
+  );
+
+  $form['key'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Key'),
+    '#default_value' => 'test',
+    '#required' => TRUE,
+  );
+
+  $form['to'] = array(
+    '#type' => 'textfield',
+    '#title' => t('To'),
+    '#default_value' => $user->mail,
+    '#required' => TRUE,
+  );
+
+  $form['from'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Sender name'),
+  );
+
+  $form['from_mail'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Sender e-mail address'),
+  );
+
+  $form['params'] = array(
+    '#tree' => TRUE,
+    'headers' => array(
+      'Cc' => array(
+        '#type' => 'textfield',
+        '#title' => t('Cc'),
+      ),
+      'Bcc' => array(
+        '#type' => 'textfield',
+        '#title' => t('Bcc'),
+      ),
+      'Reply-to' => array(
+        '#type' => 'textfield',
+        '#title' => t('Reply to'),
+      ),
+      'List-unsubscribe' => array(
+        '#type' => 'textfield',
+        '#title' => t('List-unsubscribe'),
+      ),
+    ),
+    'subject' => array(
+      '#type' => 'textfield',
+      '#title' => t('Subject'),
+    ),
+    'body' => array(
+      '#type' => 'textarea',
+      '#title' => t('HTML message'),
+    ),
+    'plain' => array(
+      '#type' => 'hidden',
+      '#states' => array(
+        'value' => array(
+          ':input[name="body"]' => array('value' => ''),
+        ),
+      ),
+    ),
+    'plaintext' => array(
+      '#type' => 'textarea',
+      '#title' => t('Plain text message'),
+    ),
+    'attachments' => array(
+      '#name' => 'files[attachment]',
+      '#type' => 'file',
+      '#title' => t('Choose a file to send as attachment'),
+    ),
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Send message'),
+  );
+
+  return $form;
+}
+
+/**
+ * Form validation logic for the email contact form.
+ */
+function mimemail_example_form_validate($form, &$form_state) {
+  $values = &$form_state['values'];
+
+  if (!valid_email_address($values['to'])) {
+    form_set_error('to', t('That e-mail address is not valid.'));
+  }
+
+  $file = file_save_upload('attachment');
+  if ($file) {
+    $file = file_move($file, 'public://');
+    $values['params']['attachments'][] = array(
+      'filepath' => $file->uri,
+    );
+  }
+}
+
+/**
+ * Form submission logic for the email contact form.
+ */
+function mimemail_example_form_submit($form, &$form_state) {
+  $values = $form_state['values'];
+
+  $module = 'mimemail_example';
+  $key = $values['key'];
+  $to = $values['to'];
+  $language = language_default();
+  $params = $values['params'];
+
+  if (!empty($values['from_mail'])) {
+    module_load_include('inc', 'mimemail');
+    $from = mimemail_address(array(
+      'name' => $values['from'],
+      'mail' => $values['from_mail'],
+    ));
+  }
+  else {
+    $from = $values['from'];
+  }
+
+  $send = TRUE;
+
+  $result = drupal_mail($module, $key, $to, $language, $params, $from, $send);
+  if ($result['result'] == TRUE) {
+    drupal_set_message(t('Your message has been sent.'));
+  }
+  else {
+    drupal_set_message(t('There was a problem sending your message and it was not sent.'), 'error');
+  }
+}

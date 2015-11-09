@@ -1,0 +1,12 @@
+name = Mime Mail Example
+description = Example of how to use the Mime Mail module.
+dependencies[] = mimemail
+package = Example modules
+core = 7.x
+
+; Information added by Drupal.org packaging script on 2015-08-02
+version = "7.x-1.0-beta4"
+core = "7.x"
+project = "mimemail"
+datestamp = "1438530555"
+

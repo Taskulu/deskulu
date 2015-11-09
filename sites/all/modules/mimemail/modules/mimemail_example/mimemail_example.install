@@ -1,0 +1,20 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for Mime Mail Example module.
+ */
+
+/**
+ * Implements hook_enable().
+ */
+function mimemail_example_enable() {
+  mailsystem_set(array('mimemail_example' => 'MimeMailSystem'));
+}
+
+/**
+ * Implements hook_disable().
+ */
+function mimemail_example_disable() {
+  mailsystem_clear(array('mimemail_example' => 'MimeMailSystem'));
+}

@@ -32,6 +32,11 @@ function incoming_mail_create_ticket() {
   foreach ($data as $datum) {
     $files = array();
     $msg = $datum['msg'];
+    $account = user_load_by_mail($msg['from_email']);
+    if ($account && $account->status == 0) {
+      watchdog('incoming_mail', 'Ticket not created as user is blocked');
+      return 'blocked';
+    }
     if ($msg['email'] == 'support@mail.taskulu.com' || $msg['email'] == 'support@taskulu.com') {
       $event = 'incoming_mail_ticket_new';
     }
