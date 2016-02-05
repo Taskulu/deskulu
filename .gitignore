@@ -1,6 +1,15 @@
 # Ignore configuration files that may contain sensitive information.
 sites/*/settings*.php
-
+.idea
 # Ignore paths that contain user-generated content.
 sites/*/files
 sites/*/private
+CHANGELOG.txt
+COPYRIGHT.txt
+INSTALL.txt
+INSTALL.*.txt
+README.txt
+LICENSE.txt
+MAINTAINERS.txt
+UPGRADE.txt
+install.php

@@ -325,291 +325,34 @@ function ckeditor_scayt_langcode($lang) {
 }
 
 /**
- * List of CKEditor plugins;
+ * List of CKEditor plugins.
  *
+ * @param boolean $render
+ *   Whether to generate plugin paths. Default to FALSE.
  * @return array
  */
 function ckeditor_load_plugins($render = FALSE) {
-  $arr = array();
-  $base_path = '%base_path%';
-  $editor_path = '%editor_path%';
-  $plugin_dir = '%plugin_dir%';
-  $plugin_dir_additional = '%plugin_dir_extra%';
-  $pattern = '#\.addButton\([\s]*[\'"](.*?)[\'"][\s]*\,[\s]*\{[\s]*(.*?)[\s]*\}#s';
-
-  /*
-   * External plugins
-   */
-  if (module_exists('ckeditor_swf') && file_exists(drupal_get_path('module', 'ckeditor_swf') . '/plugins/swf/plugin.js')) {
-    $arr['ckeditor_swf'] = array(
-      'name' => 'swf',
-      'desc' => t('Support for the CKEditor SWF module'),
-      'path' => $base_path . drupal_get_path('module', 'ckeditor_swf') . '/plugins/swf/',
-      'buttons' => FALSE,
-      'default' => 't'
-    );
-  }
-
-  if (module_exists('ckeditor_link') && file_exists(drupal_get_path('module', 'ckeditor_link') . '/plugins/link/plugin.js')) {
-    $arr['ckeditor_link'] = array(
-      'name' => 'drupal_path',
-      'desc' => t('Support for the CKEditor Link module'),
-      'path' => $base_path . drupal_get_path('module', 'ckeditor_link') . '/plugins/link/',
-      'buttons' => FALSE,
-      'default' => 't'
-    );
-  }
-
-  if (module_exists('linkit') && file_exists(drupal_get_path('module', 'linkit') . '/editors/ckeditor/plugin.js')) {
-    $arr['linkit'] = array(
-      'name' => 'Linkit',
-      'desc' => t('Support for the Linkit module <em>(buttons: Linkit)</em>'),
-      'path' => $base_path . drupal_get_path('module', 'linkit') . '/editors/ckeditor/',
-      'buttons' => array(
-        'Linkit' => array(
-          'title' => 'Linkit',
-          'icon' => $base_path . drupal_get_path('module', 'linkit') . '/editors/ckeditor/linkit.png'
-        )
-      ),
-      'default' => 't'
-    );
-  }
-
-  /*
-   * CKEditor build-in plugins
-   */
-  $_editor_path = ckeditor_path('local');
-  //die($editor_path);
-  if ($_editor_path != '<URL>') {
-    if (file_exists($_editor_path . '/plugins/tableresize/plugin.js')) {
-      $arr['tableresize'] = array(
-        'name' => 'tableresize',
-        'desc' => t('Table Resize plugin'),
-        'path' => $editor_path . '/plugins/tableresize/',
-        'buttons' => FALSE,
-        'default' => 't'
-      );
-    }
-
-    if (file_exists($_editor_path . '/plugins/autogrow/plugin.js')) {
-      $arr['autogrow'] = array(
-        'name' => 'autogrow',
-        'desc' => t('Auto Grow plugin'),
-        'path' => $editor_path . '/plugins/autogrow/',
-        'buttons' => FALSE,
-        'default' => 'f'
-      );
-    }
-
-    if (file_exists($_editor_path . '/plugins/stylesheetparser/plugin.js')) {
-      $arr['stylesheetparser'] = array(
-        'name' => 'stylesheetparser',
-        'desc' => t('Stylesheet Parser plugin'),
-        'path' => $editor_path . '/plugins/stylesheetparser/',
-        'buttons' => FALSE,
-        'default' => 'f'
-      );
-    }
-  }
-  else {
-    $_editor_url = ckeditor_path('url');
-    if (preg_match("/\/(standard|full)-all/", $_editor_url)) {
-      $arr['tableresize'] = array(
-        'name' => 'tableresize',
-        'desc' => t('Table Resize plugin. See !link for more details.', array(
-          '!link' => l(t('addon page'), 'http://ckeditor.com/addon/tableresize')
-        )),
-        'path' => $_editor_url . '/plugins/tableresize/',
-        'buttons' => FALSE,
-        'default' => 't'
-      );
-      $arr['autogrow'] = array(
-        'name' => 'autogrow',
-        'desc' => t('Auto Grow plugin. See !link for more details.', array(
-            '!link' => l(t('addon page'), 'http://ckeditor.com/addon/autogrow')
-          )),
-        'path' => $_editor_url . '/plugins/autogrow/',
-        'buttons' => FALSE,
-        'default' => 'f'
-      );
-      $arr['stylesheetparser'] = array(
-        'name' => 'stylesheetparser',
-        'desc' => t('Stylesheet Parser plugin. See !link for more details.', array(
-          '!link' => l(t('addon page'), 'http://ckeditor.com/addon/stylesheetparser')
-        )),
-        'path' => $_editor_url . '/plugins/stylesheetparser/',
-        'buttons' => FALSE,
-        'default' => 'f'
-      );
-      $arr['codesnippet'] = array(
-        'name' => 'codesnippet',
-        'desc' => t('Plugin for inserting Code Snippets. See !link for more details. See !help for additional instructions.', array(
-            '!link' => l(t('addon page'), 'http://ckeditor.com/addon/codesnippet'),
-            '!help' => l(t('help'), 'admin/help/ckeditor', array('fragment' => 'codesnippet'))
-          )),
-        'path' => $_editor_url . '/plugins/codesnippet/',
-        'buttons' => array(
-          'CodeSnippet' => array(
-            'icon' => 'icons/codesnippet.png',
-            'label' => 'Insert Code Snippet',
-          )
-        ),
-        'default' => 'f'
-      );
-      $arr['mathjax'] = array(
-        'name' => 'mathjax',
-        'desc' => t('Plugin for inserting Mathematical Formula (MathJax). See !link for more details. See !help for additional instructions.', array(
-          '!link' => l(t('addon page'), 'http://ckeditor.com/addon/mathjax'),
-          '!help' => l(t('help'), 'admin/help/ckeditor', array('fragment' => 'mathjax'))
-        )),
-        'path' => $_editor_url . '/plugins/mathjax/',
-        'buttons' => array(
-          'Mathjax' => array(
-            'icon' => 'icons/mathjax.png',
-            'label' => 'Insert Mathematical Formulas',
-          )
-        ),
-        'default' => 'f'
-      );
-    }
-  }
-
-  /*
-   * CKEditor module plugins
-   */
-  $_plugin_dir = ckeditor_module_path('local') . '/plugins/';
-  if ($handle = opendir($_plugin_dir)) {
-    while (false !== ($file = readdir($handle))) {
-      if (is_dir($_plugin_dir . $file) && file_exists($_plugin_dir . $file . '/plugin.js')) {
-        $source = file_get_contents($_plugin_dir . $file . '/plugin.js');
-        $buttons = array();
-        if (preg_match_all($pattern, $source, $matches)) {
-          foreach ($matches[1] as $i => $button_name) {
-            if (preg_match('#(icon)[\s]*\:[\s]*([^\,\n]*)#', $matches[2][$i], $matches2)) {
-              $buttons[$button_name] = array();
-              $buttons[$button_name]['label'] = $button_name;
-              $matches2[2] = str_replace(array('this.path', '+', '\'', '"'), array('', '', '', ''), $matches2[2]);
-              $buttons[$button_name]['icon'] = trim($matches2[2]);
-            }
-          }
-        }
-        if (preg_match('#@file ([^\n\r]*)#', $source, $matches)) {
-          $arr[$file] = array(
-            'name' => $file,
-            'desc' => t($matches[1]),
-            'path' => $plugin_dir . $file . '/',
-            'buttons' => (count($buttons) > 0) ? $buttons : FALSE,
-            'default' => 'f'
-          );
-        }
-        else {
-          $arr[$file] = array(
-            'name' => $file,
-            'desc' => t('Plugin file: ' . $file),
-            'path' => $plugin_dir . $file . '/',
-            'buttons' => (count($buttons) > 0) ? $buttons : FALSE,
-            'default' => 'f'
-          );
-        }
-      }
-    }
-    closedir($handle);
-  }
-
-  /*
-   * CKEditor module plugins - additional directory
-   */
-  $_plugin_dir_additional = ckeditor_plugins_path('local') . '/';
-  if ($_plugin_dir != $_plugin_dir_additional && is_dir($_plugin_dir_additional) && $handle = opendir($_plugin_dir_additional)) {
-    while (false !== ($file = readdir($handle))) {
-      if (is_dir($_plugin_dir_additional . $file) && file_exists($_plugin_dir_additional . $file . '/plugin.js')) {
-        $source = file_get_contents($_plugin_dir_additional . $file . '/plugin.js');
-        $buttons = array();
-        if (preg_match_all($pattern, $source, $matches)) {
-          foreach ($matches[1] as $i => $button_name) {
-            if (preg_match('#(icon)[\s]*\:[\s]*([^\,\n]*)#', $matches[2][$i], $matches2)) {
-              $buttons[$button_name] = array();
-              $buttons[$button_name]['label'] = $button_name;
-              $matches2[2] = str_replace(array('this.path', '+', '\'', '"'), array('', '', '', ''), $matches2[2]);
-              $buttons[$button_name]['icon'] = trim($matches2[2]);
-            }
-          }
-        }
-        if (preg_match('#@file ([^\n\r]*)#', $source, $matches)) {
-          $arr[$file] = array(
-            'name' => $file,
-            'desc' => t($matches[1]),
-            'path' => $plugin_dir_additional . $file . '/',
-            'buttons' => (count($buttons) > 0) ? $buttons : FALSE,
-            'default' => 'f'
-          );
-        }
-        else {
-          $arr[$file] = array(
-            'name' => $file,
-            'desc' => t('Plugin file: ' . $file),
-            'path' => $plugin_dir_additional . $file . '/',
-            'buttons' => (count($buttons) > 0) ? $buttons : FALSE,
-            'default' => 'f'
-          );
-        }
-      }
-    }
-
-    closedir($handle);
-  }
-
-  /*
-   * CKEditor plugins registered by hook
-   */
   $plugins = module_invoke_all('ckeditor_plugin');
 
+  // [#2159403] introduced a slight change in CKEditor API, expecting the path
+  // to a plugin returned by hook_ckeditor_plugin() to be a full URL. This
+  // breaks backward compatibility for external plugins, so we're fixing it
+  // below.
   foreach ($plugins as $i => $plugin) {
-    if (file_exists($plugin['path'] . 'plugin.js')) {
-      $source = file_get_contents($plugin['path'] . 'plugin.js');
-      $plugins[$i]['path'] = $base_path . $plugin['path'];
-      if (!isset($plugin['buttons']) || count($plugin['buttons']) == 0) {
-        $buttons = array();
-        if (preg_match_all($pattern, $source, $matches)) {
-          foreach ($matches[1] as $j => $button_name) {
-            if (preg_match('#(icon)[\s]*\:[\s]*([^\,\n]*)#', $matches[2][$j], $matches2)) {
-              $buttons[$button_name] = array();
-              $buttons[$button_name]['label'] = $button_name;
-              $matches2[2] = str_replace(array('this.path', '+', '\'', '"'), array('', '', '', ''), $matches2[2]);
-              $buttons[$button_name]['icon'] = trim($matches2[2]);
-            }
-          }
-        }
-        $plugins[$i]['buttons'] = (count($buttons) > 0) ? $buttons : FALSE;
-      }
-    }
-    else {
-      unset($plugins[$i]);
+    if (strpos($plugin['path'], '%') !== 0 && !preg_match('|^(http(s)?:)?\/?\/|i', $plugin['path'])) {
+      $plugins[$i]['path'] = '%base_path%' . $plugin['path'];
     }
   }
-  $arr = array_merge($arr, $plugins);
 
-  if (isset($arr['media']) && module_exists('media') == FALSE) {
-    unset($arr['media']);
-  }
+  drupal_alter('ckeditor_plugin', $plugins);
 
-  if (isset($arr['imce']) && module_exists('imce') == FALSE) {
-    unset($arr['imce']);
-  }
-  //remove page break button if there is no module to do this
-  if (isset($arr['drupalbreaks']['buttons']['DrupalPageBreak']) && !module_exists('paging') && !module_exists('pagebreak') && !module_exists('smart_paging')) {
-    unset($arr['drupalbreaks']['buttons']['DrupalPageBreak']);
+  ksort($plugins);
+
+  if ($render) {
+    $plugins = ckeditor_plugins_render($plugins);
   }
 
-  if (isset($arr['drupalbreaks'])) {
-    $arr['drupalbreaks']['default'] = 't';
-  }
-
-  ksort($arr);
-  if ($render === TRUE) {
-    $arr = ckeditor_plugins_render($arr);
-  }
-  return $arr;
+  return $plugins;
 }
 
 /**
@@ -810,7 +553,6 @@ function ckeditor_profile_settings_compile($global_profile, $profile) {
   $current_theme = variable_get('theme_default', $theme);
 
   $settings = array();
-  $conf = array();
   $conf = $profile->settings;
   $profile_name = $profile->name;
 
@@ -861,6 +603,7 @@ function ckeditor_profile_settings_compile($global_profile, $profile) {
   }
   $settings['format_tags'] = $conf['font_format'];
   $settings['show_toggle'] = $conf['show_toggle'];
+  $settings['default'] = $conf['default'];
   if (!empty($conf['allowed_content']) && $conf['allowed_content'] === 'f') {
     $settings['allowedContent'] = true;
   }
@@ -887,18 +630,6 @@ function ckeditor_profile_settings_compile($global_profile, $profile) {
 
   if (isset($conf['loadPlugins'])) {
     $settings['loadPlugins'] = ckeditor_plugins_render($conf['loadPlugins']);
-
-    if (array_key_exists('media', $settings['loadPlugins']) && module_exists('media')) {
-      module_load_include('inc', 'media', 'includes/media.browser');
-      $javascript = media_browser_js();
-      foreach ($javascript as $key => $definitions) {
-        foreach ($definitions as $definition) {
-          $function = 'drupal_add_' . $key;
-          call_user_func_array($function, $definition);
-        }
-      }
-      drupal_add_js(drupal_get_path('module', 'ckeditor') . '/plugins/media/library.js', array('scope' => 'footer', 'weight' => -20));
-    }
   }
   else {
     $settings['loadPlugins'] = array();
@@ -1347,6 +1078,12 @@ function ckeditor_profile_settings_compile($global_profile, $profile) {
     }
   }
 
+  if (!empty($settings['loadPlugins'])) {
+    // Remove orphaned plugins (coming from disabled modules).
+    $available_plugins = array_keys(ckeditor_load_plugins());
+    $settings['loadPlugins'] = array_intersect_key($settings['loadPlugins'], array_flip($available_plugins));
+  }
+
   // Allow modules to modify the settings.
   drupal_alter('ckeditor_settings', $settings, $conf);
 
@@ -1427,9 +1164,8 @@ function ckeditor_load_by_field($field, $format, $show_toggle = TRUE, $add_field
     $ckeditor_in_default_format = TRUE;
   }
 
-  $settings = FALSE;
   if ($settings = ckeditor_profiles_compile($format)) {
-    $ckeditor_on = ($profile->settings['default'] == 't') ? TRUE : FALSE;
+    $ckeditor_on = ($settings['default'] == 't' && $profile->settings['default'] == 't') ? TRUE : FALSE;
   }
   elseif ($settings = ckeditor_profiles_compile($use_ckeditor)) {
     $ckeditor_on = FALSE;

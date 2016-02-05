@@ -146,7 +146,7 @@ function ckeditor_install() {
     $arr['ckeditor_path'] = $ckeditor_path;
   }
   else {
-    $arr['ckeditor_path'] = '//cdn.ckeditor.com/4.4.3/full-all';
+    $arr['ckeditor_path'] = '//cdn.ckeditor.com/' . CKEDITOR_LATEST . '/full-all';
   }
 
   db_insert('ckeditor_settings')->fields(array("name" => "CKEditor Global Profile", "settings" => serialize($arr)))->execute();

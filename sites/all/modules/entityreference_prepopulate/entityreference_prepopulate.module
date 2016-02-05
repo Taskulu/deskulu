@@ -62,13 +62,7 @@ function entityreference_prepopulate_field_update_instance($instance, $prior_ins
  * Implements hook_field_attach_form().
  */
 function entityreference_prepopulate_field_attach_form($entity_type, $entity, &$form, &$form_state, $langcode) {
-  list($id,,$bundle) = entity_extract_ids($entity_type, $entity);
-
-  if (!empty($form_state['triggering_element']['#ajax'])) {
-    // We are inside AJAX, so values can't be taken from URL at the
-    // moment.
-    return;
-  }
+  list($id,, $bundle) = entity_extract_ids($entity_type, $entity);
 
   // Check if there is a field that needs to be prepopulated attached to the
   // given entity.
@@ -92,12 +86,6 @@ function entityreference_prepopulate_field_attach_form($entity_type, $entity, &$
       }
       $settings = $instance['settings']['behaviors']['prepopulate'];
 
-      if ((!empty($settings['skip_perm']) && user_access($settings['skip_perm'])) || ($id && empty($settings['action_on_edit']))) {
-        // User has access to skip the action, or the entity is already
-        // saved, but "Apply action on edit", is disabled.
-        continue;
-      }
-
       $field = $value['field'];
 
       // Store prepopulated values in the form state to make them persistent,
@@ -106,6 +94,12 @@ function entityreference_prepopulate_field_attach_form($entity_type, $entity, &$
 
       if ($ids = entityreference_prepopulate_get_values($field, $instance)) {
         $form_state['entityreference_prepopulate'][$instance['entity_type']][$instance['bundle']][$field_name] = $ids;
+      }
+
+      if ((!empty($settings['skip_perm']) && user_access($settings['skip_perm'])) || ($id && empty($settings['action_on_edit']))) {
+        // User has access to skip the action, or the entity is already
+        // saved, but "Apply action on edit", is disabled.
+        continue;
       }
 
       if ($ids || ($id && !empty($settings['action_on_edit']))) {
@@ -234,24 +228,10 @@ function entityreference_prepopulate_get_values($field, $instance, $validate = T
     $validate,
   );
 
-  if (module_exists('og') && og_is_group_audience_field($field_name)) {
-    if (empty($instance['field_mode'])) {
-      // Group audience field, but no field-mode provided.
-      // So we iterate over the "default" and possibly "admin" field-modes,
-      // and return those values together.
-      $ids = array();
-      $field_modes = !user_access('administer group') ? array('default') : array('default', 'admin');
-      foreach ($field_modes as $field_mode) {
-        $instance['field_mode'] = $field_mode;
-        if ($og_ids = entityreference_prepopulate_get_values($field, $instance)) {
-          $ids = array_merge($ids, $og_ids);
-        }
-      }
+  $is_audience_field = module_exists('og') && og_is_group_audience_field($field_name);
 
-      // Return the values.
-      return $ids;
-    }
-
+  // Add field mode to ID if the audience field has one.
+  if ($is_audience_field && !empty($instance['field_mode'])) {
     $identifier[] = $instance['field_mode'];
   }
 
@@ -261,38 +241,53 @@ function entityreference_prepopulate_get_values($field, $instance, $validate = T
     return $cache[$identifier];
   }
 
+  if ($is_audience_field && empty($instance['field_mode'])) {
+    // Group audience field, but no field-mode provided.
+    // So we iterate over the "default" and possibly "admin" field-modes,
+    // and return those values together.
+    $ids = array();
+    $field_modes = !user_access('administer group') ? array('default') : array('default', 'admin');
+    foreach ($field_modes as $field_mode) {
+      $instance['field_mode'] = $field_mode;
+      if ($og_ids = entityreference_prepopulate_get_values($field, $instance)) {
+        $ids = array_merge($ids, $og_ids);
+      }
+    }
+
+    // Cache and return the values.
+    return $cache[$identifier] = $ids;
+  }
+
   $cache[$identifier] = $ids = array();
 
   // Check if we have cached values.
-  if (!$ids) {
-    $ids = entityreference_prepopulate_get_values_from_cache($field, $instance);
-  }
+  if (!($ids = entityreference_prepopulate_get_values_from_cache($field, $instance))) {
+    // Get the providers.
+    $enabled_providers = !empty($instance['settings']['behaviors']['prepopulate']['providers']) ? array_filter($instance['settings']['behaviors']['prepopulate']['providers']) : array();
 
-  // Get the providers.
-  $enabled_providers = !empty($instance['settings']['behaviors']['prepopulate']['providers']) ? array_filter($instance['settings']['behaviors']['prepopulate']['providers']) : array();
-
-  if (!$enabled_providers) {
-    // If the instance isn't updated yet, we assume the URL provider is enabled.
-    $enabled_providers += array('url' => TRUE);
-  }
-
-  // For backwards compatibility with version 1.4, we check the "og_context"
-  // property.
-  if (!empty($instance['settings']['behaviors']['prepopulate']['og_context'])) {
-    $enabled_providers += array('og_context' => TRUE);
-  }
-
-  $providers = entityreference_prepopulate_providers_info();
-  foreach (array_keys($enabled_providers) as $name) {
-    if (empty($providers[$name]) || !empty($providers[$name]['disabled'])) {
-      // Provider doesn't exist any more or is disabled.
-      continue;
+    if (!$enabled_providers) {
+      // If the instance isn't updated yet, we assume the URL provider is enabled.
+      $enabled_providers += array('url' => TRUE);
     }
-    $provider = $providers[$name];
-    $function = $provider['callback'];
-    if ($ids = $function($field, $instance)) {
-      // We found values, so we can break.
-      break;
+
+    // For backwards compatibility with version 1.4, we check the "og_context"
+    // property.
+    if (!empty($instance['settings']['behaviors']['prepopulate']['og_context'])) {
+      $enabled_providers += array('og_context' => TRUE);
+    }
+
+    $providers = entityreference_prepopulate_providers_info();
+    foreach (array_keys($enabled_providers) as $name) {
+      if (empty($providers[$name]) || !empty($providers[$name]['disabled'])) {
+        // Provider doesn't exist any more or is disabled.
+        continue;
+      }
+      $provider = $providers[$name];
+      $function = $provider['callback'];
+      if ($ids = $function($field, $instance)) {
+        // We found values, so we can break.
+        break;
+      }
     }
   }
 

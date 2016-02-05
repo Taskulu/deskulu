@@ -93,11 +93,11 @@ li.sortableItem {
 }
 
 #security-filters .filter-text-formats .enabled {
-    background: url(images/tick.png) no-repeat right center;
+    background: url(../images/tick.png) no-repeat right center;
 }
 
 #security-filters .filter-text-formats .disabled {
-    background: url(images/delete.png) no-repeat right center;
+    background: url(../images/delete.png) no-repeat right center;
 }
 
 #security-filters .filter-info {

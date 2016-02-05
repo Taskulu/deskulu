@@ -9,9 +9,9 @@ hidden = TRUE
 
 dependencies[] = services
 
-; Information added by Drupal.org packaging script on 2015-04-15
-version = "7.x-3.12"
+; Information added by Drupal.org packaging script on 2016-01-22
+version = "7.x-3.13"
 core = "7.x"
 project = "services"
-datestamp = "1429118524"
+datestamp = "1453497542"
 

@@ -38,7 +38,11 @@ function xmlrpc_server_server() {
 function xmlrpc_server_xmlrpc() {
   $callbacks = array();
   module_load_include('inc', 'services', 'includes/services.runtime');
-  $resources = services_get_resources(services_get_server_info('endpoint', ''));
+  module_load_include('inc', 'services', 'includes/services.resource_build');
+  $endpoint_name = services_get_server_info('endpoint', '');
+  $endpoint = services_endpoint_load($endpoint_name);
+  $resources = services_get_resources($endpoint_name);
+  _services_apply_endpoint($resources, $endpoint, TRUE);
   if (!empty($resources)) {
     // Translate all resources
     foreach ($resources as $name => $def) {

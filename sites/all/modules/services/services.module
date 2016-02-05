@@ -125,8 +125,8 @@ function services_security_update_reset_users_with_password_one_op($progress, $l
     $context['sandbox']['current_user'] = 0;
     $context['sandbox']['max'] = $limit;
   }
-  //required for user_check_password
-  require_once('./includes/password.inc');
+  // Required for user_check_password.
+  require_once DRUPAL_ROOT . '/' . variable_get('password_inc', 'includes/password.inc');
   //Set the password we are looking for.
   $password = "1";
   //Fetch all users in our current range.
@@ -577,8 +577,14 @@ function _services_sessions_authenticate_call($module, $controller) {
 
   if ($controller['callback'] != '_user_resource_get_token') {
     $non_safe_method_called = !in_array($_SERVER['REQUEST_METHOD'], array('GET', 'HEAD', 'OPTIONS', 'TRACE'));
-    $csrf_token_invalid = !isset($_SERVER['HTTP_X_CSRF_TOKEN']) || !drupal_valid_token($_SERVER['HTTP_X_CSRF_TOKEN'], 'services');
-    if ($non_safe_method_called && $csrf_token_invalid) {
+    $csrf_token = NULL;
+    if (isset($_SERVER['HTTP_X_CSRF_TOKEN'])) {
+      $csrf_token = $_SERVER['HTTP_X_CSRF_TOKEN'];
+    }
+    elseif (isset($_REQUEST['services_token'])) {
+      $csrf_token = $_REQUEST['services_token'];
+    }
+    if ($non_safe_method_called && !drupal_valid_token($csrf_token, 'services')) {
       return t('CSRF validation failed');
     }
   }
@@ -799,11 +805,12 @@ function services_get_resource_api_version($endpoint, $resource, $method) {
   if (isset($endpoint->resources[$resource]) ) {
     $class_info = services_operation_class_info();
     foreach ($class_info as $class_name => $class) {
-      if (!empty($resource[$class_name])) {
+      if (!empty($endpoint->resources[$resource][$class_name])) {
         if (isset($endpoint->resources[$resource][$class_name][$method]['settings']['services']['resource_api_version'])) {
           if($version = _services_version_header_options()) {
             $split = explode('.', $version);
-          } else {
+          }
+          else {
             $split = explode('.', $endpoint->resources[$resource][$class_name][$method]['settings']['services']['resource_api_version']);
           }
           return array(
@@ -908,8 +915,10 @@ function services_resources_as_procedures($resource, $resource_name) {
  *   Integer number of items to be returned.
  * @param $resource
  *   String name of the resource building the index query
+ * @param $options
+ *   Additional query options.
  */
-function services_resource_build_index_query($query, $page, $fields, $parameters, $page_size, $resource) {
+function services_resource_build_index_query($query, $page, $fields, $parameters, $page_size, $resource, $options = array()) {
   $default_limit = variable_get("services_{$resource}_index_page_size", 20);
   if (!user_access('perform unlimited index queries') && $page_size > $default_limit) {
     $page_size = $default_limit;
@@ -923,7 +932,16 @@ function services_resource_build_index_query($query, $page, $fields, $parameters
   }
   if (isset($parameters) && is_array($parameters)) {
     foreach ($parameters as $parameter => $parameter_value) {
-      $query->condition($parameter, services_str_getcsv($parameter_value), 'IN');
+      $op = 'IN';
+      if (isset($options['parameters_op']) && isset($options['parameters_op'][$parameter])) {
+        $op = strtoupper($options['parameters_op'][$parameter]);
+      }
+      $query->condition($parameter, services_str_getcsv($parameter_value), $op);
+    }
+  }
+  if (isset($options['orderby'])) {
+    foreach($options['orderby'] as $column => $sort) {
+      $query->orderBy($column, $sort);
     }
   }
 }

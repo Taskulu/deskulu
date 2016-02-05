@@ -308,7 +308,7 @@ function select2widget_entity_validate_field(&$element, &$form_state, $form) {
     }
 
     elseif (preg_match("/.+\((\d+)\)/", $target_entity, $matches)) {
-      $entity_labels[$matches[1]] = $target_entity;
+      $entity_labels[$matches[1]] = check_plain($target_entity);
       $value[] = array('target_id' => $matches[1]);
     }
 

@@ -1,0 +1,4 @@
+div[class*="show-value"] {
+  float: left;
+  margin-right: 20px;
+}

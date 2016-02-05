@@ -1,0 +1,51 @@
+<?php
+
+/**
+ * Implements hook_permission().
+ */
+function actions_permissions_permission() {
+  $permissions = array();
+  $actions = actions_list() + _actions_permissions_advanced_actions_list();
+  foreach ($actions as $key => $action) {
+    $permission = actions_permissions_get_perm($action['label'], $key);
+
+    $permissions[$permission] = array(
+      'title' => t('Execute %label', array('%label' => $action['label'])),
+    );
+  }
+  return $permissions;
+}
+
+/**
+ * Get a list of advanced actions (created through the Action UI).
+ */
+function _actions_permissions_advanced_actions_list() {
+  $actions = array();
+  // Actions provided by Drupal that aren't usable in a VBO context.
+  $hidden_actions = array(
+    'system_block_ip_action',
+    'system_goto_action',
+    'system_message_action',
+  );
+
+  $result = db_query("SELECT * FROM {actions} WHERE parameters > ''");
+  foreach ($result as $action) {
+    if (in_array($action->callback, $hidden_actions)) {
+      continue;
+    }
+
+    $parameters = unserialize($action->parameters);
+    $actions[$action->aid] = array(
+      'label' => $action->label,
+      'type' => $action->type,
+    );
+  }
+  return $actions;
+}
+
+/**
+ * Returns the permission name used in user_access().
+ */
+function actions_permissions_get_perm($label, $key) {
+  return "execute $key";
+}

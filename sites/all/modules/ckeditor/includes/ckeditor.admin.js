@@ -120,7 +120,7 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 
       text = text + "]";
       text = text.replace(/\['\/'\]/g,"'/'");
-      $("#edit-toolbar").attr('value',text);
+      $("#edit-toolbar").val(text);
       if (Drupal.settings.ckeditor_toolbar_wizard == 't'){
         Drupal.ckeditorToolbarReload();
       }

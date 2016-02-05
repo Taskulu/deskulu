@@ -1,3 +1,11 @@
+7.x-1.x-dev
+Development snapshot
+
+2014-10-14
+New stable release: 7.x-1.16
+
+[#2357029] SA-CONTRIB-2014-098 - CKEditor - Cross Site Scripting (XSS)
+
 2013-07-15
 New stable release 7.x-1.15
 

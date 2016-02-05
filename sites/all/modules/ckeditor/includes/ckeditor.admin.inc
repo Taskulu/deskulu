@@ -99,36 +99,12 @@ function ckeditor_profile_overview() {
   }
   $profiles = ckeditor_profile_load();
   if ($profiles) {
+    // @todo The following variable is never used. Remove it?
     $access_ckeditor_roles = user_roles(FALSE, 'access ckeditor');
     $header = array(t('Profile'), t('Input format'), t('Operations'));
-    $plugins = ckeditor_load_plugins();
     $disabled_plugins = array();
     foreach ($profiles as $p) {
       if ($p->name !== "CKEditor Global Profile") {
-        if (isset($p->settings['loadPlugins']) && is_array($p->settings['loadPlugins']) && count($p->settings['loadPlugins']) > 0) {
-          $changed = FALSE;
-          foreach ($p->settings['loadPlugins'] as $plugin_name => $plugin_settings) {
-            if (!array_key_exists($plugin_name, $plugins)) {
-              if (isset($plugin_settings['active']) && $plugin_settings['active'] == 0) {
-                continue;
-              }
-              if (!isset($disabled_plugins[$p->name])) {
-                $disabled_plugins[$p->name] = array();
-              }
-              $p->settings['loadPlugins'][$plugin_name]['active'] = 0;
-              $disabled_plugins[$p->name][] = $plugin_name;
-              $changed = TRUE;
-            }
-          }
-          if ($changed === TRUE) {
-            db_update('ckeditor_settings')
-                ->fields(array(
-                  'settings' => serialize($p->settings)
-                ))
-                ->condition('name', $p->name, '=')
-                ->execute();
-          }
-        }
         $rows[] = array(
           array('data' => $p->name, 'valign' => 'top'),
           array('data' => implode("<br />\n", $p->input_formats)),
@@ -266,7 +242,7 @@ function ckeditor_admin_global_profile_form($form, $form_state, $mode = 'add') {
     '#description' => t(
         'The path to CKEditor (the WYSIWYG rich text editor downloaded from !ckeditorcom). Provide a path relative to the document root, unless CKEditor is located on an external URL. In such case enter the full URL to a folder with CKEditor.<br />The simplest way to have the editor running is to use CDN, to use it set: !cdn', array(
       '!ckeditorcom' => l(t('ckeditor.com'), 'http://ckeditor.com/download'),
-      '!cdn' => '<strong>//cdn.ckeditor.com/4.4.3/full-all</strong>'
+      '!cdn' => '<strong>//cdn.ckeditor.com/' . CKEDITOR_LATEST . '/full-all</strong>'
         )
     ) .
     '<br /><br /> ' .

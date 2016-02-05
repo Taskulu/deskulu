@@ -7,6 +7,30 @@ function i18nviews_views_data_alter(&$data) {
   if (module_exists('i18n_taxonomy')) {
     i18nviews_views_data_alter_i18n_taxonomy($data);
   }
+
+  if (module_exists('i18n_node')) {
+    // Content type
+    $data['node']['type_i18n'] = array(
+      'title' => t('Type (translated)'),
+      'help' => t('The translated content type (for example, "blog entry", "forum post", "story", etc).'),
+      'field' => array(
+        'handler' => 'i18nviews_handler_field_node_type',
+        'click sortable' => TRUE,
+        'real field' => 'type',
+      ),
+      'sort' => array(
+        'handler' => 'views_handler_sort',
+      ),
+      'filter' => array(
+        'handler' => 'i18nviews_handler_filter_node_type',
+        'real field' => 'type',
+      ),
+      'argument' => array(
+        'handler' => 'i18nviews_handler_argument_node_type',
+        'real field' => 'type',
+      ),
+    );
+  }
 }
 
 /**

@@ -198,7 +198,7 @@ function theme_services_resource_table($variables) {
 
     // Make the class name safe for output on the page by replacing all
     // non-word/decimal characters with a dash (-).
-    $method_class = strtolower(trim(preg_replace("/[^\w\d]/", "-", $key)));
+    $method_class = 'services-' . strtolower(trim(preg_replace("/[^\w\d]/", "-", $key)));
 
     // Select the right "expand"/"collapse" image, depending on whether the
     // category is expanded (at least one method selected) or not.

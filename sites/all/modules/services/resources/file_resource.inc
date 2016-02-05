@@ -118,6 +118,18 @@ function _file_resource_definition() {
               'default value' => variable_get('services_file_index_page_size', 20),
               'source' => array('param' => 'pagesize'),
             ),
+            array(
+              'name' => 'options',
+              'optional' => TRUE,
+              'type' => 'array',
+              'description' => 'Additional query options.',
+              'default value' => array(
+                'orderby' => array(
+                  'timestamp' => 'DESC'
+                )
+              ),
+              'source' => array('param' => 'options'),
+            ),
           ),
           'access callback' => '_file_resource_access',
           'access arguments' => array('index'),
@@ -253,7 +265,7 @@ function _file_resource_retrieve($fid, $include_file_contents, $get_image_style)
 
     $file->image_styles = array();
     // Add image style information if available.
-    if ($get_image_style) {
+    if ($get_image_style && !empty($file->uri) && strpos($file->filemime, 'image') === 0) {
       foreach (image_styles() as $style) {
         $style_name = $style['name'];
         $file->image_styles[$style_name] = image_style_url($style_name, $file->uri);
@@ -298,16 +310,17 @@ function _file_resource_delete($fid) {
  *   indicating items to retrieve.
  * @param $page_size
  *   Integer number of items to be returned.
+ * @param $options
+ *   Additional query options.
  * @return
  *   An array of file objects.
  *
  * @see _node_resource_index() for more notes
  **/
-function _file_resource_index($page, $fields, $parameters, $page_size) {
-  $file_select = db_select('file_managed', 't')
-    ->orderBy('timestamp', 'DESC');
+function _file_resource_index($page, $fields, $parameters, $page_size, $options = array()) {
+  $file_select = db_select('file_managed', 't');
 
-  services_resource_build_index_query($file_select, $page, $fields, $parameters, $page_size, 'file');
+  services_resource_build_index_query($file_select, $page, $fields, $parameters, $page_size, 'file', $options);
 
   $results = services_resource_execute_index_query($file_select);
 

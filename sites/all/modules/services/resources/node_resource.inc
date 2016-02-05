@@ -116,6 +116,19 @@ function _node_resource_definition() {
               'default value' => variable_get('services_node_index_page_size', 20),
               'source' => array('param' => 'pagesize'),
             ),
+            array(
+              'name' => 'options',
+              'optional' => TRUE,
+              'type' => 'array',
+              'description' => 'Additional query options.',
+              'default value' => array(
+                'orderby' => array(
+                  'sticky' => 'DESC',
+                  'created' => 'DESC'
+                )
+              ),
+              'source' => array('param' => 'options'),
+            ),
           ),
           'access arguments' => array('access content'),
         ),
@@ -280,20 +293,13 @@ function _node_resource_retrieve($nid) {
  * @see drupal_form_submit()
  */
 function _node_resource_create($node) {
-  $account = NULL;
-  if ($node['uid']) {
-    $account = user_load($node['uid']);
-  }
-  if (empty($account)) {
-    global $user;
-    $account = $user;
-  }
+  global $user;
   // Adds backwards compatability with regression fixed in #1083242
   $node = _services_arg_value($node, 'node');
   if (!isset($node['name'])) {
     // Assign username to the node from $user created at auth step.
-    if (isset($account->name)) {
-      $node['name'] = $account->name;
+    if (isset($user->name)) {
+      $node['name'] = $user->name;
     }
   }
   if(!isset($node['language'])) {
@@ -319,7 +325,7 @@ function _node_resource_create($node) {
   // has permission to change it, $form_state['values'] will override this
   // default when the form is submitted).
   $stub_node = (object) array_intersect_key($node, array_flip(array('type', 'language')));
-  $stub_node->name = $account->name;
+  $stub_node->name = $user->name;
 
   // Contributed modules may check the triggering element in the form state.
   // The triggering element is usually set from the browser's POST request, so
@@ -469,6 +475,8 @@ function _node_resource_delete($nid) {
  *   indicating items to retrieve.
  * @param $page_size
  *   Integer number of items to be returned.
+ * @param $options
+ *   Additional query options.
  * @return
  *   An array of node objects.
  *
@@ -478,13 +486,11 @@ function _node_resource_delete($nid) {
  *     - Is there an easier syntax we can define which can make the urls
  *       for index requests more straightforward?
  */
-function _node_resource_index($page, $fields, $parameters, $page_size) {
+function _node_resource_index($page, $fields, $parameters, $page_size, $options = array()) {
   $node_select = db_select('node', 't')
-    ->addTag('node_access')
-    ->orderBy('sticky', 'DESC')
-    ->orderBy('created', 'DESC');
+    ->addTag('node_access');
 
-  services_resource_build_index_query($node_select, $page, $fields, $parameters, $page_size, 'node');
+  services_resource_build_index_query($node_select, $page, $fields, $parameters, $page_size, 'node', $options);
 
   if (!user_access('administer nodes')) {
     $node_select->condition('status', 1);
@@ -618,7 +624,7 @@ function _node_resource_load_node_comments($nid, $count = 0, $start = 0) {
   $return_comments = array();
 
   foreach ($comments as $comment) {
-    $return_comments[] = services_field_permissions_comment_clean('view', 'comment', $comment);
+    $return_comments[] = services_field_permissions_clean('view', 'comment', $comment);
   }
 
   return $return_comments;

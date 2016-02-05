@@ -1,0 +1,14 @@
+<?php
+
+/**
+ * @file
+ * Installation and update functions.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function views_bulk_operations_uninstall() {
+  // Remove VBO actions that are now orphaned.
+  actions_synchronize(TRUE);
+}

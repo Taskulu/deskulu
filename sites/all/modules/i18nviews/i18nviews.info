@@ -11,15 +11,18 @@ files[] = i18nviews.inc
 files[] = i18nviews.i18n.inc
 
 ; Handlers, Plugins
+files[] = includes/i18nviews_handler_argument_node_type.inc
 files[] = includes/i18nviews_handler_argument_taxonomy_index_tid.inc
 files[] = includes/i18nviews_handler_argument_taxonomy_term_name.inc
 files[] = includes/i18nviews_handler_argument_taxonomy_term_language.inc
 files[] = includes/i18nviews_handler_argument_term_node_tid_depth.inc
+files[] = includes/i18nviews_handler_field_node_type.inc
 files[] = includes/i18nviews_handler_field_taxonomy_term_description.inc
 files[] = includes/i18nviews_handler_field_taxonomy_term_language.inc
 files[] = includes/i18nviews_handler_field_taxonomy_term_name.inc
 files[] = includes/i18nviews_handler_field_term_node_tid.inc
 files[] = includes/i18nviews_handler_filter_field_list.inc
+files[] = includes/i18nviews_handler_filter_node_type.inc
 files[] = includes/i18nviews_handler_filter_taxonomy_index_tid.inc
 files[] = includes/i18nviews_handler_filter_taxonomy_term_name.inc
 files[] = includes/i18nviews_handler_filter_taxonomy_term_language.inc
@@ -27,9 +30,9 @@ files[] = includes/i18nviews_handler_filter_term_node_tid_depth.inc
 files[] = includes/i18nviews_plugin_argument_validate_i18n_taxonomy_term.inc
 files[] = includes/i18nviews_plugin_localization_i18nstrings.inc
 
-; Information added by Drupal.org packaging script on 2015-07-07
-version = "7.x-3.x-dev"
+; Information added by Drupal.org packaging script on 2016-01-28
+version = "7.x-3.0-alpha1"
 core = "7.x"
 project = "i18nviews"
-datestamp = "1436291369"
+datestamp = "1454021946"
 

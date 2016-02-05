@@ -603,6 +603,7 @@ function rate_save_vote($widget, $content_type, $content_id, $value, $ahah = FAL
 
   // Determine if the user may vote.
   $entities = entity_load($content_type, array($content_id));
+  if (empty($entities[$content_id])) return;
   $node = $entities[$content_id];
   
   $permission_status = _rate_check_permissions($widget, $node);

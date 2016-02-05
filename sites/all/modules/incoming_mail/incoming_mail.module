@@ -60,11 +60,16 @@ function incoming_mail_create_ticket() {
       watchdog('incoming_mail', 'Email received for unrecognized inbox.<br><pre>!data</pre>', array('!data' => var_export($datum, 1)), WATCHDOG_ERROR);
       continue;
     }
-    watchdog('incoming_mail', var_export($msg['html'], 1));
-    $body = incoming_mail_strip_quotes($msg['html']);
-    watchdog('incoming_mail', var_export($body, 1));
-    $body = incoming_mail_strip_tags($body);
-    watchdog('incoming_mail', var_export($body, 1));
+    watchdog('incoming_mail1', var_export($msg['html'], 1));
+    if (!empty($msg['html'])) {
+      $body = incoming_mail_strip_quotes($msg['html']);
+    }
+    else {
+      $body = $msg['text'];
+    }
+    watchdog('incoming_mail2', var_export($body, 1));
+    //$body = incoming_mail_strip_tags($body);
+    watchdog('incoming_mail3', var_export($body, 1));
     if (!empty($msg['attachments'])) {
       foreach ($msg['attachments'] as $file) {
         $file = incoming_mail_create_file($file);
@@ -89,6 +94,7 @@ function incoming_mail_create_ticket() {
         }
       }
     }
+
     if ($event == 'incoming_mail_ticket_new') {
       rules_invoke_event('incoming_mail_ticket_new', $msg['subject'], $body, $files, $msg['from_name'], $msg['from_email']);
     }
@@ -103,8 +109,14 @@ function incoming_mail_create_ticket() {
  * Create file from file info array sent by Mandrill.
  */
 function incoming_mail_create_file($file_info) {
-  if ($file_info['base64']) {
+  if (!empty($file_info['base64'])) {
     $file_info['content'] = base64_decode($file_info['content']);
+  }
+  elseif (isset($file_info['content'])) {
+    $file_info['content'] = base64_decode($file_info['content']);
+  }
+  else {
+    return FALSE;
   }
   return file_save_data($file_info['content'], 'private://tickets/' . $file_info['name']);
 }
@@ -188,7 +200,8 @@ function incoming_mail_strip_tags($body) {
   incoming_mail_remove_element_by_tag_name('script', $doc);
   incoming_mail_remove_element_by_tag_name('style', $doc);
   incoming_mail_remove_element_by_tag_name('link', $doc);
-  incoming_mail_remove_element_attribute('*', 'style', $doc);
+  incoming_mail_remove_element_attribute('div', 'style', $doc);
+  incoming_mail_remove_element_attribute('p', 'style', $doc);
   incoming_mail_remove_element_attribute('div', 'id', $doc);
   incoming_mail_remove_element_attribute('div', 'class', $doc);
   return strip_tags(html_entity_decode($doc->saveHtml()), '<div><br><br/><b><i><p><img><ul><li><ol><a><em><strong><blockquote><code><dl><dd><dt>');

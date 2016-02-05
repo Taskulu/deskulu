@@ -41,6 +41,7 @@ define('CKEDITOR_FORCE_SIMPLE_TOOLBAR_NAME', 'DrupalBasic');
 define('CKEDITOR_ENTERMODE_P', 1);
 define('CKEDITOR_ENTERMODE_BR', 2);
 define('CKEDITOR_ENTERMODE_DIV', 3);
+define('CKEDITOR_LATEST', '4.5.4');
 
 global $_ckeditor_configuration;
 global $_ckeditor_ids;
@@ -49,6 +50,21 @@ module_load_include('inc', 'ckeditor', 'includes/ckeditor.user');
 
 $_ckeditor_configuration = array();
 $_ckeditor_ids = array();
+
+/**
+ * Implements hook_hook_info().
+ */
+function ckeditor_hook_info() {
+  $hooks = array(
+    'ckeditor_plugin',
+    'ckeditor_plugin_alter',
+    'ckeditor_security_filter',
+    'ckeditor_security_filter_alter',
+    'ckeditor_settings_alter',
+  );
+
+  return array_fill_keys($hooks, array('group' => 'ckeditor'));
+}
 
 /**
  * Implementation of hook_menu().
@@ -601,11 +617,11 @@ function ckeditor_features_api() {
  * CKEditor does not implement any kind of potection on private files.
  */
 function ckeditor_file_download($uri) {
+  $result = db_query("SELECT f.* FROM {file_managed} f WHERE uri = :uri", array(':uri' => $uri));
+  foreach ($result as $record) {
+    return NULL;
+  }
   if ($path = file_create_url($uri)) {
-    $result = db_query("SELECT f.* FROM {file_managed} f WHERE uri = :uri", array(':uri' => $uri));
-    foreach ($result as $record) {
-      return NULL;
-    }
     //No info in DB? Probably a file uploaded with FCKeditor / CKFinder
     $global_profile = ckeditor_profile_load("CKEditor Global Profile");
     //Assume that files inside of ckeditor directory belong to the CKEditor. If private directory is set, let the decision about protection to the user.
@@ -640,70 +656,6 @@ function ckeditor_file_download($uri) {
 }
 
 /**
- * Implementation of hook_modules_enabled().
- *
- * Enable disabled plugins by hook_modules_disabled().
- */
-function ckeditor_modules_enabled($modules) {
-  module_load_include('inc', 'ckeditor', 'includes/ckeditor.lib');
-  if (in_array('libraries', $modules)) {
-    // Check and update path to CKEditor in the global profile
-    _ckeditor_requirements_isinstalled();
-  }
-  $profiles_list = ckeditor_profile_input_formats();
-  $plugins_list = ckeditor_load_plugins();
-  foreach ($profiles_list AS $_profile => $_inputs) {
-    $changed = FALSE;
-    $profile = ckeditor_profile_load($_profile);
-    if (!isset($profile->settings['loadPlugins'])) continue;
-    foreach (array_keys((array) $profile->settings['loadPlugins']) as $plugin_name) {
-      if (isset($profile->settings['loadPlugins'][$plugin_name]['active']) && $profile->settings['loadPlugins'][$plugin_name]['active'] == 0 && array_key_exists($plugin_name, $plugins_list)) {
-        $profile->settings['loadPlugins'][$plugin_name]['active'] = 1;
-        $changed = TRUE;
-      }
-    }
-    if ($changed === TRUE) {
-      db_update('ckeditor_settings')
-          ->fields(array(
-            'settings' => serialize($profile->settings)
-          ))
-          ->condition('name', $profile->name, '=')
-          ->execute();
-    }
-  }
-}
-
-/**
- * Implementation of hook_modules_disabled().
- *
- * Disable enabled plugins in CKEditor profiles added by disabled modules.
- */
-function ckeditor_modules_disabled($modules) {
-  module_load_include('inc', 'ckeditor', 'includes/ckeditor.lib');
-  $profiles_list = ckeditor_profile_input_formats();
-  $plugins_list = ckeditor_load_plugins();
-  foreach ($profiles_list AS $_profile => $_inputs) {
-    $changed = FALSE;
-    $profile = ckeditor_profile_load($_profile);
-    if (!isset($profile->settings['loadPlugins'])) continue;
-    foreach (array_keys((array) $profile->settings['loadPlugins']) as $plugin_name) {
-      if (!array_key_exists($plugin_name, $plugins_list)) {
-        $profile->settings['loadPlugins'][$plugin_name]['active'] = 0;
-        $changed = TRUE;
-      }
-    }
-    if ($changed === TRUE) {
-      db_update('ckeditor_settings')
-          ->fields(array(
-            'settings' => serialize($profile->settings)
-          ))
-          ->condition('name', $profile->name, '=')
-          ->execute();
-    }
-  }
-}
-
-/**
  * Implementation of hook_modules_uninstalled().
  *
  * Remove enabled plugins in CKEditor profiles added by uninstalled modules.
@@ -712,7 +664,7 @@ function ckeditor_modules_uninstalled($modules) {
   module_load_include('inc', 'ckeditor', 'includes/ckeditor.lib');
   $profiles_list = ckeditor_profile_input_formats();
   $plugins_list = ckeditor_load_plugins();
-  foreach ($profiles_list AS $_profile => $_inputs) {
+  foreach ($profiles_list as $_profile => $_inputs) {
     $changed = FALSE;
     $profile = ckeditor_profile_load($_profile);
     if (!isset($profile->settings['loadPlugins'])) continue;
@@ -722,17 +674,16 @@ function ckeditor_modules_uninstalled($modules) {
         $changed = TRUE;
       }
     }
-    if ($changed === TRUE) {
+    if ($changed) {
       db_update('ckeditor_settings')
-          ->fields(array(
-            'settings' => serialize($profile->settings)
-          ))
-          ->condition('name', $profile->name, '=')
-          ->execute();
+        ->fields(array(
+          'settings' => serialize($profile->settings)
+        ))
+        ->condition('name', $profile->name, '=')
+        ->execute();
     }
   }
 }
-
 
 /**
  * Implements hook_field_extra_fields().
@@ -745,4 +696,3 @@ function ckeditor_field_extra_fields() {
   );
   return $fields;
 }
-
