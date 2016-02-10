@@ -95,11 +95,18 @@ function incoming_mail_create_ticket() {
       }
     }
 
+    if (!empty($msg['from_name'])) {
+      $from_name = $msg['from_name'];
+    }
+    else {
+      $from_name = preg_replace('/@.+/', '', $msg['from_email']);
+    }
+
     if ($event == 'incoming_mail_ticket_new') {
-      rules_invoke_event('incoming_mail_ticket_new', $msg['subject'], $body, $files, $msg['from_name'], $msg['from_email']);
+      rules_invoke_event('incoming_mail_ticket_new', $msg['subject'], $body, $files, $from_name, $msg['from_email']);
     }
     elseif ($event == 'incoming_mail_ticket_reply') {
-      rules_invoke_event('incoming_mail_ticket_reply', $ticket, $body, $files, $msg['from_name'], $msg['from_email']);
+      rules_invoke_event('incoming_mail_ticket_reply', $ticket, $body, $files, $from_name, $msg['from_email']);
     }
   }
   return 'OK';
