@@ -1,0 +1,12 @@
+name = Rules Data Transforms
+description = Provides data transformation actions to rules.
+package = Rules
+core = 7.x
+dependencies[] = rules
+
+; Information added by Drupal.org packaging script on 2015-10-30
+version = "7.x-1.x-dev"
+core = "7.x"
+project = "rules_data_transforms"
+datestamp = "1446218104"
+
