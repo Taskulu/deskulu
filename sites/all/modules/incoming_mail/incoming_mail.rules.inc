@@ -78,6 +78,7 @@ function incoming_mail_rules_event_info() {
     ),
   );
 
+
   return $events;
 }
 
@@ -114,6 +115,26 @@ function incoming_mail_rules_action_info() {
         'random_string' => array(
           'type' => 'text',
           'label' => t('Random string')
+        ),
+      ),
+    ),
+    'incoming_mail_truncate_string' => array(
+      'label' => t('Truncate string'),
+      'group' => t('Strings'),
+      'parameter' => array(
+        'string' => array(
+          'type' => 'text',
+          'label' => t('String'),
+        ),
+        'length' => array(
+          'type' => 'integer',
+          'label' => t('Length'),
+        ),
+      ),
+      'provides' => array(
+        'truncated' => array(
+          'type' => 'text',
+          'label' => t('Truncated string')
         ),
       ),
     ),
@@ -170,4 +191,8 @@ function incoming_mail_get_user_by_email($email, $name = '') {
 
 function incoming_mail_generate_random_string() {
   return array('random_string' => str_random());
+}
+
+function incoming_mail_truncate_string($string, $len) {
+  return array('truncated' => drupal_substr($string, 0, $len));
 }
