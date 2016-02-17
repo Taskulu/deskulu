@@ -1,0 +1,30 @@
+<?php
+/**
+ * @file
+ * CKeditor Dragresize plugin.
+ */
+
+/**
+ * Implements hook_wysiwyg_plugin().
+ */
+function wysiwyg_ckeditor_dragresize_wysiwyg_plugin($editor, $version) {
+  $plugins = array();
+  if ($editor == 'ckeditor' && version_compare($version, '4.0', '>=')) {
+    $plugins['dragresize'] = array(
+      'url' => 'https://github.com/sstur/ck-dragresize',
+      'path' => wysiwyg_get_path('ckeditor_plugins') . '/ck-dragresize',
+      'filename' => 'plugin.js',
+      'extensions' => array(
+        'dragresize' => t('DragResize'),
+      ),
+      'options' => array(),
+      'load' => TRUE,
+      'internal' => FALSE,
+    );
+    $plugin = $plugins['dragresize'];
+    if (file_exists($plugin['path'] . '/' . $plugin['filename'])) {
+      return $plugins;
+    }
+  }
+  return array();
+}

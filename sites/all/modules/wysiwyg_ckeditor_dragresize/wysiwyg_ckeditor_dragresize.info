@@ -1,0 +1,11 @@
+name = WYSIWYG CKEditor DragResize
+description = Integrates the ck-dragresize plugin for CKEditor
+core = 7.x
+dependencies[] = wysiwyg
+
+; Information added by Drupal.org packaging script on 2014-11-13
+version = "7.x-1.0"
+core = "7.x"
+project = "wysiwyg_ckeditor_dragresize"
+datestamp = "1415890681"
+

@@ -1,0 +1,48 @@
+<?php
+/**
+ * Install hooks for wysiwyg_ckeditor_dragresize.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function wysiwyg_ckeditor_dragresize_requirements($phase) {
+  $requirements = array();
+  /* Your code here */
+  // Ensure translations don't break at install timea.
+  $t = get_t();
+
+  if ($phase == 'runtime') {
+    $path = wysiwyg_get_path('ckeditor_plugins') . '/ck-dragresize';
+    $filename = 'plugin.js';
+    if (file_exists($path . '/' . $filename)) {
+      $requirements['ckeditor_dragresize'] = array(
+        'title' => $t('CKEditor DragResize'),
+        'value' => $t('CKEditor DragResize plugin is available.'),
+        'severity' => REQUIREMENT_OK,
+      );
+    }
+    else {
+      $requirements['ckeditor_dragresize'] = array(
+        'title' => $t('CKEditor DragResize'),
+        'description' => $t('CKEditor DragResize plugin is required.'),
+        'value' => $t("CKEditor DragResize plugin doesn't seem to be available."),
+        'severity' => REQUIREMENT_ERROR,
+        'description' => $t('
+        See the <a href="@help_url">project page</a> for install instructions.
+        <br/>
+        Download the required libraries from
+        <a href="@library_url">the ck-dragresize project</a>
+        and place it in <code>@install_path</code>',
+          array(
+            '@library_url' => 'https://github.com/sstur/ck-dragresize',
+            '@help_url' => url('https://drupal.org/project/wysiwyg_ckeditor_dragresize'),
+            '@install_path' => 'sites/all/libraries/ckeditor_plugins/ck-dragresize',
+          )
+        ),
+      );
+    }
+  }
+
+  return $requirements;
+}
