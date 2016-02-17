@@ -13,8 +13,8 @@
 function wysiwyg_tinymce_editor() {
   $editor['tinymce'] = array(
     'title' => 'TinyMCE',
-    'vendor url' => 'http://tinymce.moxiecode.com',
-    'download url' => 'http://tinymce.moxiecode.com/download.php',
+    'vendor url' => 'http://www.tinymce.com',
+    'download url' => 'http://www.tinymce.com/download/download.php',
     'library path' => wysiwyg_get_path('tinymce') . '/jscripts/tiny_mce',
     'libraries' => array(
       '' => array(
@@ -28,17 +28,18 @@ function wysiwyg_tinymce_editor() {
     ),
     'version callback' => 'wysiwyg_tinymce_version',
     'themes callback' => 'wysiwyg_tinymce_themes',
+    'settings form callback' => 'wysiwyg_tinymce_settings_form',
     'init callback' => 'wysiwyg_tinymce_init',
     'settings callback' => 'wysiwyg_tinymce_settings',
-    'plugin callback' => 'wysiwyg_tinymce_plugins',
-    'plugin settings callback' => 'wysiwyg_tinymce_plugin_settings',
+    'plugin callback' => '_wysiwyg_tinymce_plugins',
+    'plugin meta callback' => '_wysiwyg_tinymce_plugin_meta',
     'proxy plugin' => array(
       'drupal' => array(
         'load' => TRUE,
         'proxy' => TRUE,
       ),
     ),
-    'proxy plugin settings callback' => 'wysiwyg_tinymce_proxy_plugin_settings',
+    'proxy plugin settings callback' => '_wysiwyg_tinymce_proxy_plugin_settings',
     'versions' => array(
       '2.1' => array(
         'js files' => array('tinymce-2.js'),
@@ -127,6 +128,152 @@ function wysiwyg_tinymce_themes($editor, $profile) {
 }
 
 /**
+ * Enhances the editor profile settings form for TinyMCE.
+ *
+ * @see http://www.tinymce.com/wiki.php/Configuration
+ */
+function wysiwyg_tinymce_settings_form(&$form, &$form_state) {
+  $profile = $form_state['wysiwyg_profile'];
+  $settings = $profile->settings;
+  $settings += array(
+    'apply_source_formatting' => FALSE,
+    // Also available, but buggy in TinyMCE 2.x: blockquote,code,dt,dd,samp.
+    'theme_advanced_blockformats' => 'p,address,pre,h2,h3,h4,h5,h6,div',
+    'convert_fonts_to_spans' => TRUE,
+    'paste_auto_cleanup_on_paste' => TRUE,
+    'theme_advanced_styles' => '',
+    'theme_advanced_statusbar_location' => 'bottom',
+    'preformatted' => FALSE,
+    'remove_linebreaks' => TRUE,
+    'theme_advanced_resizing' => TRUE,
+    'theme_advanced_toolbar_align' => 'left',
+    'theme_advanced_toolbar_location' => 'top',
+    'verify_html' => TRUE,
+  );
+
+  $form['appearance']['theme_advanced_toolbar_location'] = array(
+    '#type' => 'select',
+    '#title' => t('Toolbar location'),
+    '#default_value' => $settings['theme_advanced_toolbar_location'],
+    '#options' => array('bottom' => t('Bottom'), 'top' => t('Top')),
+    '#description' => t('This option controls whether the editor toolbar is displayed above or below the editing area.') . ' ' . t('Uses the <a href="@url">@setting</a> setting internally.', array('@setting' => 'theme_advanced_toolbar_location', '@url' => url('http://www.tinymce.com/wiki.php/Configuration3x:theme_advanced_toolbar_location'))),
+  );
+
+  $form['appearance']['theme_advanced_toolbar_align'] = array(
+    '#type' => 'select',
+    '#title' => t('Button alignment'),
+    '#default_value' => $settings['theme_advanced_toolbar_align'],
+    '#options' => array('center' => t('Center'), 'left' => t('Left'), 'right' => t('Right')),
+    '#description' => t('This option controls the alignment of icons in the editor toolbar.'),
+  );
+
+  $form['appearance']['theme_advanced_statusbar_location'] = array(
+    '#type' => 'select',
+    '#title' => t('Path location'),
+    '#default_value' => $settings['theme_advanced_statusbar_location'],
+    '#options' => array('none' => t('Hide'), 'top' => t('Top'), 'bottom' => t('Bottom')),
+    '#description' => t('Where to display the path to HTML elements (i.e. <code>body > table > tr > td</code>).') . ' ' . t('Uses the <a href="@url">@setting</a> setting internally.', array('@setting' => 'theme_advanced_statusbar_location', '@url' => url('http://www.tinymce.com/wiki.php/Configuration3x:theme_advanced_statusbar_location'))),
+  );
+
+  $form['appearance']['theme_advanced_resizing'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable resizing button'),
+    '#default_value' => $settings['theme_advanced_resizing'],
+    '#return_value' => 1,
+    '#description' => t('This option gives you the ability to enable/disable the resizing button. If enabled, the Path location toolbar must be set to "Top" or "Bottom" in order to display the resize icon.') . ' ' . t('Uses the <a href="@url">@setting</a> setting internally.', array('@setting' => 'theme_advanced_resizing', '@url' => url('http://www.tinymce.com/wiki.php/Configuration3x:theme_advanced_resizing'))),
+  );
+
+  $form['output']['verify_html'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Verify HTML'),
+    '#default_value' => $settings['verify_html'],
+    '#return_value' => 1,
+    '#description' => t('If enabled, potentially malicious code like <code>&lt;HEAD&gt;</code> tags will be removed from HTML contents.') . ' ' . t('Uses the <a href="@url">@setting</a> setting internally.', array('@setting' => 'verify_html', '@url' => url('http://www.tinymce.com/wiki.php/Configuration3x:preformatted'))),
+  );
+
+  $form['output']['preformatted'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Preformatted'),
+    '#default_value' => $settings['preformatted'],
+    '#return_value' => 1,
+    '#description' => t('If enabled, the editor will insert TAB characters on tab and preserve other whitespace characters just like a PRE element in HTML does.') . ' ' . t('Uses the <a href="@url">@setting</a> setting internally.', array('@setting' => 'preformatted', '@url' => url('http://www.tinymce.com/wiki.php/Configuration3x:preformatted'))),
+  );
+
+  $form['output']['convert_fonts_to_spans'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Convert &lt;font&gt; tags to styles'),
+    '#default_value' => $settings['convert_fonts_to_spans'],
+    '#return_value' => 1,
+    '#description' => t('If enabled, HTML tags declaring the font size, font family, font color and font background color will be replaced by inline CSS styles.') . ' ' . t('Uses the <a href="@url">@setting</a> setting internally.', array(
+      '@setting' => 'convert_fonts_to_spans', '@url' => url('http://www.tinymce.com/wiki.php/Configuration3x:convert_fonts_to_spans'))),
+  );
+
+  $form['output']['remove_linebreaks'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Remove linebreaks'),
+    '#default_value' => $settings['remove_linebreaks'],
+    '#return_value' => 1,
+    '#description' => t('If enabled, the editor will remove most linebreaks from contents. Disabling this option could avoid conflicts with other input filters.') . ' ' . t('Uses the <a href="@url">@setting</a> setting internally.', array('@setting' => 'remove_linebreaks', '@url' => url('http://www.tinymce.com/wiki.php/Configuration3x:remove_linebreaks'))),
+  );
+
+  $form['output']['apply_source_formatting'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Apply source formatting'),
+    '#default_value' => $settings['apply_source_formatting'],
+    '#return_value' => 1,
+    '#description' => t('If enabled, the editor will re-format the HTML source code. Disabling this option could avoid conflicts with other input filters.') . ' ' . t('Uses the <a href="@url">@setting</a> setting internally.', array('@setting' => 'apply_source_formatting', '@url' => url('http://www.tinymce.com/wiki.php/Configuration3x:apply_source_formatting'))),
+  );
+
+  $form['css']['theme_advanced_styles'] = array(
+    '#type' => 'textarea',
+    '#title' => t('CSS classes'),
+    '#default_value' => $settings['theme_advanced_styles'],
+    '#description' => t('Optionally define CSS classes for the "Font style" dropdown list.<br />Enter one class on each line in the format: !format. Example: !example<br />If left blank, CSS classes are automatically imported from all loaded stylesheet(s).',
+      array(
+        '!format' => '<code>[title]=[class]</code>',
+        '!example' => 'My heading=header1',
+      )
+    ) . ' ' . t('Uses the <a href="@url">@setting</a> setting internally.', array('@setting' => 'theme_advanced_styles', '@url' => url('http://www.tinymce.com/wiki.php/Configuration3x:theme_advanced_styles'))),
+  );
+
+
+  $form['css']['theme_advanced_blockformats'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Block formats'),
+    '#default_value' => $settings['theme_advanced_blockformats'],
+    '#size' => 40,
+    '#maxlength' => 250,
+    '#description' => t('Comma separated list of HTML block formats. Possible values: <code>@format-list</code>.', array('@format-list' => 'p,h1,h2,h3,h4,h5,h6,div,blockquote,address,pre,code,dt,dd')) . ' ' . t('Uses the <a href="@url">@setting</a> setting internally.', array('@setting' => 'theme_advanced_blockformats', '@url' => url('http://www.tinymce.com/wiki.php/Configuration3x:theme_advanced_blockformats'))),
+    '#element_validate' => array('wysiwyg_tinymce_settings_form_validate_blockformats'),
+  );
+
+  $form['paste'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Paste plugin'),
+    '#description' => t('Settings for the paste plugin.'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#group' => 'advanced',
+  );
+  $form['paste']['paste_auto_cleanup_on_paste'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Process contents on paste'),
+    '#default_value' => !empty($settings['paste_auto_cleanup_on_paste']),
+    '#return_value' => 1,
+    '#description' => t('If enabled, contents will be automatically processed when you paste using Ctrl+V or similar methods. Cleaning up contents from MS Word or pasting as plain text will <strong>not</strong> work without this.') . ' ' . t('Uses the <a href="@url">@setting</a> setting internally.', array('@setting' => 'paste_auto_cleanup_on_paste', '@url' => url('http://www.tinymce.com/wiki.php/Plugin3x:paste'))),
+  );
+}
+
+/**
+ * #element_validate handler for theme_advanced_blockformats element added by wysiwyg_tinymce_settings_form().
+ */
+function wysiwyg_tinymce_settings_form_validate_blockformats($element, &$form_state) {
+  // Remove any white-space from 'theme_advanced_blockformats' setting, since
+  // the editor relies on a comma-separated list to explode().
+  form_set_value($element, preg_replace('@\s+@', '', $element['#value']), $form_state);
+}
+
+/**
  * Returns an initialization JavaScript for this editor library.
  *
  * @param array $editor
@@ -194,31 +341,27 @@ function wysiwyg_tinymce_settings($editor, $config, $theme) {
     // XML default characters '&', '<', '>'.
     'entities' => '160,nbsp,173,shy,8194,ensp,8195,emsp,8201,thinsp,8204,zwnj,8205,zwj,8206,lrm,8207,rlm',
   );
-  if (isset($config['apply_source_formatting'])) {
-    $settings['apply_source_formatting'] = $config['apply_source_formatting'];
-  }
-  if (isset($config['convert_fonts_to_spans'])) {
-    $settings['convert_fonts_to_spans'] = $config['convert_fonts_to_spans'];
-  }
-  if (isset($config['language'])) {
-    $settings['language'] = $config['language'];
-  }
-  if (isset($config['paste_auto_cleanup_on_paste'])) {
-    $settings['paste_auto_cleanup_on_paste'] = $config['paste_auto_cleanup_on_paste'];
-  }
-  if (isset($config['preformatted'])) {
-    $settings['preformatted'] = $config['preformatted'];
-  }
-  if (isset($config['remove_linebreaks'])) {
-    $settings['remove_linebreaks'] = $config['remove_linebreaks'];
+  $check_if_set = array(
+    'apply_source_formatting',
+    'convert_fonts_to_spans',
+    'language',
+    'paste_auto_cleanup_on_paste',
+    'preformatted',
+    'remove_linebreaks',
+    'theme_advanced_blockformats',
+  );
+  foreach ($check_if_set as $setting_name) {
+    if (isset($config[$setting_name])) {
+      $settings[$setting_name] = $config[$setting_name];
+    }
   }
   if (isset($config['verify_html'])) {
     // TinyMCE performs a type-agnostic comparison on this particular setting.
     $settings['verify_html'] = (bool) $config['verify_html'];
   }
 
-  if (!empty($config['css_classes'])) {
-    $settings['theme_advanced_styles'] = implode(';', array_filter(explode("\n", str_replace("\r", '', $config['css_classes']))));
+  if (!empty($config['theme_advanced_styles'])) {
+    $settings['theme_advanced_styles'] = implode(';', array_filter(explode("\n", str_replace("\r", '', $config['theme_advanced_styles']))));
   }
 
   if (isset($config['css_setting'])) {
@@ -301,14 +444,11 @@ function wysiwyg_tinymce_settings($editor, $config, $theme) {
       $settings += array(
         'theme_advanced_resize_horizontal' => FALSE,
         'theme_advanced_resizing_use_cookie' => FALSE,
-        'theme_advanced_statusbar_location' => isset($config['path_loc']) ? $config['path_loc'] : 'bottom',
-        'theme_advanced_resizing' => isset($config['resizing']) ? $config['resizing'] : 1,
-        'theme_advanced_toolbar_location' => isset($config['toolbar_loc']) ? $config['toolbar_loc'] : 'top',
-        'theme_advanced_toolbar_align' => isset($config['toolbar_align']) ? $config['toolbar_align'] : 'left',
+        'theme_advanced_statusbar_location' => isset($config['theme_advanced_statusbar_location']) ? $config['theme_advanced_statusbar_location'] : 'bottom',
+        'theme_advanced_resizing' => isset($config['theme_advanced_resizing']) ? $config['theme_advanced_resizing'] : 1,
+        'theme_advanced_toolbar_location' => isset($config['theme_advanced_toolbar_location']) ? $config['theme_advanced_toolbar_location'] : 'top',
+        'theme_advanced_toolbar_align' => isset($config['theme_advanced_toolbar_align']) ? $config['theme_advanced_toolbar_align'] : 'left',
       );
-      if (isset($config['block_formats'])) {
-        $settings['theme_advanced_blockformats'] = $config['block_formats'];
-      }
       if (isset($settings['buttons'])) {
         // These rows explicitly need to be set to be empty, otherwise TinyMCE
         // loads its default buttons of the advanced theme for each row.
@@ -338,42 +478,18 @@ function wysiwyg_tinymce_settings($editor, $config, $theme) {
 }
 
 /**
- * Build a JS settings array of native external plugins that need to be loaded separately.
- *
- * TinyMCE requires that external plugins (i.e. not residing in the editor's
- * directory) are loaded (once) upon initializing the editor.
+ * Build a JS settings array with global metadata for native external plugins.
  */
-function wysiwyg_tinymce_plugin_settings($editor, $profile, $plugins) {
-  $settings = array();
-  foreach ($plugins as $name => $plugin) {
-    if (!empty($plugin['load'])) {
-      // Add path for native external plugins; internal ones are loaded
-      // automatically.
-      if (empty($plugin['internal']) && isset($plugin['filename'])) {
-        $settings[$name] = base_path() . $plugin['path'] . '/' . $plugin['filename'];
-      }
+function _wysiwyg_tinymce_plugin_meta($editor, $plugin) {
+  $meta = NULL;
+  if (!empty($plugin['load'])) {
+    // Add path for native external plugins; internal ones are loaded
+    // automatically.
+    if (empty($plugin['internal']) && isset($plugin['filename'])) {
+      $meta = base_path() . $plugin['path'] . '/' . $plugin['filename'];
     }
   }
-  return $settings;
-}
-
-/**
- * Build a JS settings array for Drupal plugins loaded via the proxy plugin.
- */
-function wysiwyg_tinymce_proxy_plugin_settings($editor, $profile, $plugins) {
-  $settings = array();
-  foreach ($plugins as $name => $plugin) {
-    // Populate required plugin settings.
-    $settings[$name] = $plugin['dialog settings'] + array(
-      'title' => $plugin['title'],
-      'icon' => base_path() . $plugin['icon path'] . '/' . $plugin['icon file'],
-      'iconTitle' => $plugin['icon title'],
-    );
-    if (isset($plugin['css file'])) {
-      $settings[$name]['css'] = base_path() . $plugin['css path'] . '/' . $plugin['css file'];
-    }
-  }
-  return $settings;
+  return $meta;
 }
 
 /**
@@ -403,32 +519,44 @@ function _wysiwyg_tinymce_plugin_name($op, $name) {
 }
 
 /**
+ * Build a JS settings array for Drupal plugins loaded via the proxy plugin.
+ */
+function _wysiwyg_tinymce_proxy_plugin_settings($editor, $profile, $plugins) {
+  $settings = array();
+  foreach ($plugins as $name => $plugin) {
+    // Just need a list of all enabled plugins for each instance.
+    $settings[$name] = TRUE;
+  }
+  return $settings;
+}
+
+/**
  * Return internal plugins for this editor; semi-implementation of hook_wysiwyg_plugin().
  */
-function wysiwyg_tinymce_plugins($editor) {
+function _wysiwyg_tinymce_plugins($editor) {
   $plugins = array(
     'default' => array(
       'path' => $editor['library path'] . '/themes/advanced',
       'buttons' => array(
         'bold' => t('Bold'), 'italic' => t('Italic'), 'underline' => t('Underline'),
-        'strikethrough' => t('Strike-through'),
-        'justifyleft' => t('Align left'), 'justifycenter' => t('Align center'), 'justifyright' => t('Align right'), 'justifyfull' => t('Justify'),
-        'bullist' => t('Bullet list'), 'numlist' => t('Numbered list'),
+        'strikethrough' => t('Strikethrough'),
+        'justifyleft' => t('Align left'), 'justifycenter' => t('Align center'), 'justifyright' => t('Align right'), 'justifyfull' => t('Align full'),
+        'bullist' => t('Unordered list'), 'numlist' => t('Ordered list'),
         'outdent' => t('Outdent'), 'indent' => t('Indent'),
         'undo' => t('Undo'), 'redo' => t('Redo'),
         'link' => t('Link'), 'unlink' => t('Unlink'), 'anchor' => t('Anchor'),
         'image' => t('Image'),
-        'cleanup' => t('Clean-up'),
+        'cleanup' => t('Cleanup messy code'),
+        'forecolor' => t('Select text color'), 'backcolor' => t('Select background color'),
         'formatselect' => t('Block format'), 'styleselect' => t('Styles'),
         'fontselect' => t('Font'), 'fontsizeselect' => t('Font size'),
-        'forecolor' => t('Forecolor'), 'backcolor' => t('Backcolor'),
         'sup' => t('Superscript'), 'sub' => t('Subscript'),
-        'blockquote' => t('Blockquote'), 'code' => t('Source code'),
-        'hr' => t('Horizontal rule'),
+        'blockquote' => t('Blockquote'), 'code' => t('Edit HTML Source'),
+        'hr' => t('Insert horizontal ruler'),
         'cut' => t('Cut'), 'copy' => t('Copy'), 'paste' => t('Paste'),
-        'visualaid' => t('Visual aid'),
-        'removeformat' => t('Remove format'),
-        'charmap' => t('Character map'),
+        'visualaid' => t('Toggle guidelines/invisible elements'),
+        'removeformat' => t('Remove formatting'),
+        'charmap' => t('Insert custom character'),
         'help' => t('Help'),
       ),
       'internal' => TRUE,

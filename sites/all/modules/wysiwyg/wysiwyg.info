@@ -9,9 +9,9 @@ configure = admin/config/content/wysiwyg
 files[] = wysiwyg.module
 files[] = tests/wysiwyg.test
 
-; Information added by drupal.org packaging script on 2012-10-02
-version = "7.x-2.2"
+; Information added by Drupal.org packaging script on 2016-01-25
+version = "7.x-2.2+75-dev"
 core = "7.x"
 project = "wysiwyg"
-datestamp = "1349213776"
+datestamp = "1453735332"
 

@@ -8,9 +8,12 @@ Drupal = window.parent.Drupal;
  * Instance settings passed to FCKinstance.Config are temporarily stored in
  * FCKConfig.PageConfig.
  */
-var wysiwygFormat = FCKConfig.PageConfig.wysiwygFormat;
-var wysiwygSettings = Drupal.settings.wysiwyg.configs.fckeditor[wysiwygFormat];
-var pluginSettings = (Drupal.settings.wysiwyg.plugins[wysiwygFormat] ? Drupal.settings.wysiwyg.plugins[wysiwygFormat] : { 'native': {}, 'drupal': {} });
+// Fetch the private instance and make sure nothing can tamper with it.
+var $field = window.parent.jQuery(FCK.LinkedField);
+var wysiwygInstance = $field.data('wysiwygInstance');
+$field.removeData('wysiwygInstance');
+var wysiwygSettings = wysiwygInstance.editorSettings;
+var pluginInfo = wysiwygInstance.pluginInfo;
 
 /**
  * Apply format-specific settings.
@@ -42,21 +45,21 @@ for (var setting in wysiwygSettings) {
 
 // Fix Drupal toolbar obscuring editor toolbar in fullscreen mode.
 var oldFitWindowExecute = FCKFitWindow.prototype.Execute;
-var $drupalToolbar = window.parent.jQuery('#toolbar', Drupal.overlayChild ? window.parent.window.parent.document : window.parent.document);
+var $drupalToolbars = window.parent.jQuery('#toolbar, #admin-menu', Drupal.overlayChild ? window.parent.window.parent.document : window.parent.document);
 FCKFitWindow.prototype.Execute = function() {
   oldFitWindowExecute.apply(this, arguments);
   if (this.IsMaximized) {
-    $drupalToolbar.hide();
+    $drupalToolbars.hide();
   }
   else {
-    $drupalToolbar.show();
+    $drupalToolbars.show();
   }
 }
 
 /**
  * Initialize this editor instance.
  */
-Drupal.wysiwyg.editor.instance.fckeditor.init(window);
+wysiwygInstance.init(window);
 
 /**
  * Register native plugins for this input format.
@@ -66,9 +69,9 @@ Drupal.wysiwyg.editor.instance.fckeditor.init(window);
  * - Languages the plugin is available in.
  * - Location of the plugin folder; <plugin_name>/fckplugin.js is appended.
  */
-for (var plugin in pluginSettings['native']) {
+for (var pluginId in pluginInfo.instances['native']) {
   // Languages and path may be undefined for internal plugins.
-  FCKConfig.Plugins.Add(plugin, pluginSettings['native'][plugin].languages, pluginSettings['native'][plugin].path);
+  FCKConfig.Plugins.Add(pluginId, pluginInfo.global['native'][pluginId].languages, pluginInfo.global['native'][pluginId].path);
 }
 
 /**
@@ -80,7 +83,8 @@ for (var plugin in pluginSettings['native']) {
  * - General plugin settings.
  * - A reference to this window so the plugin setup can access FCKConfig.
  */
-for (var plugin in pluginSettings.drupal) {
-  Drupal.wysiwyg.editor.instance.fckeditor.addPlugin(plugin, pluginSettings.drupal[plugin], Drupal.settings.wysiwyg.plugins.drupal[plugin], window);
+for (var pluginId in pluginInfo.instances.drupal) {
+  var plugin = pluginInfo.instances.drupal[pluginId];
+  Drupal.wysiwyg.editor.instance.fckeditor.addPlugin(pluginId, pluginInfo.global.drupal[pluginId], window);
 }
 

@@ -11,8 +11,8 @@
 function wysiwyg_epiceditor_editor() {
   $editor['epiceditor'] = array(
     'title' => 'EpicEditor',
-    'vendor url' => 'http://oscargodson.github.com/EpicEditor',
-    'download url' => 'http://oscargodson.github.com/EpicEditor/docs/downloads/EpicEditor-v0.1.1.zip',
+    'vendor url' => 'http://epiceditor.com',
+    'download url' => 'http://epiceditor.com',
     'libraries' => array(
       '' => array(
         'title' => 'Minified',
@@ -25,6 +25,7 @@ function wysiwyg_epiceditor_editor() {
     ),
     'version callback' => 'wysiwyg_epiceditor_version',
     'themes callback' => 'wysiwyg_epiceditor_themes',
+    'settings form callback' => 'wysiwyg_epiceditor_settings_form',
     'settings callback' => 'wysiwyg_epiceditor_settings',
     'versions' => array(
       '0.1.1' => array(
@@ -74,6 +75,16 @@ function wysiwyg_epiceditor_themes($editor, $profile) {
   return array('epic-dark', 'epic-light');
   // @todo Use the preview themes somewhere.
   //return array('preview-dark', 'github');
+}
+
+/**
+ * Enhances the editor profile settings form for EpicEditor.
+ *
+ */
+function wysiwyg_epiceditor_settings_form(&$form, &$form_state) {
+  $form['buttons']['#access'] = FALSE;
+  $form['basic']['language']['#access'] = FALSE;
+  $form['css']['#access'] = FALSE;
 }
 
 /**

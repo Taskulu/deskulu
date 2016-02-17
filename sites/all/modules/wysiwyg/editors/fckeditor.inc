@@ -21,16 +21,18 @@ function wysiwyg_fckeditor_editor() {
     ),
     'version callback' => 'wysiwyg_fckeditor_version',
     'themes callback' => 'wysiwyg_fckeditor_themes',
+    'settings form callback' => 'wysiwyg_fckeditor_settings_form',
     'settings callback' => 'wysiwyg_fckeditor_settings',
-    'plugin callback' => 'wysiwyg_fckeditor_plugins',
-    'plugin settings callback' => 'wysiwyg_fckeditor_plugin_settings',
+    'plugin callback' => '_wysiwyg_fckeditor_plugins',
+    'plugin meta callback' => '_wysiwyg_fckeditor_plugin_meta',
+    'plugin settings callback' => '_wysiwyg_fckeditor_plugin_settings',
     'proxy plugin' => array(
       'drupal' => array(
         'load' => TRUE,
         'proxy' => TRUE,
       ),
     ),
-    'proxy plugin settings callback' => 'wysiwyg_fckeditor_proxy_plugin_settings',
+    'proxy plugin settings callback' => '_wysiwyg_fckeditor_proxy_plugin_settings',
     'versions' => array(
       '2.6' => array(
         'js files' => array('fckeditor-2.6.js'),
@@ -83,6 +85,67 @@ function wysiwyg_fckeditor_themes($editor, $profile) {
 }
 
 /**
+ * Enhances the editor profile settings form for FCKeditor.
+ *
+ * @see http://docs.cksource.com/FCKeditor_2.x/Developers_Guide/Configuration/Configuration_Options
+ */
+function wysiwyg_fckeditor_settings_form(&$form, &$form_state) {
+  $profile = $form_state['wysiwyg_profile'];
+  $settings = $profile->settings;
+  $settings += array(
+    'AutoDetectPasteFromWord' => TRUE,
+    'ForcePasteAsPlainText' => FALSE,
+    'FontFormats' => 'p;address;pre;h2;h3;h4;h5;h6;div',
+    'FormatOutput' => TRUE,
+    'FormatSource' => TRUE,
+  );
+  $form['output']['FormatSource'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Apply source formatting'),
+    '#default_value' => $settings['FormatSource'],
+    '#return_value' => 1,
+    '#description' => t('If enabled, the editor will re-format the HTML source code when switching to Source View.') . ' ' . t('Uses the <a href="@url">@setting</a> setting internally.', array('@setting' => 'FormatSource', '@url' => url('http://docs.cksource.com/FCKeditor_2.x/Developers_Guide/Configuration/Configuration_Options/FormatSource'))),
+  );
+  $form['output']['FormatOutput'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Apply output formatting'),
+    '#default_value' => $settings['FormatOutput'],
+    '#return_value' => 1,
+    '#description' => t('If enabled, the editor will re-format the HTML source code output. Disabling this option could avoid conflicts with other input filters.') . ' ' . t('Uses the <a href="@url">@setting</a> setting internally.', array('@setting' => 'FormatOutput', '@url' => url('http://docs.cksource.com/FCKeditor_2.x/Developers_Guide/Configuration/Configuration_Options/FormatOutput'))),
+  );
+  $form['css']['FontFormats'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Block formats'),
+    '#default_value' => $settings['FontFormats'],
+    '#size' => 40,
+    '#maxlength' => 250,
+    '#description' => t('Semicolon separated list of HTML block formats. Possible values: <code>@format-list</code>.', array('@format-list' => 'p;h1;h2;h3;h4;h5;h6;div;address;pre')) . ' ' . t('Uses the <a href="@url">@setting</a> setting internally.', array('@setting' => 'FontFormats', '@url' => url('http://docs.cksource.com/FCKeditor_2.x/Developers_Guide/Configuration/Configuration_Options/FontFormats'))),
+  );
+  $form['paste'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Paste plugin'),
+    '#description' => t('Settings for the paste plugin.'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#group' => 'advanced',
+  );
+  $form['paste']['AutoDetectPasteFromWord'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Auto detect paste from Word'),
+    '#default_value' => $settings['AutoDetectPasteFromWord'],
+    '#return_value' => 1,
+    '#description' => t('If enabled, FCKeditor checks if pasted text comes from MS Word. If so the editor will launch the "Paste from Word" window. <strong>Only works in Internet Explorer.</strong>') . ' ' . t('Uses the <a href="@url">@setting</a> setting internally.', array('@setting' => 'AutoDetectPasteFromWord', '@url' => url('http://docs.cksource.com/FCKeditor_2.x/Developers_Guide/Configuration/Configuration_Options/AutoDetectPasteFromWord'))),
+  );
+  $form['paste']['ForcePasteAsPlainText'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Force paste as plain text'),
+    '#default_value' => $settings['ForcePasteAsPlainText'],
+    '#return_value' => 1,
+    '#description' => t('If enabled, forces the editor to discard all formatting when pasting text. It will also disable the <strong>Paste from Word</strong> operation.') . ' ' . t('Uses the <a href="@url">@setting</a> setting internally.', array('@setting' => 'ForcePasteAsPlainText', '@url' => url('http://docs.cksource.com/FCKeditor_2.x/Developers_Guide/Configuration/Configuration_Options/ForcePasteAsPlainText'))),
+  );
+}
+
+/**
  * Return runtime editor settings for a given wysiwyg profile.
  *
  * @param $editor
@@ -102,7 +165,6 @@ function wysiwyg_fckeditor_settings($editor, $config, $theme) {
     'SkinPath' => base_path() . $editor['library path'] . '/editor/skins/' . $theme . '/',
     'CustomConfigurationsPath' => base_path() . drupal_get_path('module', 'wysiwyg') . '/editors/js/fckeditor.config.js',
     'Width' => '100%',
-    'Height' => 420,
     'LinkBrowser' => FALSE,
     'LinkUpload' => FALSE,
     'ImageBrowser' => FALSE,
@@ -117,14 +179,20 @@ function wysiwyg_fckeditor_settings($editor, $config, $theme) {
     'IncludeLatinEntities' => FALSE,
     'IncludeGreekEntities' => FALSE,
   );
-  if (isset($config['block_formats'])) {
-    $settings['FontFormats'] = strtr($config['block_formats'], array(',' => ';'));
+  if (isset($config['FontFormats'])) {
+    $settings['FontFormats'] = preg_replace('@\s+@', '', $config['FontFormats']);
   }
-  if (isset($config['apply_source_formatting'])) {
-    $settings['FormatOutput'] = $settings['FormatSource'] = $config['apply_source_formatting'];
+  if (isset($config['FormatOutput'])) {
+    $settings['FormatOutput'] = $config['FormatOutput'];
   }
-  if (isset($config['paste_auto_cleanup_on_paste'])) {
-    $settings['AutoDetectPasteFromWord'] = $config['paste_auto_cleanup_on_paste'];
+  if (isset($config['FormatSource'])) {
+    $settings['FormatSource'] = $config['FormatSource'];
+  }
+  if (isset($config['ForcePasteAsPlainText'])) {
+    $settings['ForcePasteAsPlainText'] = $config['ForcePasteAsPlainText'];
+  }
+  if (isset($config['AutoDetectPasteFromWord'])) {
+    $settings['AutoDetectPasteFromWord'] = $config['AutoDetectPasteFromWord'];
   }
 
   if (isset($config['css_setting'])) {
@@ -169,22 +237,30 @@ function wysiwyg_fckeditor_settings($editor, $config, $theme) {
 }
 
 /**
- * Build a JS settings array of native external plugins that need to be loaded separately.
+ * Build a JS settings array with global metadata for native external plugins.
  */
-function wysiwyg_fckeditor_plugin_settings($editor, $profile, $plugins) {
+function _wysiwyg_fckeditor_plugin_meta($editor, $plugin) {
+  $meta = array();
+  // Add path for native external plugins; internal ones do not need a path.
+  if (empty($plugin['internal']) && isset($plugin['path'])) {
+    // All native FCKeditor plugins use the filename fckplugin.js.
+    $meta['path'] = base_path() . $plugin['path'] . '/';
+  }
+  if (!empty($plugin['languages'])) {
+    $meta['languages'] = $plugin['languages'];
+  }
+  return $meta;
+}
+
+/**
+ * Build a JS settings array for native external plugins.
+ */
+function _wysiwyg_fckeditor_plugin_settings($editor, $profile, $plugins) {
   $settings = array();
   foreach ($plugins as $name => $plugin) {
-    // Register all plugins that need to be loaded.
     if (!empty($plugin['load'])) {
-      $settings[$name] = array();
-      // Add path for native external plugins; internal ones do not need a path.
-      if (empty($plugin['internal']) && isset($plugin['path'])) {
-        // All native FCKeditor plugins use the filename fckplugin.js.
-        $settings[$name]['path'] = base_path() . $plugin['path'] . '/';
-      }
-      if (!empty($plugin['languages'])) {
-        $settings[$name]['languages'] = $plugin['languages'];
-      }
+      // Just need a list of all enabled plugins for each instance.
+      $settings[$name] = TRUE;
     }
   }
   return $settings;
@@ -193,25 +269,20 @@ function wysiwyg_fckeditor_plugin_settings($editor, $profile, $plugins) {
 /**
  * Build a JS settings array for Drupal plugins loaded via the proxy plugin.
  */
-function wysiwyg_fckeditor_proxy_plugin_settings($editor, $profile, $plugins) {
+function _wysiwyg_fckeditor_proxy_plugin_settings($editor, $profile, $plugins) {
   $settings = array();
   foreach ($plugins as $name => $plugin) {
-    // Populate required plugin settings.
-    $settings[$name] = $plugin['dialog settings'] + array(
-      'title' => $plugin['title'],
-      'icon' => base_path() . $plugin['icon path'] . '/' . $plugin['icon file'],
-      'iconTitle' => $plugin['icon title'],
-      // @todo These should only be set if the plugin defined them.
-      'css' => base_path() . $plugin['css path'] . '/' . $plugin['css file'],
-    );
+    // Just need a list of all enabled plugins for each instance.
+    $settings[$name] = TRUE;
   }
   return $settings;
 }
 
+
 /**
  * Return internal plugins for this editor; semi-implementation of hook_wysiwyg_plugin().
  */
-function wysiwyg_fckeditor_plugins($editor) {
+function _wysiwyg_fckeditor_plugins($editor) {
   $plugins = array(
     'default' => array(
       'buttons' => array(

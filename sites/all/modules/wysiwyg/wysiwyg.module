@@ -54,19 +54,22 @@ function wysiwyg_menu() {
     'access arguments' => array('administer filters'),
     'file' => 'wysiwyg.admin.inc',
   );
-  $items['admin/config/content/wysiwyg/profile'] = array(
+  $items['admin/config/content/wysiwyg/list'] = array(
     'title' => 'List',
     'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
   );
-  $items['admin/config/content/wysiwyg/profile/%wysiwyg_profile/edit'] = array(
-    'title' => 'Edit',
+  $items['admin/config/content/wysiwyg/profile/%wysiwyg_profile'] = array(
+    'title callback' => 'wysiwyg_admin_profile_title',
+    'title arguments' => array(5),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('wysiwyg_profile_form', 5),
     'access arguments' => array('administer filters'),
     'file' => 'wysiwyg.admin.inc',
-    'tab_root' => 'admin/config/content/wysiwyg/profile',
-    'tab_parent' => 'admin/config/content/wysiwyg/profile/%wysiwyg_profile',
-    'type' => MENU_LOCAL_TASK,
+  );
+  $items['admin/config/content/wysiwyg/profile/%wysiwyg_profile/edit'] = array(
+    'title' => 'Edit',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
   );
   $items['admin/config/content/wysiwyg/profile/%wysiwyg_profile/delete'] = array(
     'title' => 'Remove',
@@ -74,8 +77,6 @@ function wysiwyg_menu() {
     'page arguments' => array('wysiwyg_profile_delete_confirm', 5),
     'access arguments' => array('administer filters'),
     'file' => 'wysiwyg.admin.inc',
-    'tab_root' => 'admin/config/content/wysiwyg/profile',
-    'tab_parent' => 'admin/config/content/wysiwyg/profile/%wysiwyg_profile',
     'type' => MENU_LOCAL_TASK,
     'weight' => 10,
   );
@@ -89,6 +90,46 @@ function wysiwyg_menu() {
     'file' => 'wysiwyg.dialog.inc',
   );
   return $items;
+}
+
+/**
+ * Display an editor profile title.
+ *
+ * @param $profile
+ *   An editor profile object.
+ *
+ * @return
+ *   The unfiltered name of an editor profile.
+ *   Currently the same as the text format name.
+ */
+function wysiwyg_admin_profile_title($profile) {
+  $format = filter_format_load($profile->format);
+  return $format->name;
+}
+
+/**
+ * Implements hook_admin_menu_map().
+ */
+function wysiwyg_admin_menu_map() {
+  if (!user_access('administer filters')) {
+    return;
+  }
+
+  $formats = filter_formats();
+  $profiles = wysiwyg_profile_load_all();
+  foreach ($profiles as $key => $profile) {
+    if (empty($profile->editor) || !isset($formats[$profile->format])) {
+      unset($profiles[$key]);
+    }
+  }
+  $map['admin/config/content/wysiwyg/profile/%wysiwyg_profile'] = array(
+    'parent' => 'admin/config/content/wysiwyg',
+    'hide' => 'admin/config/content/wysiwyg/list',
+    'arguments' => array(
+      array('%wysiwyg_profile' => array_keys($profiles)),
+    ),
+  );
+  return $map;
 }
 
 /**
@@ -139,16 +180,6 @@ function wysiwyg_help($path, $arg) {
 }
 
 /**
- * Implementation of hook_form_alter().
- */
-function wysiwyg_form_alter(&$form, &$form_state) {
-  // Teaser splitter is unconditionally removed and NOT supported.
-  if (isset($form['body_field'])) {
-    unset($form['body_field']['teaser_js']);
-  }
-}
-
-/**
  * Implements hook_element_info_alter().
  */
 function wysiwyg_element_info_alter(&$types) {
@@ -164,7 +195,8 @@ function wysiwyg_pre_render_text_format($element) {
   // filter_process_format() copies properties to the expanded 'value' child
   // element. Skip this text format widget, if it contains no 'format' or when
   // the current user does not have access to edit the value.
-  if (!isset($element['format']) || !empty($element['value']['#disabled'])) {
+  // Simplify module creates an extra incomplete 'format' on the base field.
+  if (!isset($element['format']['format']) || !empty($element['value']['#disabled'])) {
     return $element;
   }
   // Allow modules to programmatically enforce no client-side editor by setting
@@ -179,32 +211,42 @@ function wysiwyg_pre_render_text_format($element) {
     'field' => $field['#id'],
   );
 
-  // If this textarea is #resizable and we will load at least one
-  // editor, then only load the behavior and let the 'none' editor
-  // attach/detach it to avoid hi-jacking the UI. Due to our CSS class
-  // parsing, we can add arbitrary parameters for each input format.
-  // The #resizable property will be removed below, if at least one
-  // profile has been loaded.
-  $resizable = 0;
+  // If this textarea is #resizable the 'none' editor will attach/detach it to
+  // avoid hi-jacking the UI.
   if (!empty($field['#resizable'])) {
-    $resizable = 1;
-    drupal_add_js('misc/textarea.js');
+    $settings['resizable'] = 1;
+  }
+  if (isset($element['summary']) && $element['summary']['#type'] == 'textarea') {
+    $settings['summary'] = $element['summary']['#id'];
+  }
+
+  if (!$format_field['format']['#access'] || (isset($format_field['#access']) && !$format_field['#access'])) {
+    // Directly specify which the single available format is.
+    $available_formats = array($format_field['format']['#value'] => $format_field['format']['#options'][$format_field['format']['#value']]);
+    $settings['activeFormat'] = $format_field['format']['#value'];
+  }
+  else {
+    // Let the client check the selectbox for the active format.
+    $available_formats = $format_field['format']['#options'];
+    $settings['select'] = $format_field['format']['#id'];
   }
   // Determine the available text formats.
-  foreach ($format_field['format']['#options'] as $format_id => $format_name) {
+  foreach ($available_formats as $format_id => $format_name) {
     $format = 'format' . $format_id;
-    // Initialize default settings, defaulting to 'none' editor.
-    $settings[$format] = array(
-      'editor' => 'none',
-      'status' => 1,
-      'toggle' => 1,
-      'resizable' => $resizable,
-    );
 
     // Fetch the profile associated to this text format.
     $profile = wysiwyg_get_profile($format_id);
     if ($profile) {
+      // Initialize default settings, defaulting to 'none' editor.
+      $settings[$format] = array(
+        'editor' => 'none',
+        'status' => 1,
+        'toggle' => 1,
+      );
       $loaded = TRUE;
+      if (isset($profile->settings['add_to_summaries']) && !$profile->settings['add_to_summaries']) {
+        $settings[$format]['skip_summary'] = 1;
+      }
       $settings[$format]['editor'] = $profile->editor;
       $settings[$format]['status'] = (int) wysiwyg_user_get_status($profile);
       if (isset($profile->settings['show_toggle'])) {
@@ -219,49 +261,17 @@ function wysiwyg_pre_render_text_format($element) {
       wysiwyg_add_editor_settings($profile, $theme);
     }
   }
-  // Use a hidden element for a single text format.
-  if (!$format_field['format']['#access']) {
-    $format_field['wysiwyg'] = array(
-      '#type' => 'hidden',
-      '#name' => $format_field['format']['#name'],
-      '#value' => $format_id,
-      '#attributes' => array(
-        'id' => $format_field['format']['#id'],
-        'class' => array('wysiwyg'),
-      ),
-    );
-    $format_field['wysiwyg']['#attached']['js'][] = array(
-      'data' => array(
-        'wysiwyg' => array(
-          'triggers' => array(
-            $format_field['format']['#id'] => $settings,
-          ),
+  $element['value']['#attributes']['class'][] = 'wysiwyg';
+  $element['#attached']['js'][] = array(
+    'data' => array(
+      'wysiwyg' => array(
+        'triggers' => array(
+          $element['value']['#id'] => $settings,
         ),
       ),
-      'type' => 'setting',
-    );
-  }
-  // Otherwise, attach to text format selector.
-  else {
-    $format_field['format']['#attributes']['class'][] = 'wysiwyg';
-    $format_field['format']['#attached']['js'][] = array(
-      'data' => array(
-        'wysiwyg' => array(
-          'triggers' => array(
-            $format_field['format']['#id'] => $settings,
-          ),
-        ),
-      ),
-      'type' => 'setting',
-    );
-  }
-
-  // If we loaded at least one editor, then the 'none' editor will
-  // handle resizable textareas instead of core.
-  if (isset($loaded) && $resizable) {
-    $field['#resizable'] = FALSE;
-  }
-
+    ),
+    'type' => 'setting',
+  );
   return $element;
 }
 
@@ -348,7 +358,7 @@ function wysiwyg_load_editor($profile) {
             drupal_add_js($init, array('type' => 'inline') + $default_library_options);
           }
           else {
-            drupal_add_js(file_create_url($uri), $default_library_options);
+            drupal_add_js($uri, $default_library_options);
           }
         }
       }
@@ -388,6 +398,11 @@ function wysiwyg_load_editor($profile) {
     else {
       $loaded[$name] = FALSE;
     }
+  }
+
+  // Check if settings were already added on the page that makes an AJAX call.
+  if (isset($_POST['ajax_page_state']) && !empty($_POST['ajax_page_state']['js'][$path . '/wysiwyg.js'])) {
+    $settings_added = TRUE;
   }
 
   // Add basic Wysiwyg settings if any editor has been added.
@@ -491,24 +506,32 @@ function wysiwyg_add_plugin_settings($profile) {
   $proxy = (isset($editor['proxy plugin']) ? key($editor['proxy plugin']) : '');
 
   // Process native editor plugins.
-  if (isset($editor['plugin settings callback'])) {
-    // @todo Require PHP 5.1 in 3.x and use array_intersect_key().
-    $profile_plugins_native = array();
-    foreach ($plugins[$editor['name']] as $plugin => $meta) {
-      // Skip Drupal plugins (handled below).
-      if ($plugin === $proxy) {
-        continue;
-      }
-      // Only keep native plugins that are enabled in this profile.
-      if (isset($profile->settings['buttons'][$plugin])) {
-        $profile_plugins_native[$plugin] = $meta;
+  $profile_plugins_native = array();
+  foreach ($plugins[$editor['name']] as $plugin => $meta) {
+    // Skip Drupal plugins (handled below) and 'core' functionality.
+    if ($plugin === $proxy || $plugin === 'default') {
+      continue;
+    }
+    // Only keep native plugins that are enabled in this profile.
+    if (isset($profile->settings['buttons'][$plugin])) {
+      $profile_plugins_native[$plugin] = $meta;
+      if (!isset($processed_plugins[$editor['name']][$plugin])) {
+        if (isset($editor['plugin meta callback'])) {
+          // Invoke the editor's plugin meta callback, so it can populate the
+          // global metadata for native plugins with required values.
+          $meta['name'] = $plugin;
+          if (($native_meta = call_user_func($editor['plugin meta callback'], $editor, $meta))) {
+            drupal_add_js(array('wysiwyg' => array('plugins' => array('native' => array($editor['name'] => array($plugin => $native_meta))))), 'setting');
+          }
+        }
+        $processed_plugins[$editor['name']][$plugin] = $meta;
       }
     }
+  }
+  if (!empty($profile_plugins_native) && isset($editor['plugin settings callback'])) {
     // Invoke the editor's plugin settings callback, so it can populate the
-    // settings for native external plugins with required values.
-    $settings_native = call_user_func($editor['plugin settings callback'], $editor, $profile, $profile_plugins_native);
-
-    if ($settings_native) {
+    // format specific settings for native plugins with required values.
+    if (($settings_native = call_user_func($editor['plugin settings callback'], $editor, $profile, $profile_plugins_native))) {
       drupal_add_js(array('wysiwyg' => array('plugins' => array('format' . $profile->format => array('native' => $settings_native)))), 'setting');
     }
   }
@@ -526,9 +549,13 @@ function wysiwyg_add_plugin_settings($profile) {
           // Load the Drupal plugin's JavaScript.
           drupal_add_js($meta['js path'] . '/' . $meta['js file']);
           // Add plugin-specific settings.
-          if (isset($meta['settings'])) {
-            drupal_add_js(array('wysiwyg' => array('plugins' => array('drupal' => array($plugin => $meta['settings'])))), 'setting');
+          $settings = (isset($meta['settings']) ? $meta['settings'] : array());
+          $settings['title'] = $meta['title'];
+          $settings['icon'] = base_path() . $meta['icon path'] . '/' . $meta['icon file'];
+          if (!empty($meta['css path']) && !empty($meta['css file'])) {
+            $settings['css'] = base_path() . $meta['css path'] . '/' . $meta['css file'];
           }
+          drupal_add_js(array('wysiwyg' => array('plugins' => array('drupal' => array($plugin => $settings)))), 'setting');
         }
         else {
           $profile_plugins_drupal[$plugin] = $processed_plugins[$proxy][$plugin];
@@ -654,13 +681,8 @@ function wysiwyg_get_css() {
 
   $files = array();
   foreach (drupal_add_css() as $filepath => $info) {
-    if ($info['group'] >= CSS_THEME && $info['media'] != 'print') {
-      if ($info['type'] == 'external') {
-        $files[] = $filepath;
-      }
-      elseif (file_exists($filepath)) {
-        $files[] = base_path() . $filepath;
-      }
+    if ($info['group'] >= CSS_THEME && $info['type'] != 'inline' && $info['media'] != 'print' && file_exists($filepath)) {
+      $files[] = file_create_url($filepath);
     }
   }
   return $files;
@@ -723,6 +745,9 @@ function wysiwyg_profile_cache_clear() {
  * Implements hook_form_FORM_ID_alter().
  */
 function wysiwyg_form_user_profile_form_alter(&$form, &$form_state, $form_id) {
+  if ($form['#user_category'] != 'account') {
+    return;
+  }
   $account = $form['#user'];
   $user_formats = filter_formats($account);
   $options = array();
@@ -1011,51 +1036,56 @@ function wysiwyg_get_path($library, $base_path = FALSE) {
  * @ingroup libraries
  */
 function wysiwyg_get_libraries() {
-  global $profile;
-
-  // When this function is called during Drupal's initial installation process,
-  // the name of the profile that is about to be installed is stored in the
-  // global $profile variable. At all other times, the regular system variable
-  // contains the name of the current profile, and we can call variable_get()
-  // to determine the profile.
-  if (!isset($profile)) {
-    $profile = variable_get('install_profile', 'default');
+  if (function_exists('libraries_get_libraries')) {
+    $directories = libraries_get_libraries();
   }
+  else {
+    global $profile;
 
-  $directory = 'libraries';
-  $searchdir = array();
-  $config = conf_path();
+    // When this function is called during Drupal's initial installation process,
+    // the name of the profile that is about to be installed is stored in the
+    // global $profile variable. At all other times, the regular system variable
+    // contains the name of the current profile, and we can call variable_get()
+    // to determine the profile.
+    if (!isset($profile)) {
+      $profile = variable_get('install_profile', 'default');
+    }
 
-  // The 'profiles' directory contains pristine collections of modules and
-  // themes as organized by a distribution.  It is pristine in the same way
-  // that /modules is pristine for core; users should avoid changing anything
-  // there in favor of sites/all or sites/<domain> directories.
-  if (file_exists("profiles/$profile/$directory")) {
-    $searchdir[] = "profiles/$profile/$directory";
-  }
+    $directory = 'libraries';
+    $searchdir = array();
+    $config = conf_path();
 
-  // Always search sites/all/*.
-  $searchdir[] = 'sites/all/' . $directory;
+    // The 'profiles' directory contains pristine collections of modules and
+    // themes as organized by a distribution.  It is pristine in the same way
+    // that /modules is pristine for core; users should avoid changing anything
+    // there in favor of sites/all or sites/<domain> directories.
+    if (file_exists("profiles/$profile/$directory")) {
+      $searchdir[] = "profiles/$profile/$directory";
+    }
 
-  // Also search sites/<domain>/*.
-  if (file_exists("$config/$directory")) {
-    $searchdir[] = "$config/$directory";
-  }
+    // Always search sites/all/*.
+    $searchdir[] = 'sites/all/' . $directory;
 
-  // Retrieve list of directories.
-  // @todo Core: Allow to scan for directories.
-  $directories = array();
-  $nomask = array('CVS');
-  foreach ($searchdir as $dir) {
-    if (is_dir($dir) && $handle = opendir($dir)) {
-      while (FALSE !== ($file = readdir($handle))) {
-        if (!in_array($file, $nomask) && $file[0] != '.') {
-          if (is_dir("$dir/$file")) {
-            $directories[$file] = "$dir/$file";
+    // Also search sites/<domain>/*.
+    if (file_exists("$config/$directory")) {
+      $searchdir[] = "$config/$directory";
+    }
+
+    // Retrieve list of directories.
+    // @todo Core: Allow to scan for directories.
+    $directories = array();
+    $nomask = array('CVS');
+    foreach ($searchdir as $dir) {
+      if (is_dir($dir) && $handle = opendir($dir)) {
+        while (FALSE !== ($file = readdir($handle))) {
+          if (!in_array($file, $nomask) && $file[0] != '.') {
+            if (is_dir("$dir/$file")) {
+              $directories[$file] = "$dir/$file";
+            }
           }
         }
+        closedir($handle);
       }
-      closedir($handle);
     }
   }
 
@@ -1083,6 +1113,55 @@ function wysiwyg_get_directories($plugintype) {
     }
   }
   return $directories;
+}
+
+/**
+ * Create a placeholder structure for JavaScript callbacks.
+ *
+ * @param $name
+ *  A string with the name of the callback, use 'object.subobject.method'
+ *  syntax for methods in nested objects.
+ * @param $context
+ *  An optional string with the name of an object for overriding 'this' inside
+ *  the function. Use 'object.subobject' syntax for nested objects. Defaults to
+ *  the window object.
+ *
+ * @return
+ *  An array with placeholder information for creating a JavaScript function
+ *  reference on the client.
+ */
+function wysiwyg_wrap_js_callback($name, $context = null) {
+  $obj = array(
+    'drupalWysiwygType' => 'callback',
+    'name' => $name,
+  );
+  if ($context) {
+    $obj['context'] = $context;
+  }
+  return $obj;
+}
+
+/**
+ * Create a placeholder structure for JavaScript RegExp objects.
+ *
+ * @param $regexp
+ *  A JavaScript Regular Expression as a string, without / wrappers.
+ * @param $modifiers
+ *  An optional string with modifiers for the RegExp object.
+ *
+ * @return
+ *  An array with placeholder information for creating a JavaScript RegExp
+ *  object on the client.
+ */
+function wysiwyg_wrap_js_regexp($regexp, $modifiers = null) {
+  $obj = array(
+    'drupalWysiwygType' => 'regexp',
+    'regexp' => $regexp,
+  );
+  if ($modifiers) {
+    $obj['modifiers'] = $modifiers;
+  }
+  return $obj;
 }
 
 /**

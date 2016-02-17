@@ -45,7 +45,7 @@ Drupal.wysiwyg.editor.attach.tinymce = function(context, params, settings) {
   // it prior to attaching the editor. This is done on the client-side instead
   // of the server-side, as Wysiwyg has no way to figure out where content is
   // stored, and the class only affects editing.
-  $field = $('#' + params.field);
+  var $field = $('#' + params.field);
   $field.val($field.val().replace(/(<.+?\s+class=['"][\w\s]*?)\bmceItem\b([\w\s]*?['"].*?>)/ig, '$1$2'));
 
   // Attach editor.

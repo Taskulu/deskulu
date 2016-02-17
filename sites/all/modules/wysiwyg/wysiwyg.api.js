@@ -95,3 +95,25 @@ Drupal.wysiwyg.plugins.awesome = {
     return '<img src="' + settings.path + '/images/spacer.gif" alt="&lt;--break-&gt;" title="&lt;--break--&gt;" class="wysiwyg-break drupal-content" />';
   }
 };
+
+/**
+ * Because some editors add a lot of new elements with the id attribute set,
+ * Wysiwyg provides a way to exclude such ids from the ajax_html_ids[] parameter
+ * sent in AJAX requests. Serverside POST limits such as PHP's max_input_vars
+ * could otherwise cause the request to be rejected.
+ *
+ * The filter gathers a list of jQuery selectors from a global list in
+ * Drupal.wysiwyg.excludeIdSelectors, joins them with a comma separator and
+ * wraps them in "[id]:not[...]", which is then run on the document the same way
+ * Drupal core gathers the ids on every AJAX request.
+ *
+ * To add to the filter, set a unique key to Drupal.wysiwyg.excludeIdSelectors
+ * and set its value to an Array holding one or more selector strings which
+ * would match the element(s) to exclude.
+ *
+ * Beware not to match elements which are not removed before the actual request
+ * is performed, or Drupal may accidentally reuse the same id for new elements.
+ *
+ * Below is a sample from ckeditor.inc matching every id starting with 'cke_'.
+ */
+Drupal.wysiwyg.excludeIdSelectors.wysiwyg_ckeditor = ['[id^="cke_"]'];

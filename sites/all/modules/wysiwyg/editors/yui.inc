@@ -42,17 +42,18 @@ function wysiwyg_yui_editor() {
     ),
     'version callback' => 'wysiwyg_yui_version',
     'themes callback' => 'wysiwyg_yui_themes',
+    'settings form callback' => 'wysiwyg_yui_settings_form',
     'load callback' => 'wysiwyg_yui_load',
     'settings callback' => 'wysiwyg_yui_settings',
-    'plugin callback' => 'wysiwyg_yui_plugins',
-    'plugin settings callback' => 'wysiwyg_yui_plugin_settings',
+    'plugin callback' => '_wysiwyg_yui_plugins',
+    'plugin meta callback' => '_wysiwyg_yui_plugin_meta',
     'proxy plugin' => array(
       'drupal' => array(
         'load' => TRUE,
         'proxy' => TRUE,
       ),
     ),
-    'proxy plugin settings callback' => 'wysiwyg_yui_proxy_plugin_settings',
+    'proxy plugin settings callback' => '_wysiwyg_yui_proxy_plugin_settings',
     'versions' => array(
       '2.7.0' => array(
         'js files' => array('yui.js'),
@@ -105,6 +106,39 @@ function wysiwyg_yui_themes($editor, $profile) {
 }
 
 /**
+ * Enhances the editor profile settings form for YUI.
+ *
+ * @see http://developer.yahoo.com/yui/docs/YAHOO.widget.Editor.html
+ */
+function wysiwyg_yui_settings_form(&$form, &$form_state) {
+  $profile = $form_state['wysiwyg_profile'];
+  $settings = $profile->settings;
+  $settings += array(
+    'autoHeight' => FALSE,
+    'block_formats' => 'p,h1,h2,h3,h4,h5,h6',
+  );
+
+  $form['basic']['language']['#access'] = FALSE;
+
+  $form['appearance']['autoHeight'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable automatic height'),
+    '#default_value' => $settings['autoHeight'],
+    '#return_value' => 1,
+    '#description' => t('When enabled, removes the scrollbars from the edit area and resizes it to fit the content.') . ' ' . t('Uses the <a href="@url">@setting</a> setting internally.', array('@setting' => 'autoHeight', '@url' => url('http://developer.yahoo.com/yui/docs/YAHOO.widget.SimpleEditor.html#config_autoHeight'))),
+  );
+
+  $form['css']['block_formats'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Block formats'),
+    '#default_value' => $settings['block_formats'],
+    '#size' => 40,
+    '#maxlength' => 250,
+    '#description' => t('Comma separated list of HTML block formats. Possible values: <code>@format-list</code>.', array('@format-list' => 'p,h1,h2,h3,h4,h5,h6,')),
+  );
+}
+
+/**
  * Perform additional actions upon loading this editor.
  *
  * @param $editor
@@ -143,11 +177,7 @@ function wysiwyg_yui_settings($editor, $config, $theme) {
     'ptags' => TRUE,
   );
 
-  if (isset($config['path_loc']) && $config['path_loc'] != 'none') {
-    $settings['dompath'] = $config['path_loc'];
-  }
-  // Enable auto-height feature when editor should be resizable.
-  if (!empty($config['resizing'])) {
+  if (!empty($config['autoHeight'])) {
     $settings['autoHeight'] = TRUE;
   }
 
@@ -178,7 +208,7 @@ function wysiwyg_yui_settings($editor, $config, $theme) {
               'h5' => array('text' => 'Heading 5', 'value' => 'h5'),
               'h6' => array('text' => 'Heading 6', 'value' => 'h6'),
             );
-            foreach (explode(',', $config['block_formats']) as $tag) {
+            foreach (explode(',', preg_replace('@\s+@', '', $config['block_formats'])) as $tag) {
               if (isset($headings[$tag])) {
                 $extra['menu'][] = $headings[$tag];
               }
@@ -277,36 +307,27 @@ function wysiwyg_yui_button_setting($editor, $plugin, $button, $extra = array())
 }
 
 /**
- * Build a JS settings array of native external plugins that need to be loaded separately.
+ * Build a JS settings array with global metadata for native external plugins.
  */
-function wysiwyg_yui_plugin_settings($editor, $profile, $plugins) {
-  $settings = array();
-  foreach ($plugins as $name => $plugin) {
-    if (!empty($plugin['load'])) {
-      // Add path for native external plugins; internal ones are loaded
-      // automatically.
-      if (empty($plugin['internal']) && isset($plugin['path'])) {
-        $settings[$name] = base_path() . $plugin['path'];
-      }
+function _wysiwyg_yui_plugin_meta($editor, $plugin) {
+  $meta = NULL;
+  if (!empty($plugin['load'])) {
+    // Add path for native external plugins; internal ones are loaded
+    // automatically.
+    if (empty($plugin['internal']) && isset($plugin['path'])) {
+      $meta = base_path() . $plugin['path'];
     }
   }
-  return $settings;
+  return $meta;
 }
 
 /**
  * Build a JS settings array for Drupal plugins loaded via the proxy plugin.
  */
-function wysiwyg_yui_proxy_plugin_settings($editor, $profile, $plugins) {
+function _wysiwyg_yui_proxy_plugin_settings($editor, $profile, $plugins) {
   $settings = array();
   foreach ($plugins as $name => $plugin) {
-    // Populate required plugin settings.
-    $settings[$name] = $plugin['dialog settings'] + array(
-      'title' => $plugin['title'],
-      'icon' => base_path() . $plugin['icon path'] . '/' . $plugin['icon file'],
-      'iconTitle' => $plugin['icon title'],
-      // @todo These should only be set if the plugin defined them.
-      'css' => base_path() . $plugin['css path'] . '/' . $plugin['css file'],
-    );
+    $settings[$name] = array();
   }
   return $settings;
 }
@@ -314,7 +335,7 @@ function wysiwyg_yui_proxy_plugin_settings($editor, $profile, $plugins) {
 /**
  * Return internal plugins for this editor; semi-implementation of hook_wysiwyg_plugin().
  */
-function wysiwyg_yui_plugins($editor) {
+function _wysiwyg_yui_plugins($editor) {
   return array(
     'default' => array(
       'buttons' => array(

@@ -16,15 +16,22 @@ function wysiwyg_whizzywig_editor() {
     'libraries' => array(
       '' => array(
         'title' => 'Default',
-        'files' => array('whizzywig.js', 'xhtml.js'),
+        'files' => array('whizzywig.js'),
       ),
     ),
     'version callback' => 'wysiwyg_whizzywig_version',
+    'settings form callback' => 'wysiwyg_whizzywig_settings_form',
     'settings callback' => 'wysiwyg_whizzywig_settings',
-    'plugin callback' => 'wysiwyg_whizzywig_plugins',
+    'plugin callback' => '_wysiwyg_whizzywig_plugins',
     'versions' => array(
       '55' => array(
         'js files' => array('whizzywig.js'),
+        'libraries' => array(
+          '' => array(
+            'title' => 'Default',
+            'files' => array('whizzywig.js', 'xhtml.js'),
+          ),
+        ),
       ),
       '56' => array(
         'js files' => array('whizzywig-56.js'),
@@ -60,6 +67,15 @@ function wysiwyg_whizzywig_version($editor) {
     return $version[1];
   }
   fclose($script);
+}
+
+/**
+ * Enhances the editor profile settings form for Whizzywig.
+ */
+function wysiwyg_whizzywig_settings_form(&$form, &$form_state) {
+  $form['basic']['language']['#access'] = FALSE;
+  // @todo CSS settings are currently not used.
+  $form['css']['#access'] = FALSE;
 }
 
 /**
@@ -102,6 +118,7 @@ function wysiwyg_whizzywig_settings($editor, $config, $theme) {
   }
 
   // Add editor content stylesheet.
+  // @todo CSS settings are currently not used.
   if (isset($config['css_setting'])) {
     if ($config['css_setting'] == 'theme') {
       $css = drupal_get_path('theme', variable_get('theme_default', NULL)) . '/style.css';
@@ -120,7 +137,7 @@ function wysiwyg_whizzywig_settings($editor, $config, $theme) {
 /**
  * Return internal plugins for this editor; semi-implementation of hook_wysiwyg_plugin().
  */
-function wysiwyg_whizzywig_plugins($editor) {
+function _wysiwyg_whizzywig_plugins($editor) {
   return array(
     'default' => array(
       'buttons' => array(

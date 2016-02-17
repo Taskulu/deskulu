@@ -26,13 +26,13 @@ WYSIWYG.getEditor = function (n) {
 // Fix Drupal toolbar obscuring editor toolbar in fullscreen mode.
 var oldMaximize = WYSIWYG.maximize;
 WYSIWYG.maximize = function (n) {
-var $drupalToolbar = $('#toolbar', Drupal.overlayChild ? window.parent.document : document);
+var $drupalToolbars = $('#toolbar, #admin-menu', Drupal.overlayChild ? window.parent.document : document);
   oldMaximize.apply(this, arguments);
   if (this.maximized[n]) {
-    $drupalToolbar.hide();
+    $drupalToolbars.hide();
   }
   else {
-    $drupalToolbar.show();
+    $drupalToolbars.show();
   }
 }
 
@@ -135,6 +135,10 @@ Drupal.wysiwyg.editor.instance.openwysiwyg = {
       content = content.replace(/(\r\n)|(\n)/ig, '');
     }
     return content;
+  },
+
+  isFullscreen: function () {
+    return !!(WYSIWYG.maximized[this.field]);
   }
 };
 

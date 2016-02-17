@@ -1,35 +1,63 @@
 (function($) {
 
-Drupal.wysiwyg.editor.init.ckeditor = function(settings) {
-  // Plugins must only be loaded once. Only the settings from the first format
-  // will be used but they're identical anyway.
-  var registeredPlugins = {};
-  for (var format in settings) {
-    if (Drupal.settings.wysiwyg.plugins[format]) {
-      // Register native external plugins.
-      // Array syntax required; 'native' is a predefined token in JavaScript.
-      for (var pluginName in Drupal.settings.wysiwyg.plugins[format]['native']) {
-        if (!registeredPlugins[pluginName]) {
-          var plugin = Drupal.settings.wysiwyg.plugins[format]['native'][pluginName];
-          CKEDITOR.plugins.addExternal(pluginName, plugin.path, plugin.fileName);
-          registeredPlugins[pluginName] = true;
-        }
-      }
-      // Register Drupal plugins.
-      for (var pluginName in Drupal.settings.wysiwyg.plugins[format].drupal) {
-        if (!registeredPlugins[pluginName]) {
-          Drupal.wysiwyg.editor.instance.ckeditor.addPlugin(pluginName, Drupal.settings.wysiwyg.plugins[format].drupal[pluginName], Drupal.settings.wysiwyg.plugins.drupal[pluginName]);
-          registeredPlugins[pluginName] = true;
-        }
-      }
+CKEDITOR.disableAutoInline = true;
+
+// Exclude every id starting with 'cke_' in ajax_html_ids during AJAX requests.
+Drupal.wysiwyg.excludeIdSelectors.wysiwyg_ckeditor = ['[id^="cke_"]'];
+
+// Keeps track of private instance data.
+var instanceMap;
+
+/**
+ * Initialize the editor library.
+ *
+ * This method is called once the first time a library is needed. If new
+ * WYSIWYG fieldsare added later, update() will be called instead.
+ *
+ * @param settings
+ *   An object containing editor settings for each input format.
+ * @param pluginInfo
+ *   An object containing global plugin configuration.
+ */
+Drupal.wysiwyg.editor.init.ckeditor = function(settings, pluginInfo) {
+  instanceMap = {};
+  // Nothing to do here other than register new plugins etc.
+  Drupal.wysiwyg.editor.update.ckeditor(settings, pluginInfo);
+};
+
+/**
+ * Update the editor library when new settings are available.
+ *
+ * This method is called instead of init() when at least one new WYSIWYG field
+ * has been added to the document and the library has already been initialized.
+ *
+ * $param settings
+ *   An object containing editor settings for each input format.
+ * $param pluginInfo
+ *   An object containing global plugin configuration.
+ */
+Drupal.wysiwyg.editor.update.ckeditor = function(settings, pluginInfo) {
+  // Register native external plugins.
+  // Array syntax required; 'native' is a predefined token in JavaScript.
+  for (var pluginId in pluginInfo['native']) {
+    if (pluginInfo['native'].hasOwnProperty(pluginId) && (!CKEDITOR.plugins.externals || !CKEDITOR.plugins.externals[pluginId])) {
+      var plugin = pluginInfo['native'][pluginId];
+      CKEDITOR.plugins.addExternal(pluginId, plugin.path, plugin.fileName);
     }
-    // Register Font styles (versions 3.2.1 and above).
-    if (Drupal.settings.wysiwyg.configs.ckeditor[format].stylesSet) {
-      CKEDITOR.stylesSet.add(format, Drupal.settings.wysiwyg.configs.ckeditor[format].stylesSet);
+  }
+  // Build and register Drupal plugin wrappers.
+  for (var pluginId in pluginInfo.drupal) {
+    if (pluginInfo.drupal.hasOwnProperty(pluginId) && (!CKEDITOR.plugins.registered || !CKEDITOR.plugins.registered[pluginId])) {
+      Drupal.wysiwyg.editor.instance.ckeditor.addPlugin(pluginId, pluginInfo.drupal[pluginId]);
+    }
+  }
+  // Register Font styles (versions 3.2.1 and above).
+  for (var format in settings) {
+    if (settings[format].stylesSet && (!CKEDITOR.stylesSet || !CKEDITOR.stylesSet.registered[format])) {
+      CKEDITOR.stylesSet.add(format, settings[format].stylesSet);
     }
   }
 };
-
 
 /**
  * Attach this editor to a target element.
@@ -38,8 +66,10 @@ Drupal.wysiwyg.editor.attach.ckeditor = function(context, params, settings) {
   // Apply editor instance settings.
   CKEDITOR.config.customConfig = '';
 
-  var $drupalToolbar = $('#toolbar', Drupal.overlayChild ? window.parent.document : document);
-
+  var $drupalToolbars = $('#toolbar, #admin-menu', Drupal.overlayChild ? window.parent.document : document);
+  if (!settings.height) {
+    settings.height = $('#' + params.field).height();
+  }
   settings.on = {
     instanceReady: function(ev) {
       var editor = ev.editor;
@@ -49,7 +79,7 @@ Drupal.wysiwyg.editor.attach.ckeditor = function(context, params, settings) {
       var tags = CKEDITOR.tools.extend({}, dtd.$block, dtd.$listItem, dtd.$tableContent);
       // Set source formatting rules for each listed tag except <pre>.
       // Linebreaks can be inserted before or after opening and closing tags.
-      if (settings.apply_source_formatting) {
+      if (settings.simple_source_formatting) {
         // Mimic FCKeditor output, by breaking lines between tags.
         for (var tag in tags) {
           if (tag == 'pre') {
@@ -85,16 +115,18 @@ Drupal.wysiwyg.editor.attach.ckeditor = function(context, params, settings) {
     },
 
     pluginsLoaded: function(ev) {
+      var wysiwygInstance = instanceMap[this.name];
+      var enabledPlugins = wysiwygInstance.pluginInfo.instances.drupal;
       // Override the conversion methods to let Drupal plugins modify the data.
       var editor = ev.editor;
-      if (editor.dataProcessor && Drupal.settings.wysiwyg.plugins[params.format]) {
+      if (editor.dataProcessor && enabledPlugins) {
         editor.dataProcessor.toHtml = CKEDITOR.tools.override(editor.dataProcessor.toHtml, function(originalToHtml) {
           // Convert raw data for display in WYSIWYG mode.
           return function(data, fixForBody) {
-            for (var plugin in Drupal.settings.wysiwyg.plugins[params.format].drupal) {
+            for (var plugin in enabledPlugins) {
               if (typeof Drupal.wysiwyg.plugins[plugin].attach == 'function') {
-                data = Drupal.wysiwyg.plugins[plugin].attach(data, Drupal.settings.wysiwyg.plugins.drupal[plugin], editor.name);
-                data = Drupal.wysiwyg.instances[params.field].prepareContent(data);
+                data = Drupal.wysiwyg.plugins[plugin].attach(data, wysiwygInstance.pluginInfo.global.drupal[plugin], editor.name);
+                data = wysiwygInstance.prepareContent(data);
               }
             }
             return originalToHtml.call(this, data, fixForBody);
@@ -104,9 +136,9 @@ Drupal.wysiwyg.editor.attach.ckeditor = function(context, params, settings) {
           // Convert WYSIWYG mode content to raw data.
           return function(data, fixForBody) {
             data = originalToDataFormat.call(this, data, fixForBody);
-            for (var plugin in Drupal.settings.wysiwyg.plugins[params.format].drupal) {
+            for (var plugin in enabledPlugins) {
               if (typeof Drupal.wysiwyg.plugins[plugin].detach == 'function') {
-                data = Drupal.wysiwyg.plugins[plugin].detach(data, Drupal.settings.wysiwyg.plugins.drupal[plugin], editor.name);
+                data = Drupal.wysiwyg.plugins[plugin].detach(data, wysiwygInstance.pluginInfo.global.drupal[plugin], editor.name);
               }
             }
             return data;
@@ -116,16 +148,15 @@ Drupal.wysiwyg.editor.attach.ckeditor = function(context, params, settings) {
     },
 
     selectionChange: function (event) {
-      var pluginSettings = Drupal.settings.wysiwyg.plugins[params.format];
-      if (pluginSettings && pluginSettings.drupal) {
-        $.each(pluginSettings.drupal, function (name) {
-          var plugin = Drupal.wysiwyg.plugins[name];
-          if ($.isFunction(plugin.isNode)) {
-            var node = event.data.selection.getSelectedElement();
-            var state = plugin.isNode(node ? node.$ : null) ? CKEDITOR.TRISTATE_ON : CKEDITOR.TRISTATE_OFF;
-            event.editor.getCommand(name).setState(state);
-          }
-        });
+      var wysiwygInstance = instanceMap[this.name];
+      var enabledPlugins = wysiwygInstance.pluginInfo.instances.drupal;
+      for (var name in enabledPlugins) {
+        var plugin = Drupal.wysiwyg.plugins[name];
+        if ($.isFunction(plugin.isNode)) {
+          var node = event.data.selection.getSelectedElement();
+          var state = plugin.isNode(node ? node.$ : null) ? CKEDITOR.TRISTATE_ON : CKEDITOR.TRISTATE_OFF;
+          event.editor.getCommand(name).setState(state);
+        }
       }
     },
 
@@ -139,16 +170,21 @@ Drupal.wysiwyg.editor.attach.ckeditor = function(context, params, settings) {
         return;
       }
       if (ev.data.command.state == CKEDITOR.TRISTATE_ON) {
-        $drupalToolbar.hide();
+        $drupalToolbars.hide();
       }
       else {
-        $drupalToolbar.show();
+        $drupalToolbars.show();
       }
+    },
+
+    destroy: function (event) {
+      // Free our reference to the private instance to not risk memory leaks.
+      delete instanceMap[this.name];
     }
   };
-
+  instanceMap[params.field] = this;
   // Attach editor.
-  CKEDITOR.replace(params.field, settings);
+  var editorInstance = CKEDITOR.replace(params.field, settings);
 };
 
 /**
@@ -176,15 +212,16 @@ Drupal.wysiwyg.editor.detach.ckeditor = function (context, params, trigger) {
 };
 
 Drupal.wysiwyg.editor.instance.ckeditor = {
-  addPlugin: function(pluginName, settings, pluginSettings) {
+  addPlugin: function (pluginName, pluginSettings) {
     CKEDITOR.plugins.add(pluginName, {
       // Wrap Drupal plugin in a proxy pluygin.
       init: function(editor) {
-        if (settings.css) {
+        if (pluginSettings.css) {
           editor.on('mode', function(ev) {
             if (ev.editor.mode == 'wysiwyg') {
               // Inject CSS files directly into the editing area head tag.
-              $('head', $('#cke_contents_' + ev.editor.name + ' iframe').eq(0).contents()).append('<link rel="stylesheet" href="' + settings.css + '" type="text/css" >');
+              var iframe = $('#cke_contents_' + ev.editor.name + ' iframe, #' + ev.editor.id + '_contents iframe');
+              $('head', iframe.eq(0).contents()).append('<link rel="stylesheet" href="' + pluginSettings.css + '" type="text/css" >');
             }
           });
         }
@@ -199,12 +236,7 @@ Drupal.wysiwyg.editor.instance.ckeditor = {
                   data.node = data.node.$;
                 }
                 if (selection.getType() == CKEDITOR.SELECTION_TEXT) {
-                  if (CKEDITOR.env.ie) {
-                    data.content = selection.getNative().createRange().text;
-                  }
-                  else {
-                    data.content = selection.getNative().toString();
-                  }
+                  data.content = selection.getSelectedText();
                 }
                 else if (data.node) {
                   // content is supposed to contain the "outerHTML".
@@ -217,9 +249,9 @@ Drupal.wysiwyg.editor.instance.ckeditor = {
           editor.addCommand(pluginName, pluginCommand);
         }
         editor.ui.addButton(pluginName, {
-          label: settings.iconTitle,
+          label: pluginSettings.title,
           command: pluginName,
-          icon: settings.icon
+          icon: pluginSettings.icon
         });
 
         // @todo Add button state handling.
@@ -233,7 +265,33 @@ Drupal.wysiwyg.editor.instance.ckeditor = {
 
   insert: function(content) {
     content = this.prepareContent(content);
-    CKEDITOR.instances[this.field].insertHtml(content);
+    if (CKEDITOR.env.webkit || CKEDITOR.env.chrome || CKEDITOR.env.opera || CKEDITOR.env.safari) {
+      // Works around a WebKit bug which removes wrapper elements.
+      // @see https://drupal.org/node/1927968
+      var tmp = new CKEDITOR.dom.element('div'), children, skip = 0, item;
+      tmp.setHtml(content);
+      children = tmp.getChildren();
+      skip = 0;
+      while (children.count() > skip) {
+        item = children.getItem(skip);
+        switch(item.type) {
+          case 1:
+            CKEDITOR.instances[this.field].insertElement(item);
+            break;
+          case 3:
+            CKEDITOR.instances[this.field].insertText(item.getText());
+            skip++;
+            break;
+          case 8:
+            CKEDITOR.instances[this.field].insertHtml(item.getOuterHtml());
+            skip++;
+            break;
+        }
+      }
+    }
+    else {
+      CKEDITOR.instances[this.field].insertHtml(content);
+    }
   },
 
   setContent: function (content) {
@@ -242,6 +300,11 @@ Drupal.wysiwyg.editor.instance.ckeditor = {
 
   getContent: function () {
     return CKEDITOR.instances[this.field].getData();
+  },
+
+  isFullscreen: function () {
+    var cmd = CKEDITOR.instances[this.field].commands.maximize;
+    return !!(cmd && cmd.state == CKEDITOR.TRISTATE_ON);
   }
 };
 

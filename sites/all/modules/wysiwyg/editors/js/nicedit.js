@@ -64,24 +64,53 @@ Drupal.wysiwyg.editor.detach.nicedit = function (context, params, trigger) {
 };
 
 /**
+ * Check if a DOM node is inside another or if they are the same.
+ */
+function isInside (innerNode, outerNode) {
+  var found = false;
+  if (innerNode === outerNode) {
+    return true;
+  }
+  $(innerNode).parents().each(function (index, parent) {
+    if (parent === outerNode) {
+      found = true;
+      return false;
+    }
+  });
+  return found;
+}
+
+/**
  * Instance methods for nicEdit.
  */
 Drupal.wysiwyg.editor.instance.nicedit = {
   insert: function (content) {
-    var instance = nicEditors.findEditor(this.field);
-    var editingArea = instance.getElm();
-    var sel = instance.getSel();
+    var instance = nicEditors.findEditor(this.field),
+    editingArea = instance.getElm(),
+    sel = instance.getSel(), range;
     // IE.
     if (document.selection) {
-      editingArea.focus();
-      sel.createRange().pasteHTML(content);
+      range = sel.createRange();
+      // If the caret is not in the editing area, just append the content.
+      if (!isInside(range.parentElement(), editingArea)) {
+        editingArea.innerHTML += content;
+      }
+      else {
+        // Insert content and set the caret after it.
+        range.pasteHTML(content);
+        range.select();
+        range.collapse(false);
+      }
     }
     else {
+      // The code below doesn't work in IE, but it never gets here.
+
       // Convert selection to a range.
-      var range;
       // W3C compatible.
       if (sel.getRangeAt) {
-        range = sel.getRangeAt(0);
+        if (sel.rangeCount > 0) {
+          range = sel.getRangeAt(0);
+        }
       }
       // Safari.
       else {
@@ -89,7 +118,13 @@ Drupal.wysiwyg.editor.instance.nicedit = {
         range.setStart(sel.anchorNode, sel.anchorOffset);
         range.setEnd(sel.focusNode, userSeletion.focusOffset);
       }
-      // The code below doesn't work in IE, but it never gets here.
+
+      // If the caret is not in the editing area, just append the content.
+      if (sel.rangeCount == 0 || !isInside(range.commonAncestorContainer, editingArea)) {
+        editingArea.innerHTML += content;
+        return;
+      }
+
       var fragment = editingArea.ownerDocument.createDocumentFragment();
       // Fragments don't support innerHTML.
       var wrapper = editingArea.ownerDocument.createElement('div');
@@ -97,9 +132,18 @@ Drupal.wysiwyg.editor.instance.nicedit = {
       while (wrapper.firstChild) {
         fragment.appendChild(wrapper.firstChild);
       }
+      // Append a temporary node to control caret position.
+      var tn = editingArea.ownerDocument.createElement('span');
+      fragment.appendChild(tn);
       range.deleteContents();
       // Only fragment children are inserted.
       range.insertNode(fragment);
+      // Move caret to temp node and remove it.
+      range.setStartBefore(tn);
+      range.setEndBefore(tn);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      tn.parentNode.removeChild(tn);
     }
   },
 

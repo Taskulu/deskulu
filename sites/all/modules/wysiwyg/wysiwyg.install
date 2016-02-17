@@ -55,7 +55,7 @@ function wysiwyg_schema() {
         'description' => 'The {filter_format}.format of the text format.',
         'type' => 'varchar',
         'length' => 255,
-        'not null' => FALSE,
+        'not null' => TRUE,
       ),
       'status' => array(
         'description' => 'Boolean indicating whether the format is enabled by default.',
@@ -66,9 +66,9 @@ function wysiwyg_schema() {
         'size' => 'tiny',
       ),
     ),
+    'primary key' => array('uid', 'format'),
     'indexes' => array(
       'uid' => array('uid'),
-      'format' => array('format'),
     ),
     'foreign keys' => array(
       'uid' => array(
@@ -130,117 +130,14 @@ function wysiwyg_update_dependencies() {
 }
 
 /**
- * Retrieve a list of input formats to associate profiles to.
+ * Implements hook_update_last_removed().
  */
-function _wysiwyg_install_get_formats() {
-  $formats = array();
-  $result = db_query("SELECT format, name FROM {filter_formats}");
-  while ($format = db_fetch_object($result)) {
-    // Build a list of all formats.
-    $formats[$format->format] = $format->name;
-    // Fetch filters.
-    $result2 = db_query("SELECT module, delta FROM {filters} WHERE format = %d", $format->format);
-    while ($filter = db_fetch_object($result2)) {
-      // If PHP filter is enabled, remove this format.
-      if ($filter->module == 'php') {
-        unset($formats[$format->format]);
-        break;
-      }
-    }
-  }
-  return $formats;
-}
-
-/**
- * Associate Wysiwyg profiles with input formats.
- *
- * Since there was no association yet, we can only assume that there is one
- * profile only, and that profile must be duplicated and assigned to all input
- * formats (except PHP code format).  Also, input formats already have
- * titles/names, so Wysiwyg profiles do not need an own.
- *
- * Because input formats are already granted to certain user roles only, we can
- * remove our custom Wysiwyg profile permissions.  A 1:1 relationship between
- * input formats and permissions makes plugin_count obsolete, too.
- *
- * Since the resulting table is completely different, a new schema is installed.
- */
-function wysiwyg_update_6001() {
-  $ret = array();
-  if (db_table_exists('wysiwyg')) {
-    return $ret;
-  }
-  // Install new schema.
-  db_create_table($ret, 'wysiwyg', array(
-    'fields' => array(
-      'format' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
-      'editor' => array('type' => 'varchar', 'length' => 128, 'not null' => TRUE, 'default' => ''),
-      'settings' => array('type' => 'text', 'size' => 'normal'),
-    ),
-    'primary key' => array('format'),
-  ));
-
-  // Fetch all input formats.
-  $formats = _wysiwyg_install_get_formats();
-
-  // Fetch all profiles.
-  $result = db_query("SELECT name, settings FROM {wysiwyg_profile}");
-  while ($profile = db_fetch_object($result)) {
-    $profile->settings = unserialize($profile->settings);
-    // Extract editor name from profile settings.
-    $profile->editor = $profile->settings['editor'];
-    // Clean-up.
-    unset($profile->settings['editor']);
-    unset($profile->settings['old_name']);
-    unset($profile->settings['name']);
-    unset($profile->settings['rids']);
-    // Sorry.  There Can Be Only One. ;)
-    break;
-  }
-
-  if ($profile) {
-    // Rebuild profiles and associate with input formats.
-    foreach ($formats as $format => $name) {
-      // Insert profiles.
-      // We can't use update_sql() here because of curly braces in serialized
-      // array.
-      db_query("INSERT INTO {wysiwyg} (format, editor, settings) VALUES (%d, '%s', '%s')", $format, $profile->editor, serialize($profile->settings));
-      $ret[] = array(
-        'success' => TRUE,
-        'query' => strtr('Wysiwyg profile %profile converted and associated with input format %format.', array('%profile' => check_plain($profile->name), '%format' => check_plain($name))),
-      );
-    }
-  }
-
-  // Drop obsolete tables {wysiwyg_profile} and {wysiwyg_role}.
-  db_drop_table($ret, 'wysiwyg_profile');
-  db_drop_table($ret, 'wysiwyg_role');
-
-  return $ret;
-}
-
-/**
- * Clear JS/CSS caches to ensure that clients load fresh copies.
- */
-function wysiwyg_update_6200() {
-  $ret = array();
-  // Change query-strings on css/js files to enforce reload for all users.
-  _drupal_flush_css_js();
-
-  drupal_clear_css_cache();
-  drupal_clear_js_cache();
-
-  // Rebuild the menu to remove old admin/settings/wysiwyg/profile item.
-  menu_rebuild();
-
-  // Flush content caches.
-  cache_clear_all();
-
-  $ret[] = array(
-    'success' => TRUE,
-    'query' => 'Caches have been flushed.',
-  );
-  return $ret;
+function wysiwyg_update_last_removed() {
+  // Users should upgrade to the latest 6.x-2.x release before upgrading to
+  // 7.x-2.x. Some 7xxx functions duplicate work from 6xxx functions in 6.x-2.x
+  // because both branches are supported in parallel, but changes will only be
+  // applied once anyway because of safeguards.
+  return 6202;
 }
 
 /**
@@ -310,4 +207,169 @@ function wysiwyg_update_7200() {
       'not null' => FALSE,
     ));
   }
+}
+
+/**
+ * Update enabled font plugin buttons to default plugin in TinyMCE profiles.
+ */
+function wysiwyg_update_7201() {
+  $query = db_select('wysiwyg', 'w')
+    ->fields('w', array('format', 'settings'))
+    ->condition('editor', 'tinymce');
+  foreach ($query->execute() as $profile) {
+    $settings = unserialize($profile->settings);
+    // Move enabled 'font' buttons into 'default' plugin buttons.
+    $changed = FALSE;
+    foreach (array('formatselect', 'fontselect', 'fontsizeselect', 'styleselect') as $button) {
+      if (isset($settings['buttons']['font'][$button])) {
+        $settings['buttons']['default'][$button] = $settings['buttons']['font'][$button];
+        unset($settings['buttons']['font'][$button]);
+        $changed = TRUE;
+      }
+    }
+    if ($changed) {
+      db_update('wysiwyg')
+        ->condition('format', $profile->format)
+        ->fields(array(
+          'settings' => serialize($settings),
+        ))
+        ->execute();
+    }
+  }
+}
+
+/**
+ * Update internal names of settings.
+ */
+function wysiwyg_update_7202() {
+  $query = db_select('wysiwyg', 'w')
+    ->fields('w', array('format', 'editor', 'settings'));
+  foreach ($query->execute() as $profile) {
+    $settings = unserialize($profile->settings);
+    $changed = FALSE;
+    switch ($profile->editor) {
+      case 'tinymce':
+        if (isset($settings['path_loc'])) {
+          $settings['theme_advanced_statusbar_location'] = $settings['path_loc'];
+          unset($settings['path_loc']);
+          $changed = TRUE;
+        }
+        if (isset($settings['toolbar_loc'])) {
+          $settings['theme_advanced_toolbar_location'] = $settings['toolbar_loc'];
+          unset($settings['toolbar_loc']);
+          $changed = TRUE;
+        }
+        if (isset($settings['toolbar_align'])) {
+          $settings['theme_advanced_toolbar_align'] = $settings['toolbar_align'];
+          unset($settings['toolbar_align']);
+          $changed = TRUE;
+        }
+        if (isset($settings['block_formats'])) {
+          $settings['theme_advanced_blockformats'] = $settings['block_formats'];
+          unset($settings['block_formats']);
+          $changed = TRUE;
+        }
+        if (isset($settings['css_classes'])) {
+          $settings['theme_advanced_styles'] = $settings['css_classes'];
+          unset($settings['css_classes']);
+          $changed = TRUE;
+        }
+        if (isset($settings['resizing'])) {
+          $settings['theme_advanced_resizing'] = $settings['resizing'];
+          unset($settings['resizing']);
+          $changed = TRUE;
+        }
+        break;
+      case 'ckeditor':
+        if (isset($settings['apply_source_formatting'])) {
+          $settings['simple_source_formatting'] = $settings['apply_source_formatting'];
+          unset($settings['apply_source_formatting']);
+          $changed = TRUE;
+        }
+        if (isset($settings['resizing'])) {
+          $settings['resize_enabled'] = $settings['resizing'];
+          unset($settings['resizing']);
+          $changed = TRUE;
+        }
+        if (isset($settings['toolbar_loc'])) {
+          $settings['toolbarLocation'] = $settings['toolbar_loc'];
+          unset($settings['toolbar_loc']);
+          $changed = TRUE;
+        }
+        if (isset($settings['paste_auto_cleanup_on_paste'])) {
+          $settings['forcePasteAsPlainText'] = $settings['paste_auto_cleanup_on_paste'];
+          unset($settings['paste_auto_cleanup_on_paste']);
+          $changed = TRUE;
+        }
+        if (isset($settings['css_classes'])) {
+          $settings['stylesSet'] = $settings['css_classes'];
+          unset($settings['css_classes']);
+          $changed = TRUE;
+        }
+        break;
+      case 'fckeditor':
+        if (isset($settings['apply_source_formatting'])) {
+          $settings['FormatSource'] = $settings['FormatOutput'] = $settings['apply_source_formatting'];
+          unset($settings['apply_source_formatting']);
+          $changed = TRUE;
+        }
+        if (isset($settings['paste_auto_cleanup_on_paste'])) {
+          $settings['ForcePasteAsPlainText'] = $settings['paste_auto_cleanup_on_paste'];
+          unset($settings['paste_auto_cleanup_on_paste']);
+          $changed = TRUE;
+        }
+        if (isset($settings['block_formats'])) {
+          $settings['FontFormats'] = strtr($settings['block_formats'], array(',' => ';'));
+          unset($settings['block_formats']);
+          $changed = TRUE;
+        }
+        break;
+      case 'yui':
+        // The resizing setting is triggering autoHeight instead of resize.
+        if (isset($settings['resizing'])) {
+          $settings['autoHeight'] = $settings['resizing'];
+          unset($settings['resizing']);
+          $changed = TRUE;
+        }
+        break;
+      case 'openwysiwyg':
+        if (isset($settings['path_loc'])) {
+          $settings['StatusBarEnabled'] = ($settings['path_loc'] != 'none' );
+          unset($settings['path_loc']);
+          $changed = TRUE;
+        }
+        break;
+      default:
+        // Do not touch any other profiles since the extra settings won't hurt.
+    }
+    if ($changed) {
+      db_update('wysiwyg')
+        ->condition('format', $profile->format)
+        ->fields(array(
+          'settings' => serialize($settings),
+        ))
+        ->execute();
+    }
+  }
+}
+
+/**
+ * Add primary index to {wysiwyg_user}.
+ */
+function wysiwyg_update_7203() {
+  db_drop_index('wysiwyg_user', 'uid');
+  db_drop_index('wysiwyg_user', 'format');
+  db_change_field('wysiwyg_user', 'format', 'format',
+    array(
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => TRUE,
+    ),
+    array(
+      'primary key' => array('uid', 'format'),
+      'indexes' => array(
+        'uid' => array('uid'),
+      ),
+    )
+  );
 }

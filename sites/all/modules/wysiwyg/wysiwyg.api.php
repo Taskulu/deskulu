@@ -75,7 +75,7 @@ function hook_wysiwyg_plugin($editor, $version) {
             // Most plugins should define TRUE here.
             'load' => TRUE,
             // Boolean whether this plugin is a native plugin, i.e. shipped with
-            // the editor. Definition must be ommitted for plugins provided by
+            // the editor. Definition must be omitted for plugins provided by
             // other modules. TRUE means 'path' and 'filename' above are ignored
             // and the plugin is instead loaded from the editor's plugin folder.
             'internal' => TRUE,
@@ -224,8 +224,10 @@ function hook_INCLUDE_editor() {
     'settings callback' => 'wysiwyg_ckeditor_settings',
     // A callback to supply definitions of available editor plugins.
     'plugin callback' => 'wysiwyg_ckeditor_plugins',
-    // A callback to convert administrative plugin settings for a editor profile
-    // into JavaScript settings.
+    // A callback to supply global metadata for a single native external plugin.
+    'plugin meta callback' => 'wysiwyg_ckeditor_plugin_meta',
+    // A callback to convert administrative plugin settings for an editor
+    // profile into JavaScript settings per profile.
     'plugin settings callback' => 'wysiwyg_ckeditor_plugin_settings',
     // (optional) Defines the proxy plugin that handles plugins provided by
     // Drupal modules, which work in all editors that support proxy plugins.
@@ -279,5 +281,11 @@ function hook_wysiwyg_editor_settings_alter(&$settings, $context) {
   if ($context['profile']->editor == 'tinymce') {
     // Supported values to JSON data types.
     $settings['cleanup_on_startup'] = TRUE;
+    // Function references (callbacks) need special care.
+    // @see wysiwyg_wrap_js_callback()
+    $settings['file_browser_callback'] = wysiwyg_wrap_js_callback('myFileBrowserCallback');
+    // Regular Expressions need special care.
+    // @see wysiwyg_wrap_js_regexp()
+    $settings['stylesheetParser_skipSelectors'] = wysiwyg_wrap_js_regexp('(^body\.|^caption\.|\.high|^\.)', 'i');
   }
 }

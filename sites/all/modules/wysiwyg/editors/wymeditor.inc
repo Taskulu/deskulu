@@ -30,8 +30,9 @@ function wysiwyg_wymeditor_editor() {
     ),
     'version callback' => 'wysiwyg_wymeditor_version',
     'themes callback' => 'wysiwyg_wymeditor_themes',
+    'settings form callback' => 'wysiwyg_wymeditor_settings_form',
     'settings callback' => 'wysiwyg_wymeditor_settings',
-    'plugin callback' => 'wysiwyg_wymeditor_plugins',
+    'plugin callback' => '_wysiwyg_wymeditor_plugins',
     'versions' => array(
       '0.5-rc1' => array(
         'js files' => array('wymeditor.js'),
@@ -82,6 +83,30 @@ function wysiwyg_wymeditor_themes($editor, $profile) {
 }
 
 /**
+ * Enhances the editor profile settings form for WYMeditor.
+ *
+ * @see http://wymeditor.readthedocs.org/en/latest/version_1.0_and_0.5/getting_started/customize.html
+ */
+function wysiwyg_wymeditor_settings_form(&$form, &$form_state) {
+  $profile = $form_state['wysiwyg_profile'];
+  $settings = $profile->settings;
+  $settings += array(
+    'block_formats' => 'p,blockquote,pre,h2,h3,h4,h5,h6,div',
+  );
+
+  $form['css']['#description'] = t('Note: WYMeditor can only load a single stylesheet into the editor.');
+
+  $form['css']['block_formats'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Block formats'),
+    '#default_value' => $settings['block_formats'],
+    '#size' => 40,
+    '#maxlength' => 250,
+    '#description' => t('Comma separated list of HTML block formats. Possible values: <code>@format-list</code>.', array('@format-list' => 'p,h1,h2,h3,h4,h5,h6,blockquote,pre,th')),
+  );
+}
+
+/**
  * Return runtime editor settings for a given wysiwyg profile.
  *
  * @param $editor
@@ -103,7 +128,11 @@ function wysiwyg_wymeditor_settings($editor, $config, $theme) {
     'wymPath' => $editor['libraries'][$library]['files'][0],
     // @todo Does not work in Drupal; jQuery can live anywhere.
     'jQueryPath' => base_path() . 'misc/jquery.js',
-    'updateSelector' => '.form-submit',
+    // WYMeditor's update event handler will revert the field contents if
+    // changes were made after it was detached. Wysiwyg takes care of submit
+    // events anyway so make sure WYMeditor does not bind it anywhere.
+    'updateSelector' => '#wysiwyg-no-element',
+    'updateEvent' => 'wysiwyg-no-event',
     'skin' => $theme,
   );
 
@@ -158,7 +187,7 @@ function wysiwyg_wymeditor_settings($editor, $config, $theme) {
       'blockquote' => 'Blockquote',
       'th' => 'Table_Header',
     );
-    foreach (explode(',', $config['block_formats']) as $tag) {
+    foreach (explode(',', preg_replace('@\s+@', '', $config['block_formats'])) as $tag) {
       if (isset($containers[$tag])) {
         $settings['containersItems'][] = array(
           'name' => strtoupper($tag),
@@ -169,6 +198,7 @@ function wysiwyg_wymeditor_settings($editor, $config, $theme) {
     }
   }
 
+  // Add editor content stylesheet.
   if (isset($config['css_setting'])) {
     if ($config['css_setting'] == 'theme') {
       // WYMeditor only supports one CSS file currently.
@@ -186,7 +216,7 @@ function wysiwyg_wymeditor_settings($editor, $config, $theme) {
 /**
  * Return internal plugins for this editor; semi-implementation of hook_wysiwyg_plugin().
  */
-function wysiwyg_wymeditor_plugins($editor) {
+function _wysiwyg_wymeditor_plugins($editor) {
   $plugins = array(
     'default' => array(
       'buttons' => array(

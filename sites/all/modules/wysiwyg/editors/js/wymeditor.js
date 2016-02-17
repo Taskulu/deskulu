@@ -20,31 +20,30 @@ Drupal.wysiwyg.editor.attach.wymeditor = function (context, params, settings) {
  * Detach a single or all editors.
  */
 Drupal.wysiwyg.editor.detach.wymeditor = function (context, params, trigger) {
+  var instances = [];
   if (typeof params != 'undefined') {
-    var $field = $('#' + params.field);
+    var $field = $('#' + params.field, context);
     var index = $field.data(WYMeditor.WYM_INDEX);
     if (typeof index != 'undefined') {
-      var instance = WYMeditor.INSTANCES[index];
+      instances[index] = WYMeditor.INSTANCES[index];
+    }
+  }
+  else {
+    instances = WYMeditor.INSTANCES;
+  }
+  for (var index in instances) {
+    if (instances.hasOwnProperty(index)){
+      var instance = instances[index];
       instance.update();
       if (trigger != 'serialize') {
         $(instance._box).remove();
         $(instance._element).show();
-        delete instance;
+        delete WYMeditor.INSTANCES[index];
       }
     }
     if (trigger != 'serialize') {
       $field.show();
     }
-  }
-  else {
-    jQuery.each(WYMeditor.INSTANCES, function () {
-      this.update();
-      if (trigger != 'serialize') {
-        $(this._box).remove();
-        $(this._element).show();
-        delete this;
-      }
-    });
   }
 };
 

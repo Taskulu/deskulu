@@ -10,45 +10,53 @@ Drupal.wysiwyg.editor.attach.yui = function(context, params, settings) {
   // Apply theme.
   $('#' + params.field).parent().addClass('yui-skin-' + settings.theme);
 
+  var wysiwygInstance = this;
+  var enabledPlugins = wysiwygInstance.pluginInfo.instances;
   // Load plugins stylesheet.
-  for (var plugin in Drupal.settings.wysiwyg.plugins[params.format].drupal) {
-    settings.extracss += settings.extracss+' @import "'+Drupal.settings.wysiwyg.plugins[params.format].drupal[plugin].css+'"; ';
+  for (var pluginId in enabledPlugins.drupal) {
+    if (wysiwygInstance.pluginInfo.global.drupal[pluginId].css) {
+      settings.extracss += ' @import "' + wysiwygInstance.pluginInfo.global.drupal[pluginId].css + '"; ';
+    }
   }
 
   // Attach editor.
   var editor = new YAHOO.widget.Editor(params.field, settings);
 
-  editor.on('toolbarLoaded', function() {
-    // Load Drupal plugins.
-    for (var plugin in Drupal.settings.wysiwyg.plugins[params.format].drupal) {
-      Drupal.wysiwyg.instances[params.field].addPlugin(plugin, Drupal.settings.wysiwyg.plugins[params.format].drupal[plugin], Drupal.settings.wysiwyg.plugins.drupal[plugin]);
-    }
-  });
-
-  // Allow plugins to act on setEditorHTML.
-  var oldSetEditorHTML = editor.setEditorHTML;
-  editor.setEditorHTML = function (content) {
-    for (var plugin in Drupal.settings.wysiwyg.plugins[params.format].drupal) {
-      var pluginSettings = Drupal.settings.wysiwyg.plugins.drupal[plugin];
-      if (typeof Drupal.wysiwyg.plugins[plugin].attach == 'function') {
-        content = Drupal.wysiwyg.plugins[plugin].attach(content, pluginSettings, params.field);
-        content = Drupal.wysiwyg.instances[params.field].prepareContent(content);
+  if (enabledPlugins) {
+    editor.on('toolbarLoaded', function() {
+      // 'this' will reference the toolbar while inside the event handler.
+      var instanceId = params.field;
+      // Load Drupal plugins.
+      for (var plugin in enabledPlugins.drupal) {
+        wysiwygInstance.addPlugin(plugin, wysiwygInstance.pluginInfo.global.drupal[plugin]);
       }
-    }
-    oldSetEditorHTML.call(this, content);
-  };
+    });
 
-  // Allow plugins to act on getEditorHTML.
-  var oldGetEditorHTML = editor.getEditorHTML;
-  editor.getEditorHTML = function () {
-    var content = oldGetEditorHTML.call(this);
-    for (var plugin in Drupal.settings.wysiwyg.plugins[params.format].drupal) {
-      var pluginSettings = Drupal.settings.wysiwyg.plugins.drupal[plugin];
-      if (typeof Drupal.wysiwyg.plugins[plugin].detach == 'function') {
-        content = Drupal.wysiwyg.plugins[plugin].detach(content, pluginSettings, params.field);
+    // Allow plugins to act on setEditorHTML.
+    var oldSetEditorHTML = editor.setEditorHTML;
+    editor.setEditorHTML = function (content) {
+      for (var plugin in enabledPlugins.drupal) {
+        var pluginSettings = wysiwygInstance.pluginInfo.global.drupal[plugin];
+        if (typeof Drupal.wysiwyg.plugins[plugin].attach == 'function') {
+          content = Drupal.wysiwyg.plugins[plugin].attach(content, pluginSettings, params.field);
+          content = wysiwygInstance.prepareContent(content);
+        }
       }
+      oldSetEditorHTML.call(this, content);
+    };
+
+    // Allow plugins to act on getEditorHTML.
+    var oldGetEditorHTML = editor.getEditorHTML;
+    editor.getEditorHTML = function () {
+      var content = oldGetEditorHTML.call(this);
+      for (var plugin in enabledPlugins.drupal) {
+        var pluginSettings = wysiwygInstance.pluginInfo.global.drupal[plugin];
+        if (typeof Drupal.wysiwyg.plugins[plugin].detach == 'function') {
+          content = Drupal.wysiwyg.plugins[plugin].detach(content, pluginSettings, params.field);
+        }
+      }
+      return content;
     }
-    return content;
   }
 
   // Reload the editor contents to give Drupal plugins a chance to act.
@@ -57,7 +65,7 @@ Drupal.wysiwyg.editor.attach.yui = function(context, params, settings) {
   });
 
   editor.on('afterNodeChange', function (e) {
-    for (var plugin in Drupal.settings.wysiwyg.plugins[params.format].drupal) {
+    for (var plugin in enabledPlugins.drupal) {
       if (typeof Drupal.wysiwyg.plugins[plugin].isNode == 'function') {
         if (Drupal.wysiwyg.plugins[plugin].isNode(e.target._getSelectedElement())) {
           this.toolbar.selectButton(plugin);
@@ -67,6 +75,8 @@ Drupal.wysiwyg.editor.attach.yui = function(context, params, settings) {
   });
 
   editor.render();
+  // This event never gets fired if loaded into a dialog, harmless otherwise.
+  editor.fireEvent('contentReady');
 };
 
 /**
@@ -101,13 +111,13 @@ Drupal.wysiwyg.editor.detach.yui = function (context, params, trigger) {
  * Instance methods for YUI Editor.
  */
 Drupal.wysiwyg.editor.instance.yui = {
-  addPlugin: function (plugin, settings, pluginSettings) {
+  addPlugin: function (plugin, pluginSettings) {
     if (typeof Drupal.wysiwyg.plugins[plugin] != 'object') {
       return;
     }
     var editor = YAHOO.widget.EditorInfo.getEditorById(this.field);
     var button = editor.toolbar.getButtonByValue(plugin);
-    $(button._button).parent().css('background', 'transparent url(' + settings.icon + ') no-repeat center');
+    $(button._button).parent().css('background', 'transparent url(' + pluginSettings.icon + ') no-repeat center');
     // 'this' will reference the toolbar while inside the event handler.
     var instanceId = this.field;
     editor.toolbar.on(plugin + 'Click', function (e) {
@@ -129,7 +139,7 @@ Drupal.wysiwyg.editor.instance.yui = {
   },
 
   insert: function (content) {
-    YAHOO.widget.EditorInfo.getEditorById(this.field).cmd_inserthtml(content);
+    YAHOO.widget.EditorInfo.getEditorById(this.field).execCommand('inserthtml', content);
   },
 
   setContent: function (content) {
