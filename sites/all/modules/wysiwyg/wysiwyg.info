@@ -1,0 +1,17 @@
+name = Wysiwyg
+description = Allows to edit content with client-side editors.
+package = User interface
+;dependencies[] = libraries
+;dependencies[] = ctools
+;dependencies[] = debug
+core = 7.x
+configure = admin/config/content/wysiwyg
+files[] = wysiwyg.module
+files[] = tests/wysiwyg.test
+
+; Information added by drupal.org packaging script on 2012-10-02
+version = "7.x-2.2"
+core = "7.x"
+project = "wysiwyg"
+datestamp = "1349213776"
+

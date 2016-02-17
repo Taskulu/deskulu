@@ -1,0 +1,50 @@
+<?php
+
+/**
+ * @file
+ * Testing functionality for Wysiwyg module.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function wysiwyg_test_menu() {
+  $items['wysiwyg-test/ajax'] = array(
+    'title' => 'Ajaxified form',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wysiwyg_test_ajax_form'),
+    'access callback' => TRUE,
+  );
+  return $items;
+}
+
+/**
+ * Form constructor for an ajaxified form lazy-loading a textarea.
+ */
+function wysiwyg_test_ajax_form($form, &$form_state) {
+  $form['enable'] = array(
+    '#type' => 'checkbox',
+    '#title' => 'Load textarea',
+    '#ajax' => array(
+      'callback' => 'wysiwyg_test_ajax_form_callback',
+      'wrapper' => 'ajax-wrapper',
+    ),
+  );
+  $form['wrapper'] = array(
+    '#type' => 'container',
+    '#id' => 'ajax-wrapper',
+  );
+  return $form;
+}
+
+/**
+ * #ajax callback for wysiwyg_test_ajax_form().
+ */
+function wysiwyg_test_ajax_form_callback($form, &$form_state) {
+  $form['body'] = array(
+    '#type' => 'text_format',
+    '#default_value' => '',
+  );
+  form_builder($form['form_id']['#value'], $form, $form_state);
+  return $form['body'];
+}
