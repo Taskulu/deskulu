@@ -250,6 +250,7 @@ class MandrillMailSystem implements MailSystemInterface {
       'text/',
       'application/pdf',
       'application/x-zip',
+      'video/'
     );
     drupal_alter('mandrill_valid_attachment_types', $valid_types);
 
