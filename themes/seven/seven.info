@@ -13,8 +13,8 @@ regions[page_bottom] = Page bottom
 regions[sidebar_first] = First sidebar
 regions_hidden[] = sidebar_first
 
-; Information added by Drupal.org packaging script on 2016-02-03
-version = "7.42"
+; Information added by Drupal.org packaging script on 2016-02-24
+version = "7.43"
 project = "drupal"
-datestamp = "1454517955"
+datestamp = "1456343506"
 

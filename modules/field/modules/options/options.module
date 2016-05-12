@@ -279,7 +279,7 @@ function _options_prepare_options(&$options, $properties) {
       if ($properties['strip_tags']) {
         $options[$value] = strip_tags($label);
       }
-      if (isset($properties['strip_tags_and_unescape']) && $properties['strip_tags_and_unescape']) {
+      if ($properties['strip_tags_and_unescape']) {
         $options[$value] = decode_entities(strip_tags($label));
       }
       if ($properties['filter_xss']) {
