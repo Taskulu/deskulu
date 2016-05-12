@@ -104,7 +104,7 @@ function services_ctools_export_ui_form(&$form, &$form_state) {
     '#options'       => $server_opts,
     '#default_value' => $endpoint->server,
     '#title'         => t('Server'),
-    '#description'   => t('Select a the server that should be used to handle requests to this endpoint.'),
+    '#description'   => t('Select the server that should be used to handle requests to this endpoint.'),
     '#required'      => TRUE,
   );
 

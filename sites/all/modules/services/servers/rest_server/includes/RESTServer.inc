@@ -38,7 +38,9 @@ class RESTServer {
     $formatter = $this->getResponseFormatter();
 
     services_set_server_info('resource_uri_formatter', array(&$this, 'uri_formatter'));
-
+    // Initializing $arguments because an exception can be thrown for required
+    // arguments and before $arguments is initialized for the exception handler.
+    $arguments = array();
     try {
       // Parse the request data
       $arguments = $this->getControllerArguments($controller);

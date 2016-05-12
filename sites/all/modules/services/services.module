@@ -347,6 +347,7 @@ function services_get_servers($reset = FALSE) {
     foreach (module_implements('server_info') as $module) {
       if ($module != 'sqlsrv') {
         $servers[$module] = call_user_func($module . '_server_info');
+        $servers[$module]['module'] = $module;
       }
     }
   }
@@ -1110,7 +1111,31 @@ if (!function_exists('getallheaders')) {
  * Page callback to generate token.
  */
 function _services_session_token() {
+  drupal_page_is_cacheable(FALSE);
   drupal_add_http_header('Content-Type', 'text/plain');
   print drupal_get_token('services');
   drupal_exit();
+}
+
+/**
+ * Implements hook_features_export_alter().
+ */
+function services_features_export_alter(&$export, $module_name) {
+  if (!empty($export['features']['services_endpoint'])) {
+    $servers = services_get_servers();
+    foreach ($export['features']['services_endpoint'] as $name) {
+      $endpoint = services_endpoint_load($name);
+      // Add the server module as a dependency.
+      if (isset($servers[$endpoint->server])) {
+        $export['dependencies'][$servers[$endpoint->server]['module']] = $servers[$endpoint->server]['module'];
+      }
+      // Add the enabled authentication modules as dependencies.
+      foreach ($endpoint->authentication as $module => $settings) {
+        $export['dependencies'][$module] = $module;
+      }
+    }
+
+    // Ensure the dependencies list is still sorted alphabetically.
+    ksort($export['dependencies']);
+  }
 }
