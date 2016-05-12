@@ -146,7 +146,11 @@ class MandrillMailSystem implements MailSystemInterface {
     // Get metadata.
     $metadata = isset($message['metadata']) ? $message['metadata'] : array();
 
-    $from = mandrill_from($message['from']);
+    // Use sender information from the Mandrill configuration.
+    // This ensures the sending domain is correct.
+    // If provided, the custom sender email address is in the Reply-To header.
+    $from = mandrill_from();
+
     $overrides = isset($message['params']['mandrill']['overrides']) ? $message['params']['mandrill']['overrides'] : array();
     $mandrill_message = $overrides + array(
       'html' => $message['body'],
@@ -250,7 +254,6 @@ class MandrillMailSystem implements MailSystemInterface {
       'text/',
       'application/pdf',
       'application/x-zip',
-      'video/'
     );
     drupal_alter('mandrill_valid_attachment_types', $valid_types);
 

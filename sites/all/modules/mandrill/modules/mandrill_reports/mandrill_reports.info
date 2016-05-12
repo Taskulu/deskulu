@@ -7,9 +7,9 @@ dependencies[] = mandrill
 
 files[] = tests/mandrill_reports.test
 
-; Information added by Drupal.org packaging script on 2015-09-09
-version = "7.x-2.2"
+; Information added by Drupal.org packaging script on 2016-04-19
+version = "7.x-2.3"
 core = "7.x"
 project = "mandrill"
-datestamp = "1441823340"
+datestamp = "1461103450"
 
