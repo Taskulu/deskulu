@@ -1,0 +1,100 @@
+<?php
+
+/**
+ * @file
+ * Contains FeedsCSVParserTestCase.
+ */
+
+/**
+ * Tests the CSV parser using the UI.
+ */
+class FeedsCSVParserTestCase extends FeedsWebTestCase {
+  public static function getInfo() {
+    return array(
+      'name' => 'CSV parser functional tests',
+      'description' => 'Tests the CSV parser using the UI.',
+      'group' => 'Feeds',
+    );
+  }
+
+  /**
+   * Tests parsing a CSV when the mbstring extension is not available.
+   */
+  public function testMbstringExtensionDisabled() {
+    // Set "feeds_use_mbstring" to FALSE to emulate that the mbstring extension
+    // is not loaded.
+    variable_set('feeds_use_mbstring', FALSE);
+
+    // Remove items after parsing because in < PHP 5.4 processing items with
+    // encoding issues leads to test failures because check_plain() can only
+    // handle UTF-8 encoded strings.
+    // @see feeds_tests_feeds_after_parse()
+    variable_set('feeds_tests_feeds_after_parse_empty_items', TRUE);
+
+    // Create node type.
+    $node_type = $this->drupalCreateContentType();
+
+    // Create and configure importer.
+    $this->createImporterConfiguration('Content CSV', 'csv');
+    $this->setPlugin('csv', 'FeedsFileFetcher');
+    $this->setPlugin('csv', 'FeedsCSVParser');
+    $this->setSettings('csv', 'FeedsNodeProcessor', array('bundle' => $node_type->type));
+    $this->addMappings('csv', array(
+      0 => array(
+        'source' => 'id',
+        'target' => 'guid',
+      ),
+      1 => array(
+        'source' => 'text',
+        'target' => 'title',
+      ),
+    ));
+
+    // Ensure that on the CSV parser settings page a message is shown about that
+    // the mbstring extension is not available.
+    $this->drupalGet('admin/structure/feeds/csv/settings/FeedsCSVParser');
+    $this->assertNoField('encoding');
+    $this->assertText('PHP mbstring extension must be available for character encoding conversion.');
+
+    // Try to import a CSV file that is not UTF-8 encoded. No encoding warning
+    // should be shown, but import should fail.
+    $this->importFile('csv', $this->absolutePath() . '/tests/feeds/encoding_SJIS.csv');
+    $this->assertNoText('Source file is not in UTF-8 encoding.');
+  }
+
+  /**
+   * Tests an encoding failure during parsing a CSV.
+   */
+  public function testEncodingFailure() {
+    // Create node type.
+    $node_type = $this->drupalCreateContentType();
+
+    // Create and configure importer.
+    $this->createImporterConfiguration('Content CSV', 'csv');
+    $this->setPlugin('csv', 'FeedsFileFetcher');
+    $this->setPlugin('csv', 'FeedsCSVParser');
+    $this->setSettings('csv', 'FeedsNodeProcessor', array('bundle' => $node_type->type));
+    $this->addMappings('csv', array(
+      0 => array(
+        'source' => 'id',
+        'target' => 'guid',
+      ),
+      1 => array(
+        'source' => 'text',
+        'target' => 'title',
+      ),
+    ));
+
+    // Ensure that on the CSV parser settings page a setting for encoding is
+    // shown.
+    $this->drupalGet('admin/structure/feeds/csv/settings/FeedsCSVParser');
+    $this->assertField('encoding');
+    $this->assertNoText('PHP mbstring extension must be available for character encoding conversion.');
+
+    // Try to import a CSV file that is not UTF-8 encoded. Import should be
+    // halted and an encoding warning should be shown.
+    $this->importFile('csv', $this->absolutePath() . '/tests/feeds/encoding_SJIS.csv');
+    $this->assertNoText('Failed importing 4 nodes.');
+    $this->assertText('Source file is not in UTF-8 encoding.');
+  }
+}

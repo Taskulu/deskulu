@@ -80,8 +80,11 @@ function template_preprocess_entity_property(&$variables, $hook) {
   );
 
   // Populate the content with sensible defaults.
-  if (!isset($variables['content'])) {
+  if (!isset($element['#content'])) {
     $variables['content'] = entity_property_default_render_value_by_type($element['#entity_wrapped']->{$element['#property_name']});
+  }
+  else {
+    $variables['content'] = $element['#content'];
   }
 }
 

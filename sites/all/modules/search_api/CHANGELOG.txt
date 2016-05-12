@@ -1,3 +1,52 @@
+Search API 1.x, dev (xxxx-xx-xx):
+---------------------------------
+- #2693425 by jojyja: Fixed a typo in search_api.info.
+
+Search API 1.17 (2016-03-14):
+-----------------------------
+- #2665586 by recrit, drunken monkey: Fixed parsing of invalid date facet
+  filters.
+- #2677900 by stefan.r, drunken monkey: Added the possibility to change date
+  facet formats.
+- #2678856 by stefan.r, drunken monkey: Fixed date facets showing wrong month
+  on certain days.
+- #2667872 by Les Lim: Added "0" to field boost options.
+- #2654328 by drunken monkey, donquixote: Fixed use of "<" and ">" for open
+  facet ranges.
+- #2639200 by joachim: Added sorting to "related fields" select box.
+- #2638740 by joachim, drunken monkey: Added a link to the index to the
+  "re-indexing necessary" message.
+- #2629136 by drunken monkey, deranga: Fixed wrong facet counts in edge cases
+  for active OR facets.
+- #2569461 by kraynuk.m, drunken monkey: Fixed existing table in update #7118.
+- #2631276 by tauno: Fixed the MLT handler for multi-entity indexes.
+- #2576265 by drunken monkey: Fixed view trying to search on non-fulltext field.
+- #2572487 by drunken monkey: Removed operator setting for date facets.
+- #2611714 by rakesh.gectcr, drunken monkey: Improved compliance with
+  documentation standards.
+- #2613054 by temkin: Fixed the "search-api-index" Drush command to allow
+  setting further options when indexing on all indexes.
+- #2611726 by Hubbs, rakesh.gectcr: Fixed several typos.
+- #2603500 by drunken monkey, krishna savithraj: Fixed Views fulltext searches
+  for keyword "All".
+- #2529262 by kingmackenzie, stefan.r: Added an option to Views date filters to
+  choose the format used by date popup.
+- #2583263 by drunken monkey: Fixed Views integration in combination with
+  Search API ET and similar modules.
+- #2592231 by drunken monkey, balintcsaba: Fixed ignored item language when
+  viewing translated items.
+- #2570879 by thePanz, drunken monkey: Added sorting of remembered search IDs.
+- #2565743 by drunken monkey: Fixed creation of comment indexes with specific
+  bundles.
+- #2563793 by drunken monkey, smitty, ReBa: Fixed Views base table definition
+  for "Multiple types" indexes.
+- #2567775 by joseph.olstad, drunken monkey: Fixed handling of broken HTML in
+  the "HTML filter" processor.
+- #2565005 by drunken monkey: Properly escape labels of "checkboxes"/"radios"
+  options
+- #2524314 by drunken monkey: Fixed bundle-setting for taxonomy term indexes.
+- #2550599 by ACF, drunken monkey: Fixed error on entity rebuilds.
+
 Search API 1.16 (2015-08-30):
 -----------------------------
 - #2502819: Fixed example code for hook_search_api_query_alter().

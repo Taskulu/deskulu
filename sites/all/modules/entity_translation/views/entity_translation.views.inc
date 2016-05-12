@@ -182,7 +182,7 @@ function entity_translation_views_data() {
   );
   $data['entity_translation']['translation_exists'] = array(
     'title' => t('Translation exists'),
-    'help' => t('Link to translation overview page.'),
+    'help' => t('Determines if a translation exists for a particular translation.'),
     'filter' => array(
       'handler' => 'entity_translation_handler_filter_translation_exists',
     ),

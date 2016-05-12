@@ -249,3 +249,24 @@ function entity_translation_query_comment_filter_alter(QueryAlterableInterface $
     }
   }
 }
+
+/**
+ * Implements hook_node_update_index().
+ *
+ * Add translated node content to search index.
+ */
+function entity_translation_node_update_index($node) {
+  $text = '';
+  $langcodes = array_keys(language_list());
+  $translations = entity_translation_get_handler('node', $node)->getTranslations();
+  foreach ($langcodes as $langcode) {
+    // Skip the default language (already indexed by search.module).
+    if ($GLOBALS[LANGUAGE_TYPE_CONTENT]->language != $langcode && isset($translations->data[$langcode])) {
+      // Render the node in each language.
+      node_build_content($node, 'search_index', $langcode);
+      $rendered = drupal_render($node->content);
+      $text .= '<h1>' . check_plain($node->title) . '</h1>' . $rendered;
+    }
+  }
+  return $text;
+}

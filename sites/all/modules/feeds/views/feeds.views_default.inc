@@ -110,11 +110,11 @@ function feeds_views_default_views() {
   $handler->display->display_options['fields']['severity']['id'] = 'severity';
   $handler->display->display_options['fields']['severity']['table'] = 'feeds_log';
   $handler->display->display_options['fields']['severity']['field'] = 'severity';
-  /* Sort criterion: Feeds log: Log time */
-  $handler->display->display_options['sorts']['log_time']['id'] = 'log_time';
-  $handler->display->display_options['sorts']['log_time']['table'] = 'feeds_log';
-  $handler->display->display_options['sorts']['log_time']['field'] = 'log_time';
-  $handler->display->display_options['sorts']['log_time']['order'] = 'DESC';
+  /* Sort criterion: Feeds log: Log id */
+  $handler->display->display_options['sorts']['flid']['id'] = 'flid';
+  $handler->display->display_options['sorts']['flid']['table'] = 'feeds_log';
+  $handler->display->display_options['sorts']['flid']['field'] = 'flid';
+  $handler->display->display_options['sorts']['flid']['order'] = 'DESC';
   /* Contextual filter: Feeds log: Importer id */
   $handler->display->display_options['arguments']['id']['id'] = 'id';
   $handler->display->display_options['arguments']['id']['table'] = 'feeds_log';

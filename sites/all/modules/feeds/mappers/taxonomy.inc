@@ -85,6 +85,8 @@ function taxonomy_feeds_processor_targets($entity_type, $bundle_name) {
  * Callback for mapping taxonomy terms.
  */
 function taxonomy_feeds_set_target(FeedsSource $source, $entity, $target, array $terms, array $mapping) {
+  $language = $mapping['language'];
+
   // Add in default values.
   $mapping += array(
     'term_search' => FEEDS_TAXONOMY_SEARCH_TERM_NAME,
@@ -118,10 +120,14 @@ function taxonomy_feeds_set_target(FeedsSource $source, $entity, $target, array 
     ->range(0, 1);
 
 
-  $field = isset($entity->$target) ? $entity->$target : array('und' => array());
+  $field = isset($entity->$target) ? $entity->$target : array($language => array());
+
+  if (!isset($field[$language])) {
+    $field[$language] = array();
+  }
 
   // Allow for multiple mappings to the same target.
-  $delta = count($field['und']);
+  $delta = count($field[$language]);
 
   // Iterate over all values.
   foreach ($terms as $term) {
@@ -159,6 +165,13 @@ function taxonomy_feeds_set_target(FeedsSource $source, $entity, $target, array 
               'vid' => key($cache['allowed_vocabularies'][$target]),
               'vocabulary_machine_name' => reset($cache['allowed_vocabularies'][$target]),
             );
+            // Set language if the taxonomy is multilingual.
+            if ($language !== LANGUAGE_NONE) {
+              $info = entity_get_info('taxonomy_term');
+              if (!empty($info['entity keys']['language'])) {
+                $term->{$info['entity keys']['language']} = $language;
+              }
+            }
             taxonomy_term_save($term);
             $tid = $term->tid;
             // Add to the list of allowed values.
@@ -181,7 +194,7 @@ function taxonomy_feeds_set_target(FeedsSource $source, $entity, $target, array 
     }
 
     if ($tid && isset($cache['allowed_values'][$target][$tid])) {
-      $field['und'][] = array('tid' => $tid);
+      $field[$language][] = array('tid' => $tid);
       $delta++;
     }
   }

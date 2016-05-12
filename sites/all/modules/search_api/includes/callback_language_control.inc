@@ -70,7 +70,7 @@ class SearchApiAlterLanguageControl extends SearchApiAbstractAlterCallback {
       foreach ($list as $lang) {
         $name = t($lang->name);
         $native = $lang->native;
-        $languages[$lang->language] = ($name == $native) ? $name : "$name ($native)";
+        $languages[$lang->language] = check_plain(($name == $native) ? $name : "$name ($native)");
         if (!$lang->enabled) {
           $languages[$lang->language] .= ' [' . t('disabled') . ']';
         }

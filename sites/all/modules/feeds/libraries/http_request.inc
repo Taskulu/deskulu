@@ -49,7 +49,7 @@ function http_request_get_common_syndication($url, $settings = array()) {
     return FALSE;
   }
 
-  // Drop the data into a seperate variable so all manipulations of the html
+  // Drop the data into a separate variable so all manipulations of the html
   // will not effect the actual object that exists in the static cache.
   // @see http_request_get.
   $downloaded_string = $download->data;
@@ -196,6 +196,7 @@ function http_request_get($url, $username = NULL, $password = NULL, $accept_inva
 
       if ($accept_invalid_cert) {
         curl_setopt($download, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($download, CURLOPT_SSL_VERIFYHOST, 0);
       }
       $header = '';
       $data = curl_exec($download);
@@ -440,27 +441,48 @@ function http_request_create_absolute_url($url, $base_url) {
     // Produces variables $scheme, $host, $user, $pass, $path, $query and
     // $fragment.
     $parsed_url = parse_url($base_url);
+    if ($parsed_url === FALSE) {
+      // Invalid $base_url.
+      return FALSE;
+    }
 
-    $path = dirname($parsed_url['path']);
+    $path = isset($parsed_url['path']) ? $parsed_url['path'] : '';
+    if (strlen($path) > 0 && substr($path, -1) != '/') {
+      // Path ends not with '/', so remove all before previous '/'.
+      $path = dirname($path);
+    }
 
     // Adding to the existing path.
+    $cparts = array();
     if ($url{0} == '/') {
       $cparts = array_filter(explode("/", $url));
     }
     else {
       // Backtracking from the existing path.
-      $cparts = array_merge(array_filter(explode("/", $path)), array_filter(explode("/", $url)));
-      foreach ($cparts as $i => $part) {
-        if ($part == '.') {
-          $cparts[$i] = NULL;
-        }
-        if ($part == '..') {
-          $cparts[$i - 1] = NULL;
-          $cparts[$i] = NULL;
-        }
-      }
-      $cparts = array_filter($cparts);
+      $path_cparts = array_filter(explode("/", $path));
+      $url_cparts = array_filter(explode("/", $url));
+      $cparts = array_merge($path_cparts, $url_cparts);
     }
+
+    $remove_parts = 0;
+    // Start from behind.
+    $reverse_cparts = array_reverse($cparts);
+    foreach ($reverse_cparts as $i => &$part) {
+      if ($part == '.') {
+        $part = NULL;
+      }
+      elseif ($part == '..') {
+        $part = NULL;
+        $remove_parts++;
+      }
+      elseif ($remove_parts > 0) {
+        // If the current part isn't "..", and we had ".." before, then delete
+        // the part.
+        $part = NULL;
+        $remove_parts--;
+      }
+    }
+    $cparts = array_filter(array_reverse($reverse_cparts));
     $path = implode("/", $cparts);
 
     // Build the prefix to the path.

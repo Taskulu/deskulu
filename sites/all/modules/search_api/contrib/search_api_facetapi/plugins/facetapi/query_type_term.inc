@@ -174,7 +174,7 @@ class SearchApiFacetapiTerm extends FacetapiQueryType implements FacetapiQueryTy
 
     // Always include the active facet items.
     foreach ($this->adapter->getActiveItems($this->facet) as $filter)  {
-      $build[$filter['value']]['#count'] = $results['result count'];
+      $build[$filter['value']]['#count'] = 0;
     }
 
     // Then, add the facets returned by the server.

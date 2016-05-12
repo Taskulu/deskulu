@@ -1,0 +1,180 @@
+<?php
+
+/**
+ * @file
+ * Contains FeedsMapperListTestCase.
+ */
+
+/**
+ * Test case for List field mappers in mappers/list.inc
+ */
+class FeedsMapperListTestCase extends FeedsMapperTestCase {
+  public static function getInfo() {
+    return array(
+      'name' => 'Mapper: List and Boolean',
+      'description' => 'Test Feeds Mapper support for List and Boolean fields.',
+      'group' => 'Feeds',
+      'dependencies' => array('list'),
+    );
+  }
+
+  public function setUp() {
+    parent::setUp(array('list'));
+  }
+
+  /**
+   * Tests if values are cleared out when an empty value is provided.
+   */
+  public function testClearOutValues() {
+    // Create content type.
+    $typename = $this->createContentType(array(), array(
+      'alpha' => array(
+        'type' => 'list_text',
+        'settings' => array(
+          'field[settings][allowed_values]' => "0\nLorem\nUt wisi",
+        ),
+      ),
+      'beta' => array(
+        'type' => 'list_integer',
+        'settings' => array(
+          'field[settings][allowed_values]' => "0\n42\n32",
+        ),
+      ),
+      'delta' => array(
+        'type' => 'list_float',
+        'settings' => array(
+          'field[settings][allowed_values]' => "0\n3.14159\n5.62951",
+        ),
+      ),
+      'epsilon' => 'list_boolean',
+    ));
+
+    // Create and configure importer.
+    $this->createImporterConfiguration('Content CSV', 'csv');
+    $this->setSettings('csv', NULL, array(
+      'content_type' => '',
+      'import_period' => FEEDS_SCHEDULE_NEVER,
+    ));
+    $this->setPlugin('csv', 'FeedsFileFetcher');
+    $this->setPlugin('csv', 'FeedsCSVParser');
+    $this->setSettings('csv', 'FeedsNodeProcessor', array(
+      'bundle' => $typename,
+      'update_existing' => 1
+    ));
+    $this->addMappings('csv', array(
+      array(
+        'source' => 'guid',
+        'target' => 'guid',
+        'unique' => TRUE,
+      ),
+      array(
+        'source' => 'title',
+        'target' => 'title',
+      ),
+      array(
+        'source' => 'alpha',
+        'target' => 'field_alpha',
+      ),
+      array(
+        'source' => 'beta',
+        'target' => 'field_beta',
+      ),
+      array(
+        'source' => 'delta',
+        'target' => 'field_delta',
+      ),
+      array(
+        'source' => 'epsilon',
+        'target' => 'field_epsilon',
+      ),
+    ));
+
+    // Import CSV file.
+    $this->importFile('csv', $this->absolutePath() . '/tests/feeds/content.csv');
+    $this->assertText('Created 2 nodes');
+
+    // Check the two imported nodes.
+    $this->drupalGet('node/1/edit');
+    $this->assertOptionSelected('edit-field-alpha-und', 'Lorem');
+    $this->assertOptionSelected('edit-field-beta-und', '42');
+    $this->assertOptionSelected('edit-field-delta-und', '3.14159');
+    $this->assertFieldChecked('edit-field-epsilon-und');
+    $this->drupalGet('node/2/edit');
+    $this->assertOptionSelected('edit-field-alpha-und', 'Ut wisi');
+    $this->assertOptionSelected('edit-field-beta-und', '32');
+    $this->assertOptionSelected('edit-field-delta-und', '5.62951');
+    $this->assertNoFieldChecked('edit-field-epsilon-und');
+
+    // Import CSV file with empty values.
+    $this->importFile('csv', $this->absolutePath() . '/tests/feeds/content_empty.csv');
+    $this->assertText('Updated 2 nodes');
+
+    // Check if all values were cleared out for node 1.
+    $this->drupalGet('node/1/edit');
+    $this->assertNoOptionSelected('edit-field-alpha-und', 'Lorem');
+    $this->assertNoOptionSelected('edit-field-beta-und', '42');
+    $this->assertNoOptionSelected('edit-field-delta-und', '3.14159');
+    $this->assertNoFieldChecked('edit-field-epsilon-und');
+    // Check if labels for fields that should be cleared out are not shown.
+    $this->drupalGet('node/1');
+    $this->assertNoText('alpha_list_text_label');
+    $this->assertNoText('beta_list_integer_label');
+    $this->assertNoText('delta_list_float_label');
+    $this->assertNoText('epsilon_list_boolean_label');
+    // Load node 1 and check if the boolean field does *not* have a value.
+    $node = node_load(1, NULL, TRUE);
+    $this->assertTrue(empty($node->field_epsilon[LANGUAGE_NONE]), 'The field field_epsilon is empty.');
+
+    // Check if zero's didn't cleared out values for node 2.
+    $this->drupalGet('node/2/edit');
+    $this->assertOptionSelected('edit-field-alpha-und', '0');
+    $this->assertOptionSelected('edit-field-beta-und', '0');
+    $this->assertOptionSelected('edit-field-delta-und', '0');
+    $this->assertNoFieldChecked('edit-field-epsilon-und');
+    // Check if labels for fields of node 2 are still shown.
+    $this->drupalGet('node/2');
+    $this->assertText('alpha_list_text_label');
+    $this->assertText('beta_list_integer_label');
+    $this->assertText('delta_list_float_label');
+    $this->assertText('epsilon_list_boolean_label');
+    // Load node 2 and check if the boolean field *does* have a value.
+    $node = node_load(2, NULL, TRUE);
+    $this->assertEqual('0', $node->field_epsilon[LANGUAGE_NONE][0]['value']);
+
+    // Re-import the first file again.
+    $this->importFile('csv', $this->absolutePath() . '/tests/feeds/content.csv');
+    $this->assertText('Updated 2 nodes');
+
+    // Check if the two imported nodes have content again.
+    $this->drupalGet('node/1/edit');
+    $this->assertOptionSelected('edit-field-alpha-und', 'Lorem');
+    $this->assertOptionSelected('edit-field-beta-und', '42');
+    $this->assertOptionSelected('edit-field-delta-und', '3.14159');
+    $this->assertFieldChecked('edit-field-epsilon-und');
+    $this->drupalGet('node/2/edit');
+    $this->assertOptionSelected('edit-field-alpha-und', 'Ut wisi');
+    $this->assertOptionSelected('edit-field-beta-und', '32');
+    $this->assertOptionSelected('edit-field-delta-und', '5.62951');
+    $this->assertNoFieldChecked('edit-field-epsilon-und');
+
+    // Import CSV file with non-existent values.
+    $this->importFile('csv', $this->absolutePath() . '/tests/feeds/content_non_existent.csv');
+    $this->assertText('Updated 2 nodes');
+
+    // Check if all values were cleared out for node 1.
+    $this->drupalGet('node/1/edit');
+    $this->assertNoOptionSelected('edit-field-alpha-und', 'Lorem');
+    $this->assertNoOptionSelected('edit-field-beta-und', '42');
+    $this->assertNoOptionSelected('edit-field-delta-und', '3.14159');
+    $this->assertNoFieldChecked('edit-field-epsilon-und');
+    // Check if labels for fields that should be cleared out are not shown.
+    $this->drupalGet('node/1');
+    $this->assertNoText('alpha_list_text_label');
+    $this->assertNoText('beta_list_integer_label');
+    $this->assertNoText('delta_list_float_label');
+    $this->assertNoText('epsilon_list_boolean_label');
+    // Load node 1 and check if the boolean field does *not* have a value.
+    $node = node_load(1, NULL, TRUE);
+    $this->assertTrue(empty($node->field_epsilon[LANGUAGE_NONE]), 'The field field_epsilon is empty.');
+  }
+}

@@ -1,0 +1,136 @@
+<?php
+
+/**
+ * @file
+ * Contains Feedsi18nNodeTestCase.
+ */
+
+/**
+ * Tests importing nodes in a language.
+ */
+class Feedsi18nNodeTestCase extends Feedsi18nTestCase {
+
+  /**
+   * Name of created content type.
+   *
+   * @var string
+   */
+  private $contentType;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Multilingual content',
+      'description' => 'Tests Feeds multilingual support for nodes.',
+      'group' => 'Feeds',
+      'dependencies' => array('locale'),
+    );
+  }
+
+  public function setUp($modules = array(), $permissions = array()) {
+    $this->entityType = 'node';
+    $this->processorName = 'FeedsNodeProcessor';
+
+    parent::setUp($modules, $permissions);
+
+    // Create content type.
+    $this->contentType = $this->createContentType();
+
+    // Configure importer.
+    $this->setSettings('i18n', $this->processorName, array(
+      'bundle' => $this->contentType,
+      'language' => 'de',
+      'update_existing' => FEEDS_UPDATE_EXISTING,
+      'skip_hash_check' => TRUE,
+    ));
+    $this->addMappings('i18n', array(
+      0 => array(
+        'source' => 'guid',
+        'target' => 'guid',
+        'unique' => '1',
+      ),
+      1 => array(
+        'source' => 'title',
+        'target' => 'title',
+      ),
+    ));
+  }
+
+  /**
+   * Tests if the language setting is available on the processor.
+   */
+  public function testAvailableProcessorLanguageSetting() {
+    // Check if the language setting is available when the locale module is enabled.
+    $this->drupalGet('admin/structure/feeds/i18n/settings/FeedsNodeProcessor');
+    $this->assertField('language', 'Language field is available on the node processor settings when the locale module is enabled.');
+
+    // Disable the locale module and check if the language setting is no longer available.
+    module_disable(array('locale'));
+    $this->drupalGet('admin/structure/feeds/i18n/settings/FeedsNodeProcessor');
+    $this->assertNoField('language', 'Language field is not available on the node processor settings when the locale module is disabled.');
+  }
+
+  /**
+   * Tests processor language setting in combination with language mapping target.
+   */
+  public function testWithLanguageMappingTarget() {
+    $this->addMappings('i18n', array(
+      2 => array(
+        'source' => 'language',
+        'target' => 'language',
+      ),
+    ));
+
+    // Import csv file. The first item has a language specified (Dutch), the second
+    // one has no language specified and should be imported in the processor's language (German).
+    $this->importFile('i18n', $this->absolutePath() . '/tests/feeds/content_i18n.csv');
+
+    // The first node should be Dutch.
+    $node = node_load(1);
+    $this->assertEqual('nl', entity_language('node', $node), 'Item 1 has the Dutch language assigned.');
+
+    // The second node should be German.
+    $node = node_load(2);
+    $this->assertEqual('de', entity_language('node', $node), 'Item 2 has the German language assigned.');
+  }
+
+  /**
+   * Tests if nodes get imported in LANGUAGE_NONE when the locale module gets disabled.
+   */
+  public function testDisabledLocaleModule() {
+    module_disable(array('locale'));
+    // Make sure that entity info is reset.
+    drupal_flush_all_caches();
+    drupal_static_reset();
+
+    // Import content.
+    $this->importFile('i18n', $this->absolutePath() . '/tests/feeds/content.csv');
+
+    // Assert that the content has no language assigned.
+    for ($i = 1; $i <= 2; $i++) {
+      $node = node_load($i);
+      $language = entity_language('node', $node);
+      $this->assertEqual(LANGUAGE_NONE, $language, format_string('The node is language neutral (actual: !language).', array('!language' => $language)));
+    }
+  }
+
+  /**
+   * Tests if nodes get imported in LANGUAGE_NONE when the locale module gets uninstalled.
+   */
+  public function testUninstalledLocaleModule() {
+    module_disable(array('locale'));
+    drupal_uninstall_modules(array('locale'));
+    // Make sure that entity info is reset.
+    drupal_flush_all_caches();
+    drupal_static_reset();
+
+    // Import content.
+    $this->importFile('i18n', $this->absolutePath() . '/tests/feeds/content.csv');
+
+    // Assert that the content has no language assigned.
+    for ($i = 1; $i <= 2; $i++) {
+      $node = node_load($i);
+      $language = entity_language('node', $node);
+      $this->assertEqual(LANGUAGE_NONE, $language, format_string('The node is language neutral (actual: !language).', array('!language' => $language)));
+    }
+  }
+}

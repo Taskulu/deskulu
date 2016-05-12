@@ -1,0 +1,13 @@
+
+Title is built and maintained by the Drupal project community.
+Everyone is encouraged to submit issues and changes (patches) to improve it, and
+to contribute in other ways -- see http://drupal.org/contribute to find out how.
+
+Project maintainers
+-------------------
+
+The Title maintainers oversee the development of the project as a whole. The project
+maintainers for Title are:
+
+- Francesco Placella 'plach' <http://drupal.org/u/plach>, branch 7.x-1.x
+- Sam Becker 'Sam152' <https://www.drupal.org/u/sam152>, branch 8.x-2.x

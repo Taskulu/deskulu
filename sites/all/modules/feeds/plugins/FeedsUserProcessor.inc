@@ -37,10 +37,11 @@ class FeedsUserProcessor extends FeedsProcessor {
    * Creates a new user account in memory and returns it.
    */
   protected function newEntity(FeedsSource $source) {
-    $account = new stdClass();
+    $account = parent::newEntity($source);
     $account->uid = 0;
     $account->roles = array_filter($this->config['roles']);
     $account->status = $this->config['status'];
+
     return $account;
   }
 
@@ -59,6 +60,8 @@ class FeedsUserProcessor extends FeedsProcessor {
    * Validates a user account.
    */
   protected function entityValidate($account) {
+    parent::entityValidate($account);
+
     if (empty($account->name) || empty($account->mail) || !valid_email_address($account->mail)) {
       throw new FeedsValidationException(t('User name missing or email not valid.'));
     }

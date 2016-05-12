@@ -31,16 +31,34 @@ class FeedsTermProcessor extends FeedsProcessor {
    */
   protected function newEntity(FeedsSource $source) {
     $vocabulary = $this->vocabulary();
-    $term = new stdClass();
+    $term = parent::newEntity($source);
     $term->vid = $vocabulary->vid;
     $term->vocabulary_machine_name = $vocabulary->machine_name;
+
     return $term;
+  }
+
+  /**
+   * Load an existing entity.
+   */
+  protected function entityLoad(FeedsSource $source, $entity_id) {
+    $entity = parent::entityLoad($source, $entity_id);
+
+    // Avoid missing bundle errors when term has been loaded directly from db.
+    if (empty($entity->vocabulary_machine_name) && !empty($entity->vid)) {
+      $vocabulary = taxonomy_vocabulary_load($entity->vid);
+      $entity->vocabulary_machine_name = ($vocabulary) ? $vocabulary->machine_name : NULL;
+    }
+
+    return $entity;
   }
 
   /**
    * Validates a term.
    */
   protected function entityValidate($term) {
+    parent::entityValidate($term);
+
     if (drupal_strlen($term->name) == 0) {
       throw new FeedsValidationException(t('Term name missing.'));
     }
@@ -112,11 +130,21 @@ class FeedsTermProcessor extends FeedsProcessor {
 
       case 'parentguid':
         // value is parent_guid field value
+        $parent_tid = 0;
         $query = db_select('feeds_item')
           ->fields('feeds_item', array('entity_id'))
           ->condition('entity_type', $this->entityType());
-        $parent_tid = $query->condition('guid', $value)->execute()->fetchField();
-        $target_term->parent[] = ($parent_tid) ? $parent_tid : 0;
+        $term_ids = array_keys($query->condition('guid', $value)->execute()->fetchAllAssoc('entity_id'));
+        if (!empty($term_ids)) {
+          $terms = entity_load($this->entityType(), $term_ids);
+          foreach ($terms as $term) {
+            if ($term->vid == $target_term->vid) {
+              $parent_tid = $term->tid;
+              break;
+            }
+          }
+        }
+        $target_term->parent[] = $parent_tid;
         break;
 
       case 'weight':

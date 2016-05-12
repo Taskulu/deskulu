@@ -51,4 +51,309 @@ EOF;
     $this->assertEqual($links[0], 'http://example.com/rss.xml');
   }
 
+  /**
+   * Tests http_request_create_absolute_url().
+   */
+  public function testHTTPRequestCreateAbsoluteUrl() {
+    $test_urls = array(
+      // Rels that do not start with "/".
+      array(
+        'rel'    => 'h',
+        'base'   => 'http://www',
+        'expected' => 'http://www/h',
+      ),
+      array(
+        'rel'    => 'h',
+        'base'   => 'http://www/',
+        'expected' => 'http://www/h',
+      ),
+      array(
+        'rel'    => 'h',
+        'base'   => 'http://www/?c;d=e#f',
+        'expected' => 'http://www/h',
+      ),
+      array(
+        'rel'    => 'h',
+        'base'   => 'http://www/a/b',
+        'expected' => 'http://www/a/h',
+      ),
+
+      array(
+        'rel'    => 'h/j',
+        'base'   => 'http://www',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => 'h/j',
+        'base'   => 'http://www/',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => 'h/j',
+        'base'   => 'http://www/?c;d=e#f',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => 'h/j',
+        'base'   => 'http://www/a/b',
+        'expected' => 'http://www/a/h/j',
+      ),
+      array(
+        'rel'    => 'h/j',
+        'base'   => 'http://www/a/b/',
+        'expected' => 'http://www/a/b/h/j',
+      ),
+
+      // Rels that start with "/".
+      array(
+        'rel'    => '/h',
+        'base'   => 'http://www',
+        'expected' => 'http://www/h',
+      ),
+      array(
+        'rel'    => '/h',
+        'base'   => 'http://www/',
+        'expected' => 'http://www/h',
+      ),
+      array(
+        'rel'    => '/h',
+        'base'   => 'http://www/?c;d=e#f',
+        'expected' => 'http://www/h',
+      ),
+      array(
+        'rel'    => '/h',
+        'base'   => 'http://www/a/b',
+        'expected' => 'http://www/h',
+      ),
+
+      array(
+        'rel'    => '/h/j',
+        'base'   => 'http://www',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => '/h/j',
+        'base'   => 'http://www/',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => '/h/j',
+        'base'   => 'http://www/?c;d=e#f',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => '/h/j',
+        'base'   => 'http://www/a/b',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => '/h/j',
+        'base'   => 'http://www/a/b/',
+        'expected' => 'http://www/h/j',
+      ),
+
+      // Rels that contain ".".
+      array(
+        'rel'    => './h',
+        'base'   => 'http://www',
+        'expected' => 'http://www/h',
+      ),
+      array(
+        'rel'    => './h',
+        'base'   => 'http://www/',
+        'expected' => 'http://www/h',
+      ),
+      array(
+        'rel'    => './h',
+        'base'   => 'http://www/?c;d=e#f',
+        'expected' => 'http://www/h',
+      ),
+      array(
+        'rel'    => './h',
+        'base'   => 'http://www/a/b',
+        'expected' => 'http://www/a/h',
+      ),
+
+      array(
+        'rel'    => './h/j',
+        'base'   => 'http://www',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => './h/j',
+        'base'   => 'http://www/',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => './h/j',
+        'base'   => 'http://www/?c;d=e#f',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => './h/j',
+        'base'   => 'http://www/a/b',
+        'expected' => 'http://www/a/h/j',
+      ),
+      array(
+        'rel'    => './h/j',
+        'base'   => 'http://www/a/b/',
+        'expected' => 'http://www/a/b/h/j',
+      ),
+
+      array(
+        'rel'    => 'h/./j',
+        'base'   => 'http://www',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => 'h/./j',
+        'base'   => 'http://www/',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => 'h/./j',
+        'base'   => 'http://www/?c;d=e#f',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => 'h/./j',
+        'base'   => 'http://www/a/b',
+        'expected' => 'http://www/a/h/j',
+      ),
+      array(
+        'rel'    => 'h/./j',
+        'base'   => 'http://www/a/b/',
+        'expected' => 'http://www/a/b/h/j',
+      ),
+
+      array(
+        'rel'    => '/h/./j',
+        'base'   => 'http://www',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => '/h/./j',
+        'base'   => 'http://www/',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => '/h/./j',
+        'base'   => 'http://www/?c;d=e#f',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => '/h/./j',
+        'base'   => 'http://www/a/b',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => '/h/./j',
+        'base'   => 'http://www/a/b/',
+        'expected' => 'http://www/h/j',
+      ),
+
+      // Rels that starts with "../".
+      array(
+        'rel'    => '../h/j',
+        'base'   => 'http://www',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => '../h/j',
+        'base'   => 'http://www/',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => '../h/j',
+        'base'   => 'http://www/?c;d=e#f',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => '../h/j',
+        'base'   => 'http://www/a/b',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => '../h/j',
+        'base'   => 'http://www/a/b/',
+        'expected' => 'http://www/a/h/j',
+      ),
+      array(
+        'rel'    => '../h/j',
+        'base'   => 'http://www/a/b/c/',
+        'expected' => 'http://www/a/b/h/j',
+      ),
+
+      // Rels that start with "../../".
+      array(
+        'rel'    => '../../h/j',
+        'base'   => 'http://www',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => '../../h/j',
+        'base'   => 'http://www/',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => '../../h/j',
+        'base'   => 'http://www/?c;d=e#f',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => '../../h/j',
+        'base'   => 'http://www/a/b',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => '../../h/j',
+        'base'   => 'http://www/a/b/',
+        'expected' => 'http://www/h/j',
+      ),
+      array(
+        'rel'    => '../../h/j',
+        'base'   => 'http://www/a/b/c/',
+        'expected' => 'http://www/a/h/j',
+      ),
+      array(
+        'rel'    => '../../h/j',
+        'base'   => 'http://www/a/b/c/d',
+        'expected' => 'http://www/a/h/j',
+      ),
+
+      // Crazy rels.
+      array(
+        'rel'    => 'h/../../j/./k',
+        'base'   => 'http://www/a/b/c/',
+        'expected' => 'http://www/a/b/j/k',
+      ),
+      array(
+        'rel'    => 'h/../../j/./k',
+        'base'   => 'http://www/a/b/c/d',
+        'expected' => 'http://www/a/b/j/k',
+      ),
+      array(
+        'rel'    => '../../../',
+        'base'   => 'http://www/a/b/c/',
+        'expected' => 'http://www/',
+      ),
+      array(
+        'rel'    => 'h/j/k/../../',
+        'base'   => 'http://www/a/b/c/',
+        'expected' => 'http://www/a/b/c/h',
+      ),
+    );
+
+    foreach ($test_urls as $test_url) {
+      $result_url = http_request_create_absolute_url($test_url['rel'], $test_url['base']);
+      $this->assertEqual($test_url['expected'], $result_url, format_string('Creating an absolute URL from base @base and rel @rel resulted into @expected (actual: @actual).', array(
+        '@actual' => var_export($result_url, TRUE),
+        '@expected' => var_export($test_url['expected'], TRUE),
+        '@rel' => var_export($test_url['rel'], TRUE),
+        '@base' => var_export($test_url['base'], TRUE),
+      )));
+    }
+
+  }
+
 }

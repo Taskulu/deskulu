@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Provides a flexible framework for implementing search servives.
+ * Provides a flexible framework for implementing search services.
  */
 
 /**
@@ -216,10 +216,13 @@ function search_api_hook_info() {
     'search_api_data_type_info' => $hook_info,
     'search_api_data_type_info_alter' => $hook_info,
     'search_api_alter_callback_info' => $hook_info,
+    'search_api_alter_callback_info_alter' => $hook_info,
     'search_api_processor_info' => $hook_info,
+    'search_api_processor_info_alter' => $hook_info,
     'search_api_index_items_alter' => $hook_info,
     'search_api_items_indexed' => $hook_info,
     'search_api_query_alter' => $hook_info,
+    'search_api_results_alter' => $hook_info,
     'search_api_server_load' => $hook_info,
     'search_api_server_insert' => $hook_info,
     'search_api_server_update' => $hook_info,
@@ -883,7 +886,7 @@ function search_api_entity_update($entity, $type) {
   list($id, , $new_bundle) = entity_extract_ids($type, $entity);
 
   // Check if the entity's bundle changed.
-  if (isset($entity->original)) {
+  if (!empty($entity->original)) {
     list(, , $old_bundle) = entity_extract_ids($type, $entity->original);
     if ($new_bundle != $old_bundle) {
       _search_api_entity_datasource_bundle_change($type, $id, $old_bundle, $new_bundle);
@@ -917,6 +920,36 @@ function search_api_entity_delete($entity, $type) {
     search_api_track_item_delete($type, array($id));
     $combined_id = $type . '/' . $id;
     search_api_track_item_delete('multiple', array($combined_id));
+  }
+}
+
+/**
+ * Implements hook_node_access_records_alter().
+ *
+ * Marks the node as "changed" in indexes that use the "Node access" data
+ * alteration. Also marks the node's comments as changed in indexes that use the
+ * "Comment access" data alteration.
+ */
+function search_api_node_access_records_alter(&$grants, $node) {
+  foreach (search_api_index_load_multiple(FALSE) as $index) {
+    $item_ids = array();
+    if (!empty($index->options['data_alter_callbacks']['search_api_alter_node_access']['status'])) {
+      $item_id = $index->datasource()->getItemId($node);
+      $item_ids = array($item_id);
+    }
+    elseif (!empty($index->options['data_alter_callbacks']['search_api_alter_comment_access']['status'])) {
+      if (!isset($comments)) {
+        $comments = comment_load_multiple(FALSE, array('nid' => $node->nid));
+      }
+      foreach ($comments as $comment) {
+        $item_ids[] = $index->datasource()->getItemId($comment);
+      }
+    }
+
+    if ($item_ids) {
+      $indexes = array($index->machine_name => $index);
+      search_api_track_item_change_for_indexes($index->item_type, $item_ids, $indexes);
+    }
   }
 }
 
@@ -1186,6 +1219,20 @@ function search_api_track_item_change($type, array $item_ids) {
   if (!$indexes) {
     return;
   }
+  search_api_track_item_change_for_indexes($type, $item_ids, $indexes);
+}
+
+/**
+ * Marks the items with the specified IDs as "dirty" for the given indexes.
+ *
+ * @param string $type
+ *   The item type of the items.
+ * @param array $item_ids
+ *   The item IDs.
+ * @param SearchApiIndex[] $indexes
+ *   The indexes for which to mark the items as "dirty".
+ */
+function search_api_track_item_change_for_indexes($type, array $item_ids, $indexes) {
   try {
     $returned_indexes = search_api_get_datasource_controller($type)->trackItemChange($item_ids, $indexes);
     if (isset($returned_indexes)) {
@@ -1207,7 +1254,6 @@ function search_api_track_item_change($type, array $item_ids) {
   catch (SearchApiException $e) {
     $vars['%item_type'] = $type;
     watchdog_exception('search_api', $e, '%type while updating items of type %item_type: !message in %function (line %line of %file).', $vars);
-    return;
   }
 }
 
@@ -2058,7 +2104,7 @@ function _search_api_query_add_node_access($account, SearchApiQueryInterface $qu
   }
 
   // If the user cannot access content/comments at all, return no results.
-  if (!user_access('access content', $account) || ($is_comment && !user_access('access content', $account))) {
+  if (!user_access('access content', $account) || ($is_comment && !user_access('access comments', $account))) {
     // Simple hack for returning no results.
     $query->condition('status', 0);
     $query->condition('status', 1);
@@ -2100,8 +2146,8 @@ function _search_api_query_add_node_access($account, SearchApiQueryInterface $qu
  * @param array $allowed
  *   Optionally, an array of allowed types.
  *
- * @return
- *   TRUE if $type is either one of the specified types, or a list of such
+ * @return bool
+ *   TRUE if $type is either one of the specified types or a list of such
  *   values. FALSE otherwise.
  *
  * @see search_api_extract_inner_type()
@@ -2117,7 +2163,7 @@ function search_api_is_text_type($type, array $allowed = array('text')) {
  * @param $type
  *   A string containing the type to check.
  *
- * @return
+ * @return bool
  *   TRUE iff $type is a list type ("list<*>").
  */
 function search_api_is_list_type($type) {
@@ -2130,7 +2176,7 @@ function search_api_is_list_type($type) {
  * @param $type
  *   A string containing the type to check.
  *
- * @return
+ * @return int
  *   The nesting level of the type. 0 for singular types, 1 for lists of
  *   singular types, etc.
  */
@@ -2157,7 +2203,7 @@ function search_api_list_nesting_level($type) {
  * @param $nested_type
  *   Another type, determining the nesting level.
  *
- * @return
+ * @return string
  *   A list version of $type, as specified above.
  */
 function search_api_nest_type($type, $nested_type) {
@@ -2174,7 +2220,7 @@ function search_api_nest_type($type, $nested_type) {
  * @param $type
  *   A string containing the list type to process.
  *
- * @return
+ * @return string
  *   A string containing the primitive type contained within the list, e.g.
  *   "text" for "list<text>" (or for "list<list<text>>"). If $type is no list
  *   type, it is returned unchanged.
@@ -2196,7 +2242,7 @@ function search_api_extract_inner_type($type) {
  *
  * Modules implementing other datasource controllers, that use a table other
  * than {search_api_item}, can use this function, too. It should be called
- * uncoditionally in a hook_search_api_index_update() implementation. If this
+ * unconditionally in a hook_search_api_index_update() implementation. If this
  * function isn't used, similar code should be added there.
  *
  * However, note that this is only necessary (and this function should only be
@@ -2453,7 +2499,7 @@ function search_api_access_disable_page(Entity $entity) {
  * @param Entity $entity
  *   The server or index for which the access to the delete page is checked.
  *
- * @return
+ * @return bool
  *   TRUE if the delete page can be accessed by the user, FALSE otherwise.
  */
 function search_api_access_delete_page(Entity $entity) {
@@ -2568,7 +2614,7 @@ function search_api_server_clear($id) {
  * @param $id
  *   The ID or machine name of the server to delete.
  *
- * @return
+ * @return int|false
  *   1 on success, 0 or FALSE on failure.
  */
 function search_api_server_delete($id) {
@@ -2779,7 +2825,7 @@ function search_api_index_disable($id) {
  * @param $id
  *   The ID or machine name of the index to re-index.
  *
- * @return
+ * @return bool
  *   TRUE on success, FALSE on failure.
  */
 function search_api_index_reindex($id) {
@@ -2803,7 +2849,7 @@ function _search_api_index_reindex(SearchApiIndex $index) {
  * @param $id
  *   The ID or machine name of the index to clear.
  *
- * @return
+ * @return bool
  *   TRUE on success, FALSE on failure.
  */
 function search_api_index_clear($id) {
@@ -2817,7 +2863,7 @@ function search_api_index_clear($id) {
  * @param $id
  *   The ID or machine name of the index to delete.
  *
- * @return
+ * @return bool
  *   TRUE on success, FALSE on failure.
  */
 function search_api_index_delete($id) {
@@ -2827,6 +2873,62 @@ function search_api_index_delete($id) {
   }
   $index->delete();
   return TRUE;
+}
+
+/**
+ * Sanitizes field values returned from the server.
+ *
+ * @param array $values
+ *   The field values, as returned from the server. See
+ *   SearchApiQueryInterface::execute() for documentation on the structure.
+ *
+ * @return array
+ *   An associative array of field IDs mapped to their sanitized values (scalar
+ *   or array-valued).
+ */
+function search_api_get_sanitized_field_values(array $values) {
+  // Sanitize the field values returned from the server. Usually we use
+  // check_plain(), but this can be overridden by setting the field value to
+  // an array with "#value" and "#sanitize_callback" keys.
+  foreach ($values as $field_id => $field_value) {
+    if (is_array($field_value)
+      && isset($field_value['#sanitize_callback'])
+      && ($field_value['#sanitize_callback'] === FALSE || is_callable($field_value['#sanitize_callback']))
+      && array_key_exists('#value', $field_value)
+    ) {
+      $sanitize_callback = $field_value['#sanitize_callback'];
+      $field_value = $field_value['#value'];
+    }
+    else {
+      $sanitize_callback = 'check_plain';
+    }
+    if ($sanitize_callback !== FALSE) {
+      $field_value = search_api_sanitize_field_value($field_value, $sanitize_callback);
+    }
+    $values[$field_id] = $field_value;
+  }
+  return $values;
+}
+
+/**
+ * Sanitizes the given field value(s).
+ *
+ * @param mixed $field_value
+ *   A scalar field value, or an array of field values.
+ * @param callable $sanitize_callback
+ *   (optional) The callback to use for sanitizing a scalar value.
+ *
+ * @return mixed
+ *   The sanitized field value(s).
+ */
+function search_api_sanitize_field_value($field_value, $sanitize_callback = 'check_plain') {
+  if (is_scalar($field_value)) {
+    return call_user_func($sanitize_callback, $field_value);
+  }
+  foreach ($field_value as &$nested_value) {
+    $nested_value = search_api_sanitize_field_value($nested_value, $sanitize_callback);
+  }
+  return $field_value;
 }
 
 /**
@@ -3174,7 +3276,7 @@ function _search_api_batch_indexing_callback(SearchApiIndex $index, $batch_size,
  * @param boolean $success
  *   Whether the batch finished successfully.
  * @param array $results
- *   Detailed informations about the result.
+ *   Detailed information about the result.
  */
 function _search_api_batch_indexing_finished($success, $results) {
   // Check if called from drush.

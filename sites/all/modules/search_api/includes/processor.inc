@@ -172,7 +172,7 @@ abstract class SearchApiAbstractProcessor implements SearchApiProcessorInterface
       $default_fields = drupal_map_assoc(array_keys($this->options['fields']));
     }
     foreach ($fields as $name => $field) {
-      $field_options[$name] = $field['name'];
+      $field_options[$name] = check_plain($field['name']);
       if (!empty($default_fields[$name]) || (!isset($this->options['fields']) && $this->testField($name, $field))) {
         $default_fields[$name] = $name;
       }
@@ -390,13 +390,15 @@ abstract class SearchApiAbstractProcessor implements SearchApiProcessorInterface
   }
 
   /**
+   * Determines whether to process data from the given field.
+   *
    * @param $name
    *   The field's machine name.
    * @param array $field
    *   The field's information.
    *
-   * @return
-   *   TRUE, iff the field should be processed.
+   * @return bool
+   *   TRUE, if the field should be processed, FALSE otherwise.
    */
   protected function testField($name, array $field) {
     if (empty($this->options['fields'])) {
@@ -406,8 +408,13 @@ abstract class SearchApiAbstractProcessor implements SearchApiProcessorInterface
   }
 
   /**
-   * @return
-   *   TRUE, iff the type should be processed.
+   * Determines whether fields of the given type should normally be processed.
+   *
+   * Defaults to processing text types, but can easily be overridden by
+   * subclasses.
+   *
+   * @return bool
+   *   TRUE, if the type should be processed, FALSE otherwise.
    */
   protected function testType($type) {
     return search_api_is_text_type($type, array('text', 'tokens'));

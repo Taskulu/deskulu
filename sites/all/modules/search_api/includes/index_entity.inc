@@ -934,7 +934,12 @@ class SearchApiIndex extends Entity {
     $i = $only_indexed ? 1 : 0;
     if (!isset($this->fulltext_fields[$i])) {
       $this->fulltext_fields[$i] = array();
-      $fields = $only_indexed ? $this->options['fields'] : $this->getFields(FALSE);
+      if ($only_indexed) {
+        $fields = isset($this->options['fields']) ? $this->options['fields'] : array();
+      }
+      else {
+        $fields = $this->getFields(FALSE);
+      }
       foreach ($fields as $key => $field) {
         if (search_api_is_text_type($field['type'])) {
           $this->fulltext_fields[$i][] = $key;

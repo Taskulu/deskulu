@@ -196,8 +196,8 @@ function entity_translation_i18n_menu_form_menu_edit_item_validate($form, &$form
   $item = $form_state['values'];
 
   // Localizable menu items should not be created when a translation set for the
-  // same path already exists.
-  if ($item['language'] == LANGUAGE_NONE) {
+  // same path already exists (exluding special paths starting by <).
+  if ($item['language'] == LANGUAGE_NONE && strpos($item['link_path'], '<') !== 0) {
     $count = db_select('menu_links', 'ml')
       ->condition('ml.link_path', $item['link_path'])
       ->condition('ml.i18n_tsid', 0, '<>')

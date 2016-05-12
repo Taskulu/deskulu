@@ -49,6 +49,8 @@ function text_feeds_processor_targets($entity_type, $bundle_name) {
  * Callback for mapping text fields.
  */
 function text_feeds_set_target(FeedsSource $source, $entity, $target, array $values, array $mapping) {
+  $language = $mapping['language'];
+
   list($field_name, $column) = explode(':', $target . ':value');
 
   if ($column === 'value' && isset($source->importer->processor->config['input_format'])) {
@@ -59,7 +61,7 @@ function text_feeds_set_target(FeedsSource $source, $entity, $target, array $val
     );
   }
 
-  $field = isset($entity->$field_name) ? $entity->$field_name : array('und' => array());
+  $field = isset($entity->$field_name) ? $entity->$field_name : array($language => array());
 
   // Iterate over all values.
   $delta = 0;
@@ -71,10 +73,10 @@ function text_feeds_set_target(FeedsSource $source, $entity, $target, array $val
 
     if (is_scalar($value) && strlen($value)) {
 
-      $field['und'][$delta][$column] = (string) $value;
+      $field[$language][$delta][$column] = (string) $value;
 
       if (isset($mapping['format'])) {
-        $field['und'][$delta]['format'] = $mapping['format'];
+        $field[$language][$delta]['format'] = $mapping['format'];
       }
     }
 

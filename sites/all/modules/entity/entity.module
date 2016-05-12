@@ -184,8 +184,17 @@ function entity_ui_entity_page_view($entity) {
  * Gets the page title for the passed operation.
  */
 function entity_ui_get_page_title($op, $entity_type, $entity = NULL) {
-  module_load_include('inc', 'entity', 'includes/entity.ui');
-  $label = entity_label($entity_type, $entity);
+  if (isset($entity)) {
+    module_load_include('inc', 'entity', 'includes/entity.ui');
+    $label = entity_label($entity_type, $entity);
+    list(, , $bundle) = entity_extract_ids($entity_type, $entity);
+  }
+  else {
+    $info = entity_get_info($entity_type);
+    $label = $info['label'];
+    $bundle = NULL;
+  }
+
   switch ($op) {
     case 'view':
       return $label;
@@ -200,12 +209,7 @@ function entity_ui_get_page_title($op, $entity_type, $entity = NULL) {
     case 'export':
       return t('Export @label', array('@label' => $label));
   }
-  if (isset($entity)) {
-    list(, , $bundle) = entity_extract_ids($entity_type, $entity);
-  }
-  else {
-    $bundle = NULL;
-  }
+
   return entity_ui_get_action_title($op, $entity_type, $bundle);
 }
 
@@ -1076,7 +1080,8 @@ function entity_flush_caches() {
   // case of enabling or disabling modules we already rebuild defaults in
   // entity_modules_enabled() and entity_modules_disabled(), so we do not need
   // to do it again.
-  if (current_path() != 'admin/modules/list/confirm') {
+  // Also check if rebuilding on cache flush is explicitly disabled.
+  if (current_path() != 'admin/modules/list/confirm' && variable_get('entity_rebuild_on_flush', TRUE)) {
     entity_defaults_rebuild();
   }
 

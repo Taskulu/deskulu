@@ -19,7 +19,7 @@ class SearchApiException extends Exception {
    */
   public function __construct($message = NULL) {
     if (!$message) {
-      $message = t('An error occcurred in the Search API framework.');
+      $message = t('An error occurred in the Search API framework.');
     }
     parent::__construct($message);
   }

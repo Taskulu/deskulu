@@ -269,10 +269,13 @@ class SearchApiAlterAddAggregation extends SearchApiAbstractAlterCallback {
   /**
    * Helper method for getting all available aggregation types.
    *
-   * @param $info (optional)
-   *   One of "name", "type" or "description", to indicate what values should be
-   *   returned for the types. Defaults to "name".
+   * @param string $info
+   *   (optional) One of "name", "type" or "description", to indicate what
+   *   information should be returned for the types.
    *
+   * @return string[]
+   *   An associative array of aggregation type identifiers mapped to their
+   *   names, data types or descriptions, as requested.
    */
   protected function getTypes($info = 'name') {
     switch ($info) {
@@ -310,6 +313,7 @@ class SearchApiAlterAddAggregation extends SearchApiAbstractAlterCallback {
           'list' => t('The List aggregation collects all field values into a multi-valued field containing all values.'),
         );
     }
+    return array();
   }
 
   /**

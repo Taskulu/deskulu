@@ -127,8 +127,8 @@ class EntityDefaultUIController {
    * Use per bundle form ids if possible, such that easy per bundle alterations
    * are supported too.
    *
-   * Note that for performance reasons, this method is only invoked for forms,
-   * which receive the entity_type as first argument. Thus any forms added, must
+   * Note that for performance reasons, this method is invoked only for forms
+   * which receive the entity_type as first argument. Thus any forms added must
    * follow that pattern.
    *
    * @see entity_forms()

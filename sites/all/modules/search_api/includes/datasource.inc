@@ -22,7 +22,7 @@
 interface SearchApiDataSourceControllerInterface {
 
   /**
-   * Constructs a new data source controller.
+   * Constructs an SearchApiDataSourceControllerInterface object.
    *
    * @param string $type
    *   The item type for which this controller is created.
@@ -47,7 +47,7 @@ interface SearchApiDataSourceControllerInterface {
    * Loads items of the type of this data source controller.
    *
    * @param array $ids
-   *   The IDs of the items to laod.
+   *   The IDs of the items to load.
    *
    * @return array
    *   The loaded items, keyed by ID.
@@ -592,7 +592,7 @@ abstract class SearchApiAbstractDataSourceController implements SearchApiDataSou
    * {@inheritdoc}
    */
   public function trackItemInsert(array $item_ids, array $indexes) {
-    if (!$this->table) {
+    if (!$this->table || $item_ids === array()) {
       return;
     }
 
@@ -622,7 +622,7 @@ abstract class SearchApiAbstractDataSourceController implements SearchApiDataSou
    * {@inheritdoc}
    */
   public function trackItemChange($item_ids, array $indexes, $dequeue = FALSE) {
-    if (!$this->table) {
+    if (!$this->table || $item_ids === array()) {
       return NULL;
     }
 
@@ -652,7 +652,7 @@ abstract class SearchApiAbstractDataSourceController implements SearchApiDataSou
    */
   public function trackItemQueued($item_ids, SearchApiIndex $index) {
     $this->checkIndex($index);
-    if (!$this->table) {
+    if (!$this->table || $item_ids === array()) {
       return;
     }
     $update = db_update($this->table)
@@ -670,7 +670,7 @@ abstract class SearchApiAbstractDataSourceController implements SearchApiDataSou
    * {@inheritdoc}
    */
   public function trackItemIndexed(array $item_ids, SearchApiIndex $index) {
-    if (!$this->table) {
+    if (!$this->table || $item_ids === array()) {
       return;
     }
     $this->checkIndex($index);
@@ -687,7 +687,7 @@ abstract class SearchApiAbstractDataSourceController implements SearchApiDataSou
    * {@inheritdoc}
    */
   public function trackItemDelete(array $item_ids, array $indexes) {
-    if (!$this->table) {
+    if (!$this->table || $item_ids === array()) {
       return NULL;
     }
 

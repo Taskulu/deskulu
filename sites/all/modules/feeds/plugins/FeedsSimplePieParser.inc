@@ -22,7 +22,7 @@ class FeedsSimplePieEnclosure extends FeedsEnclosure {
   /**
    * Serialization helper.
    *
-   * Handle the simplepie enclosure class seperately ourselves.
+   * Handle the simplepie enclosure class separately ourselves.
    */
   public function __sleep() {
     $this->_serialized_simplepie_enclosure = serialize($this->simplepie_enclosure);

@@ -89,7 +89,7 @@ ul.container-actions li {
   background-image: none;
   margin: 0;
   padding: 0;
-  position: relative; /* Fix for IE 7 compatability mode. */
+  position: relative; /* Fix for IE 7 compatibility mode. */
 }
 
 ul.container-actions .form-item,

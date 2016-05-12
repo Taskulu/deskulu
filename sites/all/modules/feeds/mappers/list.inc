@@ -49,8 +49,10 @@ function list_feeds_processor_targets($entity_type, $bundle_name) {
 /**
  * Callback for setting list_boolean fields.
  */
-function list_feeds_set_boolean_target(FeedsSource $source, $entity, $target, array $values) {
-  $field = isset($entity->$target) ? $entity->$target : array(LANGUAGE_NONE => array());
+function list_feeds_set_boolean_target(FeedsSource $source, $entity, $target, array $values, array $mapping) {
+  $language = $mapping['language'];
+
+  $field = isset($entity->$target) ? $entity->$target : array($language => array());
 
   foreach ($values as $value) {
 
@@ -58,7 +60,16 @@ function list_feeds_set_boolean_target(FeedsSource $source, $entity, $target, ar
       $value = $value->getValue();
     }
 
-    $field[LANGUAGE_NONE][] = array('value' => (int) (bool) $value);
+    if (is_string($value) && strlen($value) == 0) {
+      // Don't convert an empty string to a boolean.
+      continue;
+    }
+    if (is_null($value)) {
+      // Don't convert a NULL value to a boolean.
+      continue;
+    }
+
+    $field[$language][] = array('value' => (int) (bool) $value);
   }
 
   $entity->$target = $field;

@@ -354,7 +354,7 @@ function theme_feeds_upload($variables) {
     $summary .= '<div class="feeds-file-info">';
     $summary .= '<div class="feeds-file-name">';
     if ($wrapper) {
-      $summary .= l(check_plain($file->filename), $wrapper->getExternalUrl());
+      $summary .= l($file->filename, $wrapper->getExternalUrl());
     }
     else {
       $summary .= t('URI scheme %scheme not available.', array('%scheme' =>  file_uri_scheme($uri)));

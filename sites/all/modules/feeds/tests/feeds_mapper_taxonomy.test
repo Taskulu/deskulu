@@ -234,6 +234,7 @@ class FeedsMapperTaxonomyTestCase extends FeedsMapperTestCase {
     $target = 'field_tags';
     $mapping = array(
       'term_search' => FEEDS_TAXONOMY_SEARCH_TERM_ID,
+      'language' => LANGUAGE_NONE,
     );
 
     $source = FeedsSource::instance('tmp', 0);
@@ -284,6 +285,7 @@ class FeedsMapperTaxonomyTestCase extends FeedsMapperTestCase {
     $target = 'field_tags';
     $mapping = array(
       'term_search' => FEEDS_TAXONOMY_SEARCH_TERM_GUID,
+      'language' => LANGUAGE_NONE,
     );
 
     $source = FeedsSource::instance('tmp', 0);

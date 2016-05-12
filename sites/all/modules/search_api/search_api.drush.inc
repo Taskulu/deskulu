@@ -71,9 +71,10 @@ function search_api_drush_command() {
       'drush sapi-i default_node_index' => dt('Index items for the index with the machine name !name.', array('!name' => 'default_node_index')),
       'drush sapi-i 1 100' => dt("Index a maximum number of !limit items (index's cron batch size items per batch run) for the index with the ID !id.", array('!limit' => 100, '!id' => 1)),
       'drush sapi-i 1 100 10' => dt("Index a maximum number of !limit items (!batch_size items per batch run) for the index with the ID !id.", array('!limit' => 100, '!batch_size' => 10, '!id' => 1)),
+      'drush sapi-i 0 0 100' => dt("Index all items of all indexes with !batch_size items per batch run.", array('!batch_size' => 100)),
     ),
     'arguments' => array(
-      'index_id' => dt('The numeric ID or machine name of an index.'),
+      'index_id' => dt('The numeric ID or machine name of an index. Set to 0 to index all indexes. Defaults to 0 (index all).'),
       'limit' => dt("The number of items to index (index's cron batch size items per run). Set to 0 to index all items. Defaults to 0 (index all)."),
       'batch_size' => dt("The number of items to index per batch run. Set to 0 to index all items at once. Defaults to the index's cron batch size."),
     ),
@@ -326,6 +327,7 @@ function drush_search_api_index($index_id = NULL, $limit = NULL, $batch_size = N
   if (search_api_drush_static(__FUNCTION__)) {
     return;
   }
+  $index_id = !empty($index_id) ? $index_id : NULL;
   $indexes = search_api_drush_get_index($index_id);
   if (empty($indexes)) {
     return;

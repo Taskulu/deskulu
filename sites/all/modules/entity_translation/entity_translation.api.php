@@ -91,7 +91,7 @@ function hook_entity_info() {
     'translation' => array(
       'entity_translation' => array(
         'class' => 'EntityTranslationCustomEntityHandler',
-        'path sets' => array(
+        'path schemes' => array(
           'default' => array(
             'base path' => 'custom_entity_2/%custom_entity',
             'path wildcard' => '%custom_entity',

@@ -1806,7 +1806,7 @@ function search_api_admin_index_fields(array $form, array &$form_state, SearchAp
   // An array of option arrays for types, keyed by nesting level.
   $types = array(0 => search_api_field_types());
   $entity_types = entity_get_info();
-  $boosts = drupal_map_assoc(array('0.1', '0.2', '0.3', '0.5', '0.8', '1.0', '2.0', '3.0', '5.0', '8.0', '13.0', '21.0'));
+  $boosts = drupal_map_assoc(array('0.0', '0.1', '0.2', '0.3', '0.5', '0.8', '1.0', '2.0', '3.0', '5.0', '8.0', '13.0', '21.0'));
 
   $fulltext_types = array(0 => array('text'));
   // Add all custom data types with fallback "text" to fulltext types as well.
@@ -1949,6 +1949,7 @@ function search_api_admin_index_fields(array $form, array &$form_state, SearchAp
   );
 
   if ($additional) {
+    asort($additional);
     reset($additional);
     $form['additional'] = array(
       '#type' => 'fieldset',
@@ -2102,6 +2103,9 @@ function _search_api_admin_get_fields(SearchApiIndex $index, EntityMetadataWrapp
  * @param array $variables
  *   An associative array containing:
  *   - element: A render element representing the form.
+ *
+ * @return string
+ *   The HTML for a field list form.
  */
 function theme_search_api_admin_fields_table($variables) {
   $form = $variables['element'];
@@ -2147,6 +2151,7 @@ function theme_search_api_admin_fields_table($variables) {
 function search_api_admin_index_fields_submit(array $form, array &$form_state) {
   $index = $form_state['index'];
   $options = isset($index->options) ? $index->options : array();
+  $index_path = 'admin/config/search/search_api/index/' . $index->machine_name;
   if ($form_state['values']['op'] == t('Save changes')) {
     $fields = $form_state['values']['fields'];
     $default_types = search_api_default_field_types();
@@ -2176,18 +2181,18 @@ function search_api_admin_index_fields_submit(array $form, array &$form_state) {
     $ret = $index->update(array('options' => $options));
 
     if ($ret) {
-      drupal_set_message(t('The indexed fields were successfully changed. ' .
-          'The index was cleared and will have to be re-indexed with the new settings.'));
+      $vars = array('@url' => $index_path);
+      drupal_set_message(t('The indexed fields were successfully changed. The index was cleared and will have to be <a href="@url">re-indexed</a> with the new settings.', $vars));
     }
     else {
       drupal_set_message(t('No values were changed.'));
     }
     if (isset($index->options['data_alter_callbacks']) || isset($index->options['processors'])) {
-      $form_state['redirect'] = 'admin/config/search/search_api/index/' . $index->machine_name . '/fields';
+      $form_state['redirect'] = $index_path . '/fields';
     }
     else {
       drupal_set_message(t('Please set up the indexing workflow.'));
-      $form_state['redirect'] = 'admin/config/search/search_api/index/' . $index->machine_name . '/workflow';
+      $form_state['redirect'] = $index_path . '/workflow';
     }
     return;
   }
@@ -2202,7 +2207,7 @@ function search_api_admin_index_fields_submit(array $form, array &$form_state) {
   else {
     drupal_set_message(t('No values were changed.'));
   }
-  $form_state['redirect'] = 'admin/config/search/search_api/index/' . $index->machine_name . '/fields';
+  $form_state['redirect'] = $index_path . '/fields';
 }
 
 /**

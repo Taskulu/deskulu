@@ -1035,6 +1035,13 @@ function search_api_update_7117() {
  * Adds the {search_api_item_string_id} table for items with string IDs.
  */
 function search_api_update_7118() {
+  // Some users have reported that the table already existed for them, for
+  // whatever reason. Therefore, just bail if the table already exists, assuming
+  // it already looks as expected.
+  if (db_table_exists('search_api_item_string_id')) {
+    return;
+  }
+
   $table = array(
     'description' => 'Stores the items which should be indexed for each index, and their status. Used only for items with string IDs.',
     'fields' => array(

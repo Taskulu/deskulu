@@ -18,6 +18,18 @@ function entity_translation_admin_form($form, $form_state) {
     '#default_value' => variable_get('locale_field_language_fallback', TRUE),
   );
 
+  $form['entity_translation_show_fallback_on_overview_pages'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Show fallback statuses on overview pages'),
+    '#description' => t('Enable to the show fallback information on the entity overview pages.'),
+    '#default_value' => variable_get('entity_translation_show_fallback_on_overview_pages', FALSE),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="locale_field_language_fallback"]' => array('checked' => TRUE),
+      ),
+    ),
+  );
+
   $form['entity_translation_shared_labels'] = array(
     '#type' => 'checkbox',
     '#title' => t('Display shared labels'),
@@ -219,8 +231,7 @@ function entity_translation_overview($entity_type, $entity, $callback = NULL) {
   // languages.
   if ($handler->initOriginalTranslation()) {
     // FIXME!
-    field_attach_presave($entity_type, $entity);
-    field_attach_update($entity_type, $entity);
+    entity_translation_entity_save($entity_type, $entity);
   }
 
   $header = array(t('Language'), t('Source language'), t('Translation'), t('Status'), t('Operations'));
@@ -235,6 +246,8 @@ function entity_translation_overview($entity_type, $entity, $callback = NULL) {
     if ($path) {
       $links = EntityTranslationDefaultHandler::languageSwitchLinks($path);
     }
+
+    $show_fallback = variable_get('locale_field_language_fallback', TRUE) && variable_get('entity_translation_show_fallback_on_overview_pages', FALSE);
 
     foreach ($languages as $language) {
       $classes = array();
@@ -305,6 +318,18 @@ function entity_translation_overview($entity_type, $entity, $callback = NULL) {
           $classes[] = $translatable ? '' : 'non-traslatable';
         }
         $status = t('Not translated');
+        // Show fallback information if required.
+        if ($show_fallback) {
+          $language_fallback_candidates = _entity_translation_language_fallback_get_candidates($language);
+          $fallback_candidates = array_intersect_key(drupal_map_assoc($language_fallback_candidates), $translations->data);
+          $fallback_langcode = reset($fallback_candidates);
+          if ($fallback_langcode !== FALSE) {
+            $status = t('Fallback from @language', array('@language' => $languages[$fallback_langcode]->name));
+            $label = _entity_translation_label($entity_type, $entity, $fallback_langcode);
+            $link = isset($links->links[$langcode]['href']) ? $links->links[$langcode] : array('href' => $path, 'language' => $langcode);
+            $row_title = l($label, $link['href'], $link);
+          }
+        }
       }
       $rows[] = array(
         'data' => array($language_name, $source_name, $row_title, $status, implode(" | ", $options)),
@@ -420,8 +445,7 @@ function entity_translation_delete_confirm_submit($form, &$form_state) {
 
   // Remove the translation entry and the related fields.
   $handler->removeTranslation($langcode);
-  field_attach_presave($entity_type, $entity);
-  field_attach_update($entity_type, $entity);
+  entity_translation_entity_save($entity_type, $entity);
 
   $form_state['redirect'] = $handler->getTranslatePath();
 }
@@ -654,8 +678,7 @@ function _entity_translation_update_field($entity_type, $entity, $field_name) {
   // otherwise any stored empty field value would be deleted. If this happens
   // the range queries would be messed up.
   if ($empty < count($entity->{$field_name})) {
-    field_attach_presave($entity_type, $entity);
-    field_attach_update($entity_type, $entity);
+    entity_translation_entity_save($entity_type, $entity);
   }
 }
 
@@ -670,4 +693,37 @@ function entity_translation_translatable_batch_done($success, $results, $operati
     // @todo: Do something about this case.
     drupal_set_message(t("Something went wrong while processing data. Some nodes may appear to have lost fields."));
   }
+}
+
+/**
+ * Returns language fallback candidates for a certain language.
+ *
+ * @param object $language
+ *   Drupal language object.
+ *
+ * @return array
+ *   An array of language codes in the fallback order.
+ */
+function _entity_translation_language_fallback_get_candidates($language) {
+  // Save original fallback candidates.
+  $language_fallback_original = drupal_static('language_fallback_get_candidates');
+  // Replace all global languages with the given one. We need this because the
+  // language_fallback_get_candidates() does not take the $language parameter,
+  // however other modules (like language_fallback) may use current language(s)
+  // when they alter the language fallback candidates.
+  $languages_original = array();
+  foreach (language_types() as $language_type) {
+    $languages_original[$language_type] = $GLOBALS[$language_type];
+    $GLOBALS[$language_type] = $language;
+  }
+  // Clear static cache, so that fallback candidates are recalculated.
+  drupal_static_reset('language_fallback_get_candidates');
+  $language_fallback_candidates = language_fallback_get_candidates();
+  // Restore original data.
+  $language_fallback =& drupal_static('language_fallback_get_candidates');
+  $language_fallback = $language_fallback_original;
+  foreach ($languages_original as $language_type => $_language) {
+    $GLOBALS[$language_type] = $_language;
+  }
+  return $language_fallback_candidates;
 }

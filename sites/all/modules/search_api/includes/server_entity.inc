@@ -241,7 +241,7 @@ class SearchApiServer extends Entity {
   /**
    * Adds a new index to this server.
    *
-   * If an exception in the service class implementation of this method occcurs,
+   * If an exception in the service class implementation of this method occurs,
    * it will be caught and the operation saved as an pending server task.
    *
    * @see SearchApiServiceInterface::addIndex()
@@ -268,7 +268,7 @@ class SearchApiServer extends Entity {
    * If the service class implementation of the method returns TRUE, this will
    * automatically take care of marking the items on the index for re-indexing.
    *
-   * If an exception in the service class implementation of this method occcurs,
+   * If an exception in the service class implementation of this method occurs,
    * it will be caught and the operation saved as an pending server task.
    *
    * @see SearchApiServiceInterface::fieldsUpdated()
@@ -296,7 +296,7 @@ class SearchApiServer extends Entity {
   /**
    * Removes an index from this server.
    *
-   * If an exception in the service class implementation of this method occcurs,
+   * If an exception in the service class implementation of this method occurs,
    * it will be caught and the operation saved as an pending server task.
    *
    * @see SearchApiServiceInterface::removeIndex()
@@ -334,7 +334,7 @@ class SearchApiServer extends Entity {
   /**
    * Deletes indexed items from this server.
    *
-   * If an exception in the service class implementation of this method occcurs,
+   * If an exception in the service class implementation of this method occurs,
    * it will be caught and the operation saved as an pending server task.
    *
    * @see SearchApiServiceInterface::deleteItems()

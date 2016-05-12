@@ -3,6 +3,36 @@ Entity Translation 7.x-1.x, xxxx-xx-xx
 --------------------------------------
 
 
+Entity Translation 7.x-1.0-beta5, 2016-05-08
+--------------------------------------------
+#929402 by das-peter, bastnic, kristiaanvandeneynde, brockfanning, greenjuls,
+  make77, steinmb: Added support for migrate module.
+#1291388 by Jax, poiu, plach: Added support for multilingual core search.
+#2339315 by loopduplicate, gnucifer, plopesc, james.williams: Fixed Source
+  language prepopulated values should be also included in $form_state['field'].
+#2648062 by brunoric, cebasqueira, lucasr, mmchristoph: Fixed Fatal error: Call
+  to a member function getFormLanguage() on a non-object.
+#S156840 by HelenaEksler, plach: Fixed XSS vulnerability in the translation
+  form page title.
+#2444203 by Leksat, badrange, attiks: Show fallback information on the translation
+  overview.
+#2458393 by catch, plach, douggreen: Fixed unindexed query in
+  EntityTranslationDefaultHandler::loadMultiple().
+#2462909 by GeduR: Misspelling translation exists help in views handler
+  definition.
+#2166157 by rsmylski, ciss: entity translation handler id for new entities not
+  unique enough - can cause infinite/circular child reference.
+#2452279 by GeduR: Duplicated variable $language in
+  entity_translation_edit_access().
+#2423661 by marcoscano: Module api documentation has wrong example ("path sets"
+  instead of "path schemes").
+#2305547 by das-peter: Fixed undefined index name.
+#1989084 by jsacksick, candelas: Fixed <nolink> and validation.
+#2203801 by idflood: Impossible to update taxonomy term after enabling
+  i18n_taxonomy.
+#2415189 by catch: Translation deletion bypasses entity saving.
+
+
 Entity Translation 7.x-1.0-beta4, 2015-01-23
 --------------------------------------------
 #2396103 by plach: Fixed [DATA LOSS] Translations deleted.

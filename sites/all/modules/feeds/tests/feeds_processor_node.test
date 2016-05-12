@@ -12,8 +12,8 @@ class FeedsRSStoNodesTest extends FeedsWebTestCase {
 
   public static function getInfo() {
     return array(
-      'name' => 'RSS import to nodes',
-      'description' => 'Tests a feed configuration that is attached to a content type, uses HTTP fetcher, common syndication parser and a node processor. Repeats the same test for an importer configuration that is not attached to a content type and for a configuration that is attached to a content type and uses the file fetcher.',
+      'name' => 'Processor: Node',
+      'description' => 'Tests for the node processor.',
       'group' => 'Feeds',
     );
   }
@@ -577,10 +577,188 @@ class FeedsRSStoNodesTest extends FeedsWebTestCase {
 
     // The feed should still be scheduled because it is being processed.
     // @see https://drupal.org/node/2275893
-    feeds_source('syndication', 0)->scheduleImport();
-
     $this->cronRun();
     $this->assertEqual(86, db_query("SELECT COUNT(*) FROM {node}")->fetchField());
+  }
+
+  /**
+   * Tests skip new items.
+   */
+  public function testSkipNewItems() {
+    // Include FeedsProcessor.inc so processor related constants are available.
+    module_load_include('inc', 'feeds', 'plugins/FeedsProcessor');
+
+    // Attach to standalone importer.
+    $this->setSettings('syndication', NULL, array('content_type' => ''));
+    // Set that new items should not be imported.
+    $this->setSettings('syndication', 'FeedsNodeProcessor', array(
+      'insert_new' => FEEDS_SKIP_NEW,
+      'update_existing' => FEEDS_SKIP_EXISTING,
+    ));
+
+    // Make title unique target.
+    $this->removeMappings('syndication', $this->getCurrentMappings('syndication'));
+    $this->addMappings('syndication', array(
+      0 => array(
+        'source' => 'title',
+        'target' => 'title',
+        'unique' => TRUE,
+      ),
+      1 => array(
+        'source' => 'description',
+        'target' => 'body',
+      ),
+      2 => array(
+        'source' => 'timestamp',
+        'target' => 'created',
+      ),
+    ));
+
+    // Do a first import, no nodes should be created.
+    $edit = array(
+      'feeds[FeedsHTTPFetcher][source]' => $GLOBALS['base_url'] . '/' . drupal_get_path('module', 'feeds') . '/tests/feeds/developmentseed.rss2',
+    );
+    $this->drupalPost('import/syndication', $edit, 'Import');
+    $this->assertText('There are no new nodes');
+
+    // Now create two nodes with titles that are present in the source
+    // "developmentseed.rss2".
+    $this->drupalCreateNode(array(
+      'type' => 'article',
+      'title' => 'Open Atrium Translation Workflow: Two Way Translation Updates',
+    ));
+    $this->drupalCreateNode(array(
+      'type' => 'article',
+      'title' => 'Week in DC Tech: October 5th Edition',
+    ));
+
+    // Import again. Since the processor is set to not update as well, nothing
+    // should be imported.
+    $this->drupalPost('import/syndication', array(), 'Import');
+    $this->assertText('There are no new nodes');
+
+    // Now set importer to update existing.
+    $this->setSettings('syndication', 'FeedsNodeProcessor', array(
+      'update_existing' => FEEDS_UPDATE_EXISTING,
+    ));
+    // And import again. Two nodes should be updated.
+    $this->drupalPost('import/syndication', array(), 'Import');
+    $this->assertText('Updated 2 nodes.');
+
+    // Change "insert_new" setting to insert new items to verify if changing the
+    // setting later has the effect that new items will be imported as yet.
+    $this->setSettings('syndication', 'FeedsNodeProcessor', array(
+      'insert_new' => FEEDS_INSERT_NEW,
+    ));
+    // Import. Eight nodes should be created. No nodes should be updated.
+    $this->drupalPost('import/syndication', array(), 'Import');
+    $this->assertText('Created 8 nodes.');
+    $this->assertNoText('Updated 2 nodes.');
+  }
+
+  /**
+   * Tests if the target "changed" works as expected.
+   */
+  public function testChangedTarget() {
+    // Create and configure importer.
+    $this->createImporterConfiguration('Content CSV', 'csv');
+    $this->setSettings('csv', NULL, array('content_type' => '', 'import_period' => FEEDS_SCHEDULE_NEVER));
+    $this->setPlugin('csv', 'FeedsFileFetcher');
+    $this->setPlugin('csv', 'FeedsCSVParser');
+    $this->addMappings('csv', array(
+      0 => array(
+        'source' => 'title',
+        'target' => 'title',
+      ),
+      // Borrow the timestamp value from the "created" column in the csv.
+      1 => array(
+        'source' => 'created',
+        'target' => 'changed',
+      ),
+    ));
+
+    // Import CSV file.
+    $this->importFile('csv', $this->absolutePath() . '/tests/feeds/content.csv');
+    $this->assertText('Created 2 nodes');
+
+    // Assert changed date of nodes.
+    $expected_values = array(
+      1 => array(
+        'changed' => 1251936720,
+      ),
+      2 => array(
+        'changed' => 1251932360,
+      ),
+    );
+    for ($i = 1; $i <= 2; $i++) {
+      $node = node_load($i);
+      $this->assertEqual($expected_values[$i]['changed'], $node->changed);
+    }
+  }
+
+  /**
+   * Tests the FeedsSource::pushImport() method.
+   */
+  public function testPushImport() {
+    // Attach to standalone importer.
+    $this->setSettings('syndication', NULL, array('content_type' => ''));
+
+    $raw = file_get_contents(dirname(__FILE__) . '/feeds/developmentseed.rss2');
+    feeds_source('syndication', 0)->pushImport(new FeedsFetcherResult($raw));
+    $this->assertEqual(10, db_query("SELECT COUNT(*) FROM {node}")->fetchField());
+  }
+
+  /**
+   * Tests the FeedsSource::pushImport() method with a CSV file.
+   */
+  public function testPushImportWithCSV() {
+    // Attach to standalone importer and configure.
+    $this->setSettings('syndication', NULL, array('content_type' => ''));
+    $this->setPlugin('syndication', 'FeedsCSVParser');
+    $this->removeMappings('syndication', $this->getCurrentMappings('syndication'));
+    $this->addMappings('syndication', array(
+      0 => array(
+        'source' => 'title',
+        'target' => 'title',
+      ),
+    ));
+
+    $raw = file_get_contents($this->absolutePath() . '/tests/feeds/many_nodes.csv');
+    feeds_source('syndication', 0)->pushImport(new FeedsFetcherResult($raw));
+    $this->assertEqual(86, db_query("SELECT COUNT(*) FROM {node}")->fetchField());
+  }
+
+  /**
+   * Tests if target item is not updated when only non-mapped data on the source changed.
+   */
+  public function testIrrelevantUpdate() {
+    // Include FeedsProcessor.inc so processor related constants are available.
+    module_load_include('inc', 'feeds', 'plugins/FeedsProcessor');
+
+    // Attach to standalone importer and configure.
+    $this->setSettings('syndication', NULL, array('content_type' => ''));
+    $this->setPlugin('syndication', 'FeedsFileFetcher');
+    $this->setPlugin('syndication', 'FeedsCSVParser');
+    $this->removeMappings('syndication', $this->getCurrentMappings('syndication'));
+    $this->addMappings('syndication', array(
+      0 => array(
+        'source' => 'name',
+        'target' => 'title',
+        'unique' => TRUE,
+      ),
+    ));
+
+    // Import file.
+    $this->importFile('syndication', $this->absolutePath() . '/tests/feeds/users.csv');
+    $this->assertText('Created 5 nodes');
+
+    // Ensure that no nodes are updated when only non-mapped columns changed.
+    $this->setSettings('syndication', 'FeedsNodeProcessor', array(
+      'skip_hash_check' => FALSE,
+      'update_existing' => FEEDS_UPDATE_EXISTING,
+    ));
+    $this->importFile('syndication', $this->absolutePath() . '/tests/feeds/users_updated.csv');
+    $this->assertText('There are no new nodes.');
   }
 
 }

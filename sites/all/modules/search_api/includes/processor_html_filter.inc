@@ -120,7 +120,9 @@ class SearchApiHtmlFilter extends SearchApiAbstractProcessor {
         );
       }
       $text = substr($text, $pos + 1);
-      preg_match('#^(/?)([-:_a-zA-Z]+)#', $text, $m);
+      if (!preg_match('#^(/?)([-:_a-zA-Z]+)#', $text, $m)) {
+        continue;
+      }
       $text = substr($text, strpos($text, '>') + 1);
       if ($m[1]) {
         // Closing tag.

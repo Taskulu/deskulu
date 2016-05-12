@@ -32,6 +32,8 @@ class ParserCSVTest extends DrupalWebTestCase  {
 
     $this->_testSimple();
     $this->_testBatching();
+    $this->_testEncodingConversion();
+    $this->_testEncodingConversionFailure();
   }
 
   /**
@@ -50,6 +52,51 @@ class ParserCSVTest extends DrupalWebTestCase  {
       $rows = $parser->parse($iterator);
       $this->assertFalse($parser->lastLinePos(), t('CSV reports all lines parsed, with delimiter: ') . $delimiterType);
       $this->assertEqual(md5(serialize($rows)), md5(serialize($control_result)), t('Parsed result matches control result.'));
+    }
+  }
+
+  /**
+   * Simple test of encoding conversion prior to parsing.
+   */
+  protected function _testEncodingConversion() {
+    // Pull in the $control_result array.
+    include $this->absolutePath() . '/tests/feeds/encoding.csv.php';
+
+    $encodings = $this->getEncodings();
+    foreach ($encodings as $encoding) {
+      $file =  $this->absolutePath() . "/tests/feeds/encoding_{$encoding}.csv";
+      $iterator = new ParserCSVIterator($file);
+      $parser = new ParserCSV();
+      $parser->setDelimiter(',');
+      $parser->setEncoding($encoding);
+      $rows = $parser->parse($iterator);
+      $this->assertFalse($parser->lastLinePos(), format_string('CSV reports all lines parsed, with encoding: %encoding', array('%encoding' => $encoding)));
+      $this->assertEqual(md5(serialize($rows)), md5(serialize($control_result)), 'Converted and parsed result matches control result.');
+    }
+  }
+
+  /**
+   * Simple test of failed encoding conversion prior to parsing.
+   */
+  protected function _testEncodingConversionFailure() {
+    // Pull in the $control_result array.
+    include $this->absolutePath() . '/tests/feeds/encoding.csv.php';
+
+    $encodings = $this->getEncodings();
+    foreach ($encodings as $encoding) {
+      $file =  $this->absolutePath() . "/tests/feeds/encoding_{$encoding}.csv";
+      $iterator = new ParserCSVIterator($file);
+      $parser = new ParserCSV();
+      $parser->setDelimiter(',');
+      // Attempt to read file as UTF-8.
+      $parser->setEncoding('UTF-8');
+      try {
+        $rows = $parser->parse($iterator);
+        $this->fail('Incorrect conversion attempt throws exception.');
+      }
+      catch (ParserCSVEncodingException $e) {
+        $this->assertNotNull($e->getMessage(), 'Incorrect conversion attempt throws exception.');
+      }
     }
   }
 
@@ -98,6 +145,13 @@ class ParserCSVTest extends DrupalWebTestCase  {
       'semicolon' => ';',
       'plus' => '+',
       'tab' => "\t",
+    );
+  }
+
+  static function getEncodings() {
+    return array(
+      'SJIS-win',
+      'SJIS',
     );
   }
 }

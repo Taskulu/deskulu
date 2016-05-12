@@ -32,6 +32,7 @@ class CommonSyndicationParserTestCase extends DrupalWebTestCase {
     $this->_testRSS10();
     $this->_testRSS2();
     $this->_testAtomGeoRSS();
+    $this->_testAtomGeoRSSWithoutAuthor();
   }
 
   /**
@@ -80,6 +81,14 @@ class CommonSyndicationParserTestCase extends DrupalWebTestCase {
     $this->assertEqual($feed['items'][3]['geolocations'][0]['name'], '-43.4371 172.5902');
     $this->assertEqual($feed['items'][3]['geolocations'][0]['lat'], '-43.4371');
     $this->assertEqual($feed['items'][3]['geolocations'][0]['lon'], '172.5902');
+  }
+
+  /**
+   * Tests parsing an Atom feed without an author.
+   */
+  protected function _testAtomGeoRSSWithoutAuthor() {
+    $string = $this->readFeed('earthquake-georss-noauthor.atom');
+    $feed = common_syndication_parser_parse($string);
   }
 
   /**

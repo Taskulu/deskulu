@@ -86,12 +86,12 @@ class SearchApiHighlight extends SearchApiAbstractProcessor {
         ),
       ),
     );
-    // Exclude certain fulltextfields
+    // Exclude certain fulltext fields.
     $fields = $this->index->getFields();
     $fulltext_fields = array();
     foreach ($this->index->getFulltextFields() as $field) {
       if (isset($fields[$field])) {
-        $fulltext_fields[$field] = $fields[$field]['name'] . ' (' . $field . ')';
+        $fulltext_fields[$field] = check_plain($fields[$field]['name'] . ' (' . $field . ')');
       }
     }
     $form['exclude_fields'] = array(
@@ -158,13 +158,14 @@ class SearchApiHighlight extends SearchApiAbstractProcessor {
       if ($this->options['highlight'] != 'never') {
         $fields = $this->getFulltextFields($response['results'], $id, $fulltext_fields, $this->options['highlight'] == 'always');
         foreach ($fields as $field => $data) {
+          $result['fields'][$field] = array('#sanitize_callback' => FALSE);
           if (is_array($data)) {
             foreach ($data as $i => $text) {
-              $result['fields'][$field][$i] = $this->highlightField($text, $keys);
+              $result['fields'][$field]['#value'][$i] = $this->highlightField($text, $keys);
             }
           }
           else {
-            $result['fields'][$field] = $this->highlightField($data, $keys);
+            $result['fields'][$field]['#value'] = $this->highlightField($data, $keys);
           }
         }
       }
@@ -200,9 +201,10 @@ class SearchApiHighlight extends SearchApiAbstractProcessor {
     // We only need detailed fields data if $load is TRUE.
     $fields = $load ? $this->index->getFields() : array();
     $needs_extraction = array();
+    $returned_fields = search_api_get_sanitized_field_values(array_intersect_key($result['fields'], array_flip($fulltext_fields)));
     foreach ($fulltext_fields as $field) {
-      if (array_key_exists($field, $result['fields'])) {
-        $data[$field] = $result['fields'][$field];
+      if (array_key_exists($field, $returned_fields)) {
+        $data[$field] = $returned_fields[$field];
       }
       elseif ($load) {
         $needs_extraction[$field] = $fields[$field];
@@ -225,7 +227,7 @@ class SearchApiHighlight extends SearchApiAbstractProcessor {
     }
     $wrapper = $this->index->entityWrapper($result['entity'], FALSE);
     $wrapper->language($language->language);
-    $extracted = search_api_extract_fields($wrapper, $needs_extraction);
+    $extracted = search_api_extract_fields($wrapper, $needs_extraction, array('sanitize' => TRUE));
 
     foreach ($extracted as $field => $info) {
       if (isset($info['value'])) {

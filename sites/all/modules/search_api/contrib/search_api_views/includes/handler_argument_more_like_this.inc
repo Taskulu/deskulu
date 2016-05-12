@@ -18,6 +18,7 @@ class SearchApiViewsHandlerArgumentMoreLikeThis extends SearchApiViewsHandlerArg
     $options = parent::option_definition();
     unset($options['break_phrase']);
     unset($options['not']);
+    $options['entity_type'] = array('default' => FALSE);
     $options['fields'] = array('default' => array());
     return $options;
   }
@@ -31,6 +32,20 @@ class SearchApiViewsHandlerArgumentMoreLikeThis extends SearchApiViewsHandlerArg
     unset($form['not']);
 
     $index = search_api_index_load(substr($this->table, 17));
+
+    if ($index->datasource() instanceof SearchApiCombinedEntityDataSourceController) {
+      $types = array_intersect_key(search_api_entity_type_options_list(), array_flip($index->options['datasource']['types']));
+      $form['entity_type'] = array(
+        '#type' => 'select',
+        '#title' => t('Entity type'),
+        '#description' => t('Select the entity type of the argument.'),
+        '#options' => $types,
+        '#default_value' => $this->options['entity_type'],
+        '#required' => TRUE,
+      );
+    }
+
+
     if (!empty($index->options['fields'])) {
       $fields = array();
       foreach ($index->getFields() as $key => $field) {
@@ -78,8 +93,15 @@ class SearchApiViewsHandlerArgumentMoreLikeThis extends SearchApiViewsHandlerArg
       else {
         $fields = array_intersect($this->options['fields'], $index_fields);
       }
+      if ($this->query->getIndex()->datasource() instanceof SearchApiCombinedEntityDataSourceController) {
+        $id = $this->options['entity_type'] . '/' . $this->argument;
+      }
+      else {
+        $id = $this->argument;
+      }
+
       $mlt = array(
-        'id' => $this->argument,
+        'id' => $id,
         'fields' => $fields,
       );
       $this->query->getSearchApiQuery()->setOption('search_api_mlt', $mlt);

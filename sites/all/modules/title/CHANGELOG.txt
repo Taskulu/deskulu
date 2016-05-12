@@ -3,6 +3,40 @@ Title 7.x-1.x, xxxx-xx-xx
 -------------------------
 
 
+Title 7.x-1.0-alpha8, 2016-03-28
+--------------------------------
+#2465141 by DuaelFr, Matthijs, jfrederick: Used entity_uri() options if given.
+#2602568 by sdstyles: Fixed title_entity_label() should be documented as
+  callback implementation.
+#2605040 by ShaxA, joelpittet, sylus: Removed recursive call to
+  entity_get_info().
+#2040055 by flux423, cs_shadow, visabhishek, plach, OlyN: Fixed Notice:
+  Undefined index: safe_value in title_field_formatter_view().
+#2426105 by Peacog, jcisio: Fixed Views "Link this field to the original entity"
+  doesn't work when using relationship.
+#2286147 by plach: Language fallback does not work when an entity translation is
+  unpublished.
+#2286145 by plach: Prevent empty translations from being synced into the legacy
+  field.
+#1772116 by duellj, GaëlG | f4o: Fixed Menu link title is not getting node title
+  by default.
+#1779268 by ndobromirov | brycesenz: Undefined index: field_name in
+  title_field_views_data_alter().
+#1441224 by MiroslavBanov | OPIN: Fieldgroup and Title break Manage Fields UI.
+#1980520 by StoraH, pbz1912: Fixed Empty wrapper tags.
+#1920096 by Johnny vd Laar | GiorgosK: Fixed Title incompatibility with the Term
+  reference widget
+#1991712 by milesw: Fixed Title displays wrong revision using Revisioning
+  module.
+#1907078 by sylus: Fixed Undefined index: field_name() in
+  title_field_replacement_enabled().
+#1961810 by peximo | fcortez: Fixed Wrap tag classes are not being inserted.
+#1850866 by B-Prod: Fixed Undefined index 'format' in
+  title_field_text_with_summary_sync_set().
+#1269076 by plach, das-peter, danielnolde | renat: Fixed Translated
+  title_field replaces node->title with translated value.
+
+
 Title 7.x-1.0-alpha7, 2013-03-18
 --------------------------------
 #1919640 by peximo: Fixed Empty tag shown when the title field is displayed.

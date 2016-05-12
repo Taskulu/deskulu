@@ -120,4 +120,260 @@ class FeedsCSVtoTermsTest extends FeedsWebTestCase {
     $this->assertText(t('No vocabulary defined for Taxonomy Term processor.'));
   }
 
+  /**
+   * Tests that terms mapped to their parent by GUID are from the same vocabulary.
+   */
+  public function testParentTargetByGUID() {
+    // Create an other vocabulary.
+    $vocabulary1 = 'addams';
+    $vocabulary2 = strtolower($this->randomName());
+    $edit = array(
+      'name' => $this->randomString(),
+      'machine_name' => $vocabulary2,
+    );
+    $this->drupalPost('admin/structure/taxonomy/add', $edit, t('Save'));
+
+    // Add mappings for the first importer.
+    $this->addMappings('term_import',
+      array(
+        0 => array(
+          'source' => 'guid',
+          'target' => 'guid',
+          'unique' => TRUE,
+        ),
+        1 => array(
+          'source' => 'name',
+          'target' => 'name',
+        ),
+        2 => array(
+          'source' => 'parentguid',
+          'target' => 'parentguid',
+        ),
+      )
+    );
+
+    // Create a second importer.
+    $this->createImporterConfiguration('Term import 2', 'term_import2');
+    $this->setSettings('term_import2', NULL, array('content_type' => ''));
+
+    // Set and configure plugins and mappings.
+    $this->setPlugin('term_import2', 'FeedsFileFetcher');
+    $this->setPlugin('term_import2', 'FeedsCSVParser');
+    $this->setPlugin('term_import2', 'FeedsTermProcessor');
+    $this->setSettings('term_import2', 'FeedsTermProcessor', array('bundle' => $vocabulary2));
+
+    // Add mappings for the second importer.
+    $this->addMappings('term_import2',
+      array(
+        0 => array(
+          'source' => 'guid',
+          'target' => 'guid',
+          'unique' => TRUE,
+        ),
+        1 => array(
+          'source' => 'name',
+          'target' => 'name',
+        ),
+        2 => array(
+          'source' => 'parentguid',
+          'target' => 'parentguid',
+        ),
+      )
+    );
+
+    $values = array(
+      1 => 'Europe',
+      2 => 'Belgium',
+    );
+
+    // Import file using the first importer.
+    $this->importFile('term_import', $this->absolutePath() . '/tests/feeds/terms.csv');
+    $this->assertText('Created 2 terms.');
+
+    // Assert that two terms were created in the first vocabulary.
+    $terms = entity_load('taxonomy_term', array_keys($values));
+    foreach ($terms as $tid => $term) {
+      $this->assertEqual($values[$tid], $term->name);
+      $this->assertEqual($vocabulary1, $term->vocabulary_machine_name);
+    }
+    // Assert that the second term's parent is the first term.
+    $parents = taxonomy_get_parents($terms[2]->tid);
+    $message = format_string('The term @term is correctly linked to its parent.', array('@term' => $terms[2]->name));
+    if (!empty($parents)) {
+      $parent = current($parents);
+      $this->assertEqual(1, $parent->tid, $message);
+    }
+    else {
+      $this->fail($message);
+    }
+
+    $values = array(
+      3 => 'Europe',
+      4 => 'Belgium',
+    );
+
+    // Now import the file using the second importer.
+    $this->importFile('term_import2', $this->absolutePath() . '/tests/feeds/terms.csv');
+    $this->assertText('Created 2 terms.');
+
+    // Assert that two terms were created in the second vocabulary.
+    $terms = entity_load('taxonomy_term', array_keys($values));
+    foreach ($terms as $tid => $term) {
+      $this->assertEqual($values[$tid], $term->name);
+      $this->assertEqual($vocabulary2, $term->vocabulary_machine_name);
+    }
+    // Assert that the second term's parent is the first term.
+    $parents = taxonomy_get_parents($terms[4]->tid);
+    $message = format_string('The term @term is correctly linked to its parent.', array('@term' => $terms[4]->name));
+    if (!empty($parents)) {
+      $parent = current($parents);
+      $this->assertEqual(3, $parent->tid, $message);
+    }
+    else {
+      $this->fail($message);
+    }
+  }
+
+  /**
+   * Tests that terms mapped to their parent by GUID are from the same vocabulary.
+   */
+  public function testParentTargetByName() {
+    // Create an other vocabulary.
+    $vocabulary1 = 'addams';
+    $vocabulary2 = strtolower($this->randomName());
+    $edit = array(
+      'name' => $this->randomString(),
+      'machine_name' => $vocabulary2,
+    );
+    $this->drupalPost('admin/structure/taxonomy/add', $edit, t('Save'));
+
+    // Add mappings for the first importer.
+    $this->addMappings('term_import',
+      array(
+        0 => array(
+          'source' => 'guid',
+          'target' => 'guid',
+          'unique' => TRUE,
+        ),
+        1 => array(
+          'source' => 'name',
+          'target' => 'name',
+        ),
+        2 => array(
+          'source' => 'parent',
+          'target' => 'parent',
+        ),
+      )
+    );
+
+    // Create a second importer.
+    $this->createImporterConfiguration('Term import 2', 'term_import2');
+    $this->setSettings('term_import2', NULL, array('content_type' => ''));
+
+    // Set and configure plugins and mappings.
+    $this->setPlugin('term_import2', 'FeedsFileFetcher');
+    $this->setPlugin('term_import2', 'FeedsCSVParser');
+    $this->setPlugin('term_import2', 'FeedsTermProcessor');
+    $this->setSettings('term_import2', 'FeedsTermProcessor', array('bundle' => $vocabulary2));
+
+    // Add mappings for the second importer.
+    $this->addMappings('term_import2',
+      array(
+        0 => array(
+          'source' => 'guid',
+          'target' => 'guid',
+          'unique' => TRUE,
+        ),
+        1 => array(
+          'source' => 'name',
+          'target' => 'name',
+        ),
+        2 => array(
+          'source' => 'parent',
+          'target' => 'parent',
+        ),
+      )
+    );
+
+    $values = array(
+      1 => 'Europe',
+      2 => 'Belgium',
+    );
+
+    // Import file using the first importer.
+    $this->importFile('term_import', $this->absolutePath() . '/tests/feeds/terms.csv');
+    $this->assertText('Created 2 terms.');
+
+    // Assert that two terms were created in the first vocabulary.
+    $terms = entity_load('taxonomy_term', array_keys($values));
+    foreach ($terms as $tid => $term) {
+      $this->assertEqual($values[$tid], $term->name);
+      $this->assertEqual($vocabulary1, $term->vocabulary_machine_name);
+    }
+    // Assert that the second term's parent is the first term.
+    $parents = taxonomy_get_parents($terms[2]->tid);
+    $message = format_string('The term @term is correctly linked to its parent.', array('@term' => $terms[2]->name));
+    if (!empty($parents)) {
+      $parent = current($parents);
+      $this->assertEqual(1, $parent->tid, $message);
+    }
+    else {
+      $this->fail($message);
+    }
+
+    $values = array(
+      3 => 'Europe',
+      4 => 'Belgium',
+    );
+
+    // Now import the file using the second importer.
+    $this->importFile('term_import2', $this->absolutePath() . '/tests/feeds/terms.csv');
+    $this->assertText('Created 2 terms.');
+
+    // Assert that two terms were created in the second vocabulary.
+    $terms = entity_load('taxonomy_term', array_keys($values));
+    foreach ($terms as $tid => $term) {
+      $this->assertEqual($values[$tid], $term->name);
+      $this->assertEqual($vocabulary2, $term->vocabulary_machine_name);
+    }
+    // Assert that the second term's parent is the first term.
+    $parents = taxonomy_get_parents($terms[4]->tid);
+    $message = format_string('The term @term is correctly linked to its parent.', array('@term' => $terms[4]->name));
+    if (!empty($parents)) {
+      $parent = current($parents);
+      $this->assertEqual(3, $parent->tid, $message);
+    }
+    else {
+      $this->fail($message);
+    }
+  }
+
+  /**
+   * Test replacing terms on subsequent imports.
+   */
+  public function testReplaceTerms() {
+    $mappings = array(
+      0 => array(
+        'source' => 'name',
+        'target' => 'name',
+        'unique' => 1,
+      ),
+    );
+    $this->addMappings('term_import', $mappings);
+
+    // Configure the processor to "Replace existing terms".
+    $this->setSettings('term_import', 'FeedsTermProcessor', array(
+      'skip_hash_check' => TRUE,
+      'update_existing' => 1,
+    ));
+
+    // Import first time.
+    $this->importFile('term_import', $this->absolutePath() . '/tests/feeds/users.csv');
+    $this->assertText('Created 5 terms');
+
+    // Import again to replace terms.
+    $this->importFile('term_import', $this->absolutePath() . '/tests/feeds/users.csv');
+    $this->assertText('Updated 5 terms.');
+  }
+
 }

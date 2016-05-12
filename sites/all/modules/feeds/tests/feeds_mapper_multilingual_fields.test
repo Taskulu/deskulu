@@ -1,0 +1,1053 @@
+<?php
+
+/**
+ * @file
+ * Contains FeedsMapperMultilingualFieldsTestCase.
+ */
+
+/**
+ * Tests field mapping with multiple languages.
+ */
+class FeedsMapperMultilingualFieldsTestCase extends FeedsMapperTestCase {
+
+  /**
+   * Name of created content type.
+   *
+   * @var string
+   */
+  private $contentType;
+
+  /**
+   * @var array
+   */
+  protected $fields = array();
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Mapper: Multilingual fields',
+      'description' => 'Tests Feeds multilingual support.',
+      'group' => 'Feeds',
+      'dependencies' => array('date', 'entity_translation', 'i18n_taxonomy', 'link'),
+    );
+  }
+
+  public function setUp() {
+    $modules = array(
+      'locale',
+      'entity_translation',
+      'date',
+      'link',
+      'list',
+      'number',
+    );
+
+    $permissions = array(
+      'administer entity translation',
+      'translate any entity',
+      'administer languages',
+    );
+
+    parent::setUp($modules, $permissions);
+
+    // Include FeedsProcessor.inc so processor related constants are available.
+    module_load_include('inc', 'feeds', 'plugins/FeedsProcessor');
+
+    // Add French language.
+    $this->addLanguage('fr', 'French');
+
+    // Add Categories vocabulary.
+    $edit = array(
+      'name' => 'Categories',
+      'machine_name' => 'categories',
+    );
+    $this->drupalPost('admin/structure/taxonomy/add', $edit, 'Save');
+
+    // Create content type.
+    $this->fields = array(
+      'date' => array(
+        'type' => 'date',
+        'settings' => array(
+          'field[settings][granularity][hour]' => FALSE,
+          'field[settings][granularity][minute]' => FALSE,
+          'field[settings][tz_handling]' => 'none',
+        ),
+      ),
+      'datestamp' => array(
+        'type' => 'datestamp',
+        'settings' => array(
+          'field[settings][granularity][second]' => TRUE,
+          'field[settings][tz_handling]' => 'utc',
+        ),
+      ),
+      'datetime' => array(
+        'type' => 'datetime',
+        'settings' => array(
+          'field[settings][granularity][second]' => TRUE,
+          'field[settings][tz_handling]' => 'utc',
+        ),
+      ),
+      'image' => array(
+        'type' => 'image',
+        'instance_settings' => array(
+          'instance[settings][alt_field]' => 1,
+          'instance[settings][title_field]' => 1,
+        ),
+      ),
+      'link' => 'link_field',
+      'list_boolean' => 'list_boolean',
+      'number_integer' => 'number_integer',
+      'number_decimal' => 'number_decimal',
+      'number_float' => 'number_float',
+      'text' => 'text',
+    );
+    $this->contentType = $this->createContentType(array(), $this->fields);
+
+    // Create term reference field.
+    $field = array(
+      'field_name' => 'field_category',
+      'type' => 'taxonomy_term_reference',
+      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+      'settings' => array(
+        'allowed_values' => array(
+          array(
+            'vocabulary' => 'categories',
+            'parent' => 0,
+          ),
+        ),
+      ),
+    );
+    field_create_field($field);
+
+    // Add term reference field to article bundle.
+    $this->instance = array(
+      'field_name' => 'field_category',
+      'bundle' => $this->contentType,
+      'entity_type' => 'node',
+      'widget' => array(
+        'type' => 'taxonomy_autocomplete',
+      ),
+      'display' => array(
+        'default' => array(
+          'type' => 'taxonomy_term_reference_link',
+        ),
+      ),
+    );
+    field_create_instance($this->instance);
+
+    // Make content type and fields multilingual.
+    $field_names = array(
+      'body',
+      'field_category',
+    );
+    foreach ($this->fields as $field_name => $field_type) {
+      $field_names[] = 'field_' . $field_name;
+    }
+    $this->setupMultilingual($this->contentType, $field_names);
+
+    // Copy directory of source files, CSV file expects them in public://images.
+    $this->copyDir($this->absolutePath() . '/tests/feeds/assets', 'public://images');
+
+    // Create an importer configuration with basic mapping.
+    $this->createImporterConfiguration('Test multilingual fields import from CSV', 'node');
+    $this->setPlugin('node', 'FeedsCSVParser');
+    $this->setPlugin('node', 'FeedsFileFetcher');
+    $this->setSettings('node', 'FeedsNodeProcessor', array(
+      'bundle' => $this->contentType,
+      'language' => 'en',
+    ));
+
+    // Add language neutral mappings.
+    $this->addMappings('node', array(
+      0 => array(
+        'source' => 'guid',
+        'target' => 'guid',
+        'unique' => 1,
+      ),
+      1 => array(
+        'source' => 'title',
+        'target' => 'title',
+      ),
+    ));
+  }
+
+  /**
+   * Tests multilingual mappings to translatable fields (entity translation).
+   */
+  public function testMultilingualFieldMappings() {
+    // Add English mappers.
+    $index = 2;
+    $mappings = $this->getMappingsInLanguage('en', $index);
+    // Append "_en" to each source name.
+    foreach ($mappings as &$mapping) {
+      $mapping['source'] .= '_en';
+    }
+    $this->addMappings('node', $mappings);
+    $index += count($mappings);
+
+    // Add French mappers.
+    $mappings = $this->getMappingsInLanguage('fr', $index);
+    // Append "_fr" to each source name.
+    foreach ($mappings as &$mapping) {
+      $mapping['source'] .= '_fr';
+    }
+    $this->addMappings('node', $mappings);
+
+    // Import file that has items with both English and French field values.
+    $this->importFile('node', $this->absolutePath() . '/tests/feeds/multilingual_en_fr.csv');
+    $this->assertText(t('Created 1 node'));
+
+    // Load node.
+    $node = node_load(1, NULL, TRUE);
+
+    // Inspect availability of English values.
+    $english = $this->getEnglishValues($node) + array(
+      'field_category' => array(
+        'expected' => 1,
+        'actual' => $node->field_category['en'][0]['tid'],
+      ),
+    );
+    foreach ($english as $field_name => $value) {
+      $this->assertEqual($value['expected'], $value['actual'], format_string('The English field %field has the expected value (actual: @actual).', array('%field' => $field_name, '@actual' => $value['actual'])));
+    }
+
+    // Inspect availability of French values.
+    $french = $this->getFrenchValues($node) + array(
+      'field_category' => array(
+        'expected' => 2,
+        'actual' => $node->field_category['fr'][0]['tid'],
+      ),
+    );
+    foreach ($french as $field_name => $value) {
+      $this->assertEqual($value['expected'], $value['actual'], format_string('The French field %field has the expected value (actual: @actual).', array('%field' => $field_name, '@actual' => $value['actual'])));
+    }
+  }
+
+  /**
+   * Tests if values of fields in other languages are kept when not importing
+   * in that language.
+   */
+  public function testChangedLanguageImport() {
+    // Add Dutch language.
+    $this->addLanguage('nl', 'Dutch');
+
+    // Import an item first in the Dutch language.
+    $this->setSettings('node', 'FeedsNodeProcessor', array(
+      'language' => 'nl',
+    ));
+    $mappings = $this->getMappingsInLanguage('nl', 2);
+    $this->addMappings('node', $mappings);
+    $this->importFile('node', $this->absolutePath() . '/tests/feeds/multilingual_nl.csv');
+    $this->assertText(t('Created 1 node'));
+
+    // Assert that Dutch values were created.
+    $node = node_load(1, NULL, TRUE);
+    $dutch = $this->getDutchValues($node) + array(
+      'field_category' => array(
+        'expected' => 1,
+        'actual' => $node->field_category['nl'][0]['tid'],
+      ),
+    );
+    foreach ($dutch as $field_name => $value) {
+      $this->assertEqual($value['expected'], $value['actual'], format_string('The Dutch field %field has the expected value (actual: @actual).', array('%field' => $field_name, '@actual' => $value['actual'])));
+    }
+
+    // Set import to update existing nodes.
+    $this->setSettings('node', 'FeedsNodeProcessor', array(
+      'update_existing' => FEEDS_UPDATE_EXISTING,
+    ));
+
+    // Change mappers language to French.
+    $path = 'admin/structure/feeds/node/mapping';
+    foreach ($mappings as $i => $mapping) {
+      $this->drupalPostAJAX($path, array(), 'mapping_settings_edit_' . $i);
+      $edit = array("config[$i][settings][field_language]" => 'fr');
+      $this->drupalPostAJAX(NULL, $edit, 'mapping_settings_update_' . $i);
+      $this->drupalPost(NULL, array(), t('Save'));
+    }
+    // Import French item.
+    $this->importFile('node', $this->absolutePath() . '/tests/feeds/multilingual_fr.csv');
+    $this->assertText(t('Updated 1 node'));
+
+    // Assert that French values were created.
+    $node = node_load(1, NULL, TRUE);
+    $french = $this->getFrenchValues($node) + array(
+      'field_category' => array(
+        'expected' => 2,
+        'actual' => $node->field_category['fr'][0]['tid'],
+      ),
+    );
+    foreach ($french as $field_name => $value) {
+      $this->assertEqual($value['expected'], $value['actual'], format_string('The French field %field has the expected value (actual: @actual).', array('%field' => $field_name, '@actual' => $value['actual'])));
+    }
+
+    // Assert that Dutch values still exist.
+    $dutch = $this->getDutchValues($node) + array(
+      'field_category' => array(
+        'expected' => 1,
+        'actual' => $node->field_category['nl'][0]['tid'],
+      ),
+    );
+    foreach ($dutch as $field_name => $value) {
+      $this->assertEqual($value['expected'], $value['actual'], format_string('The Dutch field %field has the expected value (actual: @actual).', array('%field' => $field_name, '@actual' => $value['actual'])));
+    }
+  }
+
+  /**
+   * Tests if values of fields in other languages are kept when not importing
+   * in that language for nodes that were not created by Feeds.
+   */
+  public function testChangedLanguageImportForExistingNode() {
+    // Add Dutch language.
+    $this->addLanguage('nl', 'Dutch');
+
+    // Date settings.
+    foreach (array('datestamp', 'datetime') as $field) {
+      $field = 'field_' . $field;
+      $edit = array(
+        'field[settings][granularity][second]' => 1,
+      );
+      $this->drupalPost('admin/structure/types/manage/' . $this->contentType . '/fields/' . $field . '/field-settings', $edit, 'Save field settings');
+    }
+
+    // Hack to get date fields to not round to every 15 seconds.
+    foreach (array('date', 'datestamp', 'datetime') as $field) {
+      $field = 'field_' . $field;
+      $edit = array(
+        'widget_type' => 'date_select',
+      );
+      $this->drupalPost('admin/structure/types/manage/' . $this->contentType . '/fields/' . $field . '/widget-type', $edit, 'Continue');
+      $edit = array(
+        'instance[widget][settings][increment]' => 1,
+        'field[settings][enddate_get]' => 1,
+      );
+      $this->drupalPost('admin/structure/types/manage/' . $this->contentType . '/fields/' . $field, $edit, 'Save settings');
+      $edit = array(
+        'widget_type' => 'date_text',
+      );
+      $this->drupalPost('admin/structure/types/manage/' . $this->contentType . '/fields/' . $field . '/widget-type', $edit, 'Continue');
+    }
+
+    // Create a node with Dutch values.
+    $edit = array(
+      'title' => 'Teste Feeds Multilingue 1',
+      'body[und][0][value]' => 'Dit is de berichttekst',
+      'field_date[und][0][value][date]' => '07/29/1985',
+      'field_datestamp[und][0][value][date]' => '07/29/1985 - 04:48:12',
+      'field_datetime[und][0][value][date]' => '07/29/1985 - 04:48:12',
+      'field_link[und][0][url]' => 'http://google.nl',
+      'field_list_boolean[und]' => '1',
+      'field_number_decimal[und][0][value]' => '30.3',
+      'field_number_float[und][0][value]' => '30.2795',
+      'field_number_integer[und][0][value]' => '30',
+      'field_text[und][0][value]' => 'Wortelen',
+      'files[field_image_und_0]' => drupal_realpath('public://images/attersee.jpeg'),
+      'field_category[und]' => 'Nieuws',
+      'language' => 'nl',
+    );
+    $this->drupalPost('node/add/' . $this->contentType, $edit, t('Save'));
+    // Add alt/title to the image.
+    $edit = array(
+      'field_image[nl][0][alt]' => 'Bij het zien',
+      'field_image[nl][0][title]' => 'Bij het zien van de groene vloeistof',
+    );
+    $this->drupalPost('node/1/edit/nl', $edit, t('Save'));
+    $this->drupalGet('node/1/edit/nl');
+
+    // Assert that the Dutch values were put in as expected.
+    $node = node_load(1, NULL, TRUE);
+    $dutch = $this->getDutchValues($node) + array(
+      'field_category' => array(
+        'expected' => 1,
+        'actual' => $node->field_category['nl'][0]['tid'],
+      ),
+    );
+    foreach ($dutch as $field_name => $value) {
+      $this->assertEqual($value['expected'], $value['actual'], format_string('The Dutch field %field has the expected value (actual: @actual).', array('%field' => $field_name, '@actual' => $value['actual'])));
+    }
+
+    // Change unique target from guid (0) to title (1).
+    $path = 'admin/structure/feeds/node/mapping';
+    $this->drupalPostAJAX($path, array(), 'mapping_settings_edit_0');
+    $edit = array("config[0][settings][unique]" => FALSE);
+    $this->drupalPostAJAX(NULL, $edit, 'mapping_settings_update_0');
+    $this->drupalPost(NULL, array(), t('Save'));
+    $this->drupalPostAJAX($path, array(), 'mapping_settings_edit_1');
+    $edit = array("config[1][settings][unique]" => 1);
+    $this->drupalPostAJAX(NULL, $edit, 'mapping_settings_update_1');
+    $this->drupalPost(NULL, array(), t('Save'));
+
+    // Update this item with Feeds.
+    $this->setSettings('node', 'FeedsNodeProcessor', array(
+      'update_existing' => FEEDS_UPDATE_EXISTING,
+    ));
+    $this->addMappings('node', $this->getMappingsInLanguage('fr'));
+    $this->importFile('node', $this->absolutePath() . '/tests/feeds/multilingual_fr.csv');
+    $this->assertText(t('Updated 1 node'));
+
+    // Assert that French values were created.
+    $node = node_load(1, NULL, TRUE);
+    $french = $this->getFrenchValues($node) + array(
+      'field_category' => array(
+        'expected' => 2,
+        'actual' => $node->field_category['fr'][0]['tid'],
+      ),
+    );
+    foreach ($french as $field_name => $value) {
+      $this->assertEqual($value['expected'], $value['actual'], format_string('The French field %field has the expected value (actual: @actual).', array('%field' => $field_name, '@actual' => $value['actual'])));
+    }
+
+    // Assert that Dutch values still exist.
+    $dutch = $this->getDutchValues($node) + array(
+      'field_category' => array(
+        'expected' => 1,
+        'actual' => $node->field_category['nl'][0]['tid'],
+      ),
+    );
+    foreach ($dutch as $field_name => $value) {
+      $this->assertEqual($value['expected'], $value['actual'], format_string('The Dutch field %field has the expected value (actual: @actual).', array('%field' => $field_name, '@actual' => $value['actual'])));
+    }
+  }
+
+  /**
+   * Tests if fields still are imported in their language when the
+   * entity_translation module gets disabled.
+   *
+   * The entity_translation module is mainly an UI module for configuring field
+   * language and disabling that module should not have effect on importing
+   * values in a specific language for fields.
+   */
+  public function testWithDisabledEntityTranslationModule() {
+    module_disable(array('entity_translation'));
+    // Make sure that entity info is reset.
+    drupal_flush_all_caches();
+    drupal_static_reset();
+
+    // Configure importer to import in French language.
+    $this->setSettings('node', 'FeedsNodeProcessor', array(
+      'language' => 'fr',
+    ));
+    $this->addMappings('node', $this->getMappingsInLanguage('fr'));
+
+    // Import content.
+    $this->importFile('node', $this->absolutePath() . '/tests/feeds/multilingual_fr.csv');
+    $this->assertText(t('Created 1 node'));
+
+    // Assert that the fields were all created in French.
+    $node = node_load(1, NULL, TRUE);
+    $french = $this->getFrenchValues($node) + array(
+      'field_category' => array(
+        'expected' => 1,
+        'actual' => $node->field_category['fr'][0]['tid'],
+      ),
+    );
+    foreach ($french as $field_name => $value) {
+      $this->assertEqual($value['expected'], $value['actual'], format_string('The field %field has the expected value (actual: @actual).', array('%field' => $field_name, '@actual' => $value['actual'])));
+    }
+  }
+
+  /**
+   * Tests if fields are still imported in their language when the
+   * entity_translation module gets uninstalled.
+   *
+   * @see testWithDisabledEntityTranslationModule()
+   */
+  public function testWithUninstalledEntityTranslationModule() {
+    module_disable(array('entity_translation'));
+    drupal_uninstall_modules(array('entity_translation'));
+    // Make sure that entity info is reset.
+    drupal_flush_all_caches();
+    drupal_static_reset();
+
+    // Configure importer to import in French language.
+    $this->setSettings('node', 'FeedsNodeProcessor', array(
+      'language' => 'fr',
+    ));
+    $this->addMappings('node', $this->getMappingsInLanguage('fr'));
+
+    // Import content.
+    $this->importFile('node', $this->absolutePath() . '/tests/feeds/multilingual_fr.csv');
+    $this->assertText(t('Created 1 node'));
+
+    // Assert that the fields were all created in French.
+    $node = node_load(1, NULL, TRUE);
+    $french = $this->getFrenchValues($node) + array(
+      'field_category' => array(
+        'expected' => 1,
+        'actual' => $node->field_category['fr'][0]['tid'],
+      ),
+    );
+    foreach ($french as $field_name => $value) {
+      $this->assertEqual($value['expected'], $value['actual'], format_string('The field %field has the expected value (actual: @actual).', array('%field' => $field_name, '@actual' => $value['actual'])));
+    }
+  }
+
+  /**
+   * Tests if fields are imported in LANGUAGE_NONE if the field's language gets
+   * disabled after configuring.
+   */
+  public function testDisabledLanguage() {
+    // Configure importer to import in French language.
+    $this->setSettings('node', 'FeedsNodeProcessor', array(
+      'language' => 'fr',
+    ));
+    $this->addMappings('node', $this->getMappingsInLanguage('fr'));
+
+    // Now disable the French language.
+    $path = 'admin/config/regional/language';
+    $edit = array(
+      'enabled[fr]' => FALSE,
+    );
+    $this->drupalPost($path, $edit, t('Save configuration'));
+    // Reset static cache to update the available languages.
+    drupal_static_reset();
+
+    // Ensure no error messages are shown on the mappings page.
+    $this->drupalGet('admin/structure/feeds/node/mapping');
+
+    // Import content.
+    $this->importFile('node', $this->absolutePath() . '/tests/feeds/multilingual_fr.csv');
+    $this->assertText(t('Created 1 node'));
+
+    // Assert that the fields were all created in LANGUAGE_NONE.
+    $node = node_load(1, NULL, TRUE);
+    $french = $this->getFrenchValues($node, LANGUAGE_NONE) + array(
+      'field_category' => array(
+        'expected' => 1,
+        'actual' => $node->field_category[LANGUAGE_NONE][0]['tid'],
+      ),
+    );
+    foreach ($french as $field_name => $value) {
+      $this->assertEqual($value['expected'], $value['actual'], format_string('The field %field has the expected value (actual: @actual).', array('%field' => $field_name, '@actual' => $value['actual'])));
+    }
+  }
+
+  /**
+   * Tests if fields are imported in LANGUAGE_NONE if the field's language gets
+   * removed after configuring.
+   */
+  public function testRemovedLanguage() {
+    // Configure importer to import in French language.
+    $this->setSettings('node', 'FeedsNodeProcessor', array(
+      'language' => 'fr',
+    ));
+    $this->addMappings('node', $this->getMappingsInLanguage('fr'));
+
+    // Now remove the French language.
+    $path = 'admin/config/regional/language/delete/fr';
+    $this->drupalPost($path, array(), t('Delete'));
+    // Reset static cache to update the available languages.
+    drupal_static_reset();
+
+    // Import content.
+    $this->importFile('node', $this->absolutePath() . '/tests/feeds/multilingual_fr.csv');
+    $this->assertText(t('Created 1 node'));
+
+    // Assert that the fields were all created in LANGUAGE_NONE.
+    $node = node_load(1, NULL, TRUE);
+    $french = $this->getFrenchValues($node, LANGUAGE_NONE) + array(
+      'field_category' => array(
+        'expected' => 1,
+        'actual' => $node->field_category[LANGUAGE_NONE][0]['tid'],
+      ),
+    );
+    foreach ($french as $field_name => $value) {
+      $this->assertEqual($value['expected'], $value['actual'], format_string('The field %field has the expected value (actual: @actual).', array('%field' => $field_name, '@actual' => $value['actual'])));
+    }
+  }
+
+  /**
+   * Tests if autocreated terms are in the language that was set on the target configuration
+   * in case the taxonomy is multilingual.
+   */
+  public function testAutocreatedTermLanguage() {
+    module_enable(array('i18n_taxonomy'));
+    // Make sure that entity info is reset.
+    drupal_flush_all_caches();
+    drupal_static_reset();
+
+    // Enable multilingual taxonomy.
+    $edit = array('i18n_mode' => 4);
+    $this->drupalPost('admin/structure/taxonomy/categories/edit', $edit, 'Save');
+
+    // Configure importer to import in French language.
+    $this->setSettings('node', 'FeedsNodeProcessor', array(
+      'language' => 'fr',
+    ));
+    $this->addMappings('node', array(
+      2 => array(
+        'source' => 'term',
+        'target' => 'field_category',
+        'autocreate' => TRUE,
+        'field_language' => 'fr',
+      ),
+    ));
+
+    // Import French item.
+    $this->importFile('node', $this->absolutePath() . '/tests/feeds/multilingual_fr.csv');
+    $this->assertText(t('Created 1 node'));
+
+    // Assert that the created term is in the French language.
+    $term = taxonomy_term_load(1);
+    $this->assertEqual('fr', entity_language('taxonomy_term', $term));
+  }
+
+  /**
+   * Tests if values are cleared out when an empty value or no value is
+   * provided.
+   */
+  public function testClearOutValues() {
+    // Set to update existing nodes.
+    $this->setSettings('node', 'FeedsNodeProcessor', array(
+      'update_existing' => FEEDS_UPDATE_EXISTING,
+    ));
+
+    // Add English mappers.
+    $index = 2;
+    $mappings = $this->getMappingsInLanguage('en', $index);
+    // Append "_en" to each source name.
+    foreach ($mappings as &$mapping) {
+      $mapping['source'] .= '_en';
+    }
+    $this->addMappings('node', $mappings);
+    $index += count($mappings);
+
+    // Add French mappers.
+    $mappings = $this->getMappingsInLanguage('fr', $index);
+    // Append "_fr" to each source name.
+    foreach ($mappings as &$mapping) {
+      $mapping['source'] .= '_fr';
+    }
+    $this->addMappings('node', $mappings);
+
+    // Import file that has items with both English and French field values.
+    $this->importFile('node', $this->absolutePath() . '/tests/feeds/multilingual_en_fr.csv');
+    $this->assertText(t('Created 1 node'));
+
+    // Now import a file where the French remained, but the English values were
+    // removed.
+    $this->importFile('node', $this->absolutePath() . '/tests/feeds/multilingual_en_fr_empty.csv');
+    $this->assertText(t('Updated 1 node'));
+
+    // Load node.
+    $node = node_load(1, NULL, TRUE);
+
+    // Check that the English values are gone, but the French values are still
+    // there.
+    $fields = array(
+      'body',
+      'field_date',
+      'field_datestamp',
+      'field_datetime',
+      'field_image',
+      'field_link',
+      'field_list_boolean',
+      'field_number_decimal',
+      'field_number_float',
+      'field_number_integer',
+      'field_category',
+      'field_text',
+    );
+    foreach ($fields as $field_name) {
+      $this->assertTrue(empty($node->{$field_name}['en']), format_string('The field %field is empty.', array('%field' => $field_name)));
+    }
+
+    // Inspect availability of French values.
+    $french = $this->getFrenchValues($node) + array(
+      'field_category' => array(
+        'expected' => 2,
+        'actual' => $node->field_category['fr'][0]['tid'],
+      ),
+    );
+    // Since the image was placed on the node again, its file name is now
+    // "la fayette_0.jpeg."
+    $french['field_image']['expected'] = 'la fayette_0.jpeg';
+    foreach ($french as $field_name => $value) {
+      $this->assertEqual($value['expected'], $value['actual'], format_string('The French field %field has the expected value (actual: @actual).', array('%field' => $field_name, '@actual' => $value['actual'])));
+    }
+  }
+
+  /**
+   * Tests if values are cleared out when an empty value is provided for a
+   * language that got disabled.
+   */
+  public function testClearOutValuesWithDisabledLanguage() {
+    // Set to update existing nodes.
+    $this->setSettings('node', 'FeedsNodeProcessor', array(
+      'update_existing' => FEEDS_UPDATE_EXISTING,
+    ));
+
+    // Configure importer to import in French language.
+    $this->setSettings('node', 'FeedsNodeProcessor', array(
+      'language' => 'fr',
+    ));
+    $this->addMappings('node', $this->getMappingsInLanguage('fr'));
+
+    // Now disable the French language.
+    $path = 'admin/config/regional/language';
+    $edit = array(
+      'enabled[fr]' => FALSE,
+    );
+    $this->drupalPost($path, $edit, t('Save configuration'));
+
+    // Ensure no error messages are shown on the mappings page.
+    $this->drupalGet('admin/structure/feeds/node/mapping');
+
+    // Import content. Since the French language was disabled, the content
+    // should be imported as LANGUAGE_NONE.
+    // @see ::testDisabledLanguage()
+    $this->importFile('node', $this->absolutePath() . '/tests/feeds/multilingual_fr.csv');
+    $this->assertText(t('Created 1 node'));
+
+    // Now import a file with empty values.
+    $this->importFile('node', $this->absolutePath() . '/tests/feeds/multilingual_empty.csv');
+    $this->assertText(t('Updated 1 node'));
+
+    // Load node.
+    $node = node_load(1, NULL, TRUE);
+
+    // Check that the values in LANGUAGE_NONE are gone.
+    $fields = array(
+      'body',
+      'field_date',
+      'field_datestamp',
+      'field_datetime',
+      'field_image',
+      'field_link',
+      'field_list_boolean',
+      'field_number_decimal',
+      'field_number_float',
+      'field_number_integer',
+      'field_category',
+      'field_text',
+    );
+    foreach ($fields as $field_name) {
+      $this->assertTrue(empty($node->{$field_name}[LANGUAGE_NONE]), format_string('The field %field is empty.', array('%field' => $field_name)));
+    }
+  }
+
+  /**
+   * Adds a language to test with.
+   *
+   * @param string $langcode
+   *   The language's langcode.
+   * @param string $label
+   *   The language human readable name.
+   */
+  protected function addLanguage($langcode, $label) {
+    $edit = array(
+      'langcode' => $langcode,
+    );
+    $this->drupalPost('admin/config/regional/language/add', $edit, t('Add language'));
+    $this->assertText(format_string('The language @language has been created and can now be used.', array('@language' => $label)));
+  }
+
+  /**
+   * Sets given content type and fields to be translatable.
+   *
+   * @param string $typename
+   *   The machine name of the node type.
+   * @param array $field_names
+   *   The fields to enable multilingual support for.
+   */
+  protected function setupMultilingual($typename, array $field_names) {
+    // Enable entity field translation for content type.
+    $edit = array(
+      'language_content_type' => 4,
+      'entity_translation_hide_translation_links' => 1,
+      'entity_translation_node_metadata' => 0,
+    );
+    $this->drupalPost('admin/structure/types/manage/' . $typename, $edit, t('Save content type'));
+
+    // Enable field translation on fields.
+    $edit = array(
+      'field[translatable]' => 1,
+    );
+    foreach ($field_names as $field_name) {
+      $this->drupalPost("admin/structure/types/manage/{$typename}/fields/{$field_name}", $edit, t('Save settings'));
+    }
+
+    // Reset static cache so that all languages are available when
+    // field_available_languages() is called during node_load().
+    drupal_static_reset();
+  }
+
+  /**
+   * Adds mappings for each field in specified language.
+   *
+   * @param string $langcode
+   *   The code of the desired language.
+   * @param int $start
+   *   The index number to start the array with. This must be
+   *   specified in order to add mappings to the right index when
+   *   calling FeedsWebTestCase::addMappings().
+   */
+  protected function getMappingsInLanguage($langcode, $start = 2) {
+    $mappings = array(
+      $start => array(
+        'source' => 'body',
+        'target' => 'body',
+      ),
+      array(
+        'source' => 'date',
+        'target' => 'field_date:start',
+      ),
+      array(
+        'source' => 'datestamp',
+        'target' => 'field_datestamp:start',
+      ),
+      array(
+        'source' => 'datetime',
+        'target' => 'field_datetime:start',
+      ),
+      array(
+        'source' => 'image',
+        'target' => 'field_image:uri',
+      ),
+      array(
+        'source' => 'image_alt',
+        'target' => 'field_image:alt',
+      ),
+      array(
+        'source' => 'image_title',
+        'target' => 'field_image:title',
+      ),
+      array(
+        'source' => 'link',
+        'target' => 'field_link:url',
+      ),
+      array(
+        'source' => 'list_boolean',
+        'target' => 'field_list_boolean',
+      ),
+      array(
+        'source' => 'number_decimal',
+        'target' => 'field_number_decimal',
+      ),
+      array(
+        'source' => 'number_float',
+        'target' => 'field_number_float',
+      ),
+      array(
+        'source' => 'number_integer',
+        'target' => 'field_number_integer',
+      ),
+      array(
+        'source' => 'term',
+        'target' => 'field_category',
+        'autocreate' => TRUE,
+      ),
+      array(
+        'source' => 'text',
+        'target' => 'field_text',
+      ),
+    );
+    foreach ($mappings as &$mapping) {
+      $mapping['field_language'] = $langcode;
+    }
+    return $mappings;
+  }
+
+  /**
+   * Returns expected and actual values of given node for the Dutch language.
+   *
+   * @param object $node
+   *   The multilingual node.
+   * @param string $langcode
+   *   The used language code.
+   *
+   * @return array
+   *   The expected and actual Dutch values.
+   */
+  protected function getDutchValues($node, $langcode = 'nl') {
+    return array(
+      'body' => array(
+        'expected' => 'Dit is de berichttekst',
+        'actual' => $node->body[$langcode][0]['value'],
+      ),
+      'field_date' => array(
+        'expected' => '1985-07-29T00:00:00',
+        'actual' => $node->field_date[$langcode][0]['value'],
+      ),
+      'field_datestamp' => array(
+        'expected' => '491460492',
+        'actual' => $node->field_datestamp[$langcode][0]['value'],
+      ),
+      'field_datetime' => array(
+        'expected' => '1985-07-29 04:48:12',
+        'actual' => $node->field_datetime[$langcode][0]['value'],
+      ),
+      'field_image' => array(
+        'expected' => 'attersee.jpeg',
+        'actual' => $node->field_image[$langcode][0]['filename'],
+      ),
+      'field_image:alt' => array(
+        'expected' => 'Bij het zien',
+        'actual' => $node->field_image[$langcode][0]['alt'],
+      ),
+      'field_image:title' => array(
+        'expected' => 'Bij het zien van de groene vloeistof',
+        'actual' => $node->field_image[$langcode][0]['title'],
+      ),
+      'field_link' => array(
+        'expected' => 'http://google.nl',
+        'actual' => $node->field_link[$langcode][0]['url'],
+      ),
+      'field_list_boolean' => array(
+        'expected' => '1',
+        'actual' => $node->field_list_boolean[$langcode][0]['value'],
+      ),
+      'field_number_decimal' => array(
+        'expected' => 30.3,
+        'actual' => $node->field_number_decimal[$langcode][0]['value'],
+      ),
+      'field_number_float' => array(
+        'expected' => 30.2795,
+        'actual' => $node->field_number_float[$langcode][0]['value'],
+      ),
+      'field_number_integer' => array(
+        'expected' => 30,
+        'actual' => $node->field_number_integer[$langcode][0]['value'],
+      ),
+      'field_text' => array(
+        'expected' => 'Wortelen',
+        'actual' => $node->field_text[$langcode][0]['value'],
+      ),
+    );
+  }
+
+  /**
+   * Returns expected and actual values of given node for the English language.
+   *
+   * @param object $node
+   *   The multilingual node.
+   * @param string $langcode
+   *   The used language code.
+   *
+   * @return array
+   *   The expected and actual English values.
+   */
+  protected function getEnglishValues($node, $langcode = 'en') {
+    return array(
+      'body' => array(
+        'expected' => 'This is the body',
+        'actual' => $node->body[$langcode][0]['value'],
+      ),
+      'field_date' => array(
+        'expected' => '2015-10-21T00:00:00',
+        'actual' => $node->field_date[$langcode][0]['value'],
+      ),
+      'field_datestamp' => array(
+        'expected' => '1445470140',
+        'actual' => $node->field_datestamp[$langcode][0]['value'],
+      ),
+      'field_datetime' => array(
+        'expected' => '2015-10-21 23:29:00',
+        'actual' => $node->field_datetime[$langcode][0]['value'],
+      ),
+      'field_image' => array(
+        'expected' => 'foosball.jpeg',
+        'actual' => $node->field_image[$langcode][0]['filename'],
+      ),
+      'field_image:alt' => array(
+        'expected' => 'Foosball',
+        'actual' => $node->field_image[$langcode][0]['alt'],
+      ),
+      'field_image:title' => array(
+        'expected' => 'Foosball played by two guys',
+        'actual' => $node->field_image[$langcode][0]['title'],
+      ),
+      'field_link' => array(
+        'expected' => 'http://google.ca',
+        'actual' => $node->field_link[$langcode][0]['url'],
+      ),
+      'field_list_boolean' => array(
+        'expected' => '0',
+        'actual' => $node->field_list_boolean[$langcode][0]['value'],
+      ),
+      'field_number_decimal' => array(
+        'expected' => 4.2,
+        'actual' => $node->field_number_decimal[$langcode][0]['value'],
+      ),
+      'field_number_float' => array(
+        'expected' => 3.1416,
+        'actual' => $node->field_number_float[$langcode][0]['value'],
+      ),
+      'field_number_integer' => array(
+        'expected' => 1000,
+        'actual' => $node->field_number_integer[$langcode][0]['value'],
+      ),
+      'field_text' => array(
+        'expected' => 'Carrots',
+        'actual' => $node->field_text[$langcode][0]['value'],
+      ),
+    );
+  }
+
+  /**
+   * Returns expected and actual values of given node for the French language.
+   *
+   * @param object $node
+   *   The multilingual node.
+   * @param string $langcode
+   *   The used language code.
+   *
+   * @return array
+   *   The expected and actual French values.
+   */
+  protected function getFrenchValues($node, $langcode = 'fr') {
+    return array(
+      'body' => array(
+        'expected' => 'Ceci est la corps',
+        'actual' => $node->body[$langcode][0]['value'],
+      ),
+      'field_date' => array(
+        'expected' => '1955-11-05T00:00:00',
+        'actual' => $node->field_date[$langcode][0]['value'],
+      ),
+      'field_datestamp' => array(
+        'expected' => '-446731187',
+        'actual' => $node->field_datestamp[$langcode][0]['value'],
+      ),
+      'field_datetime' => array(
+        'expected' => '1955-11-05 12:00:13',
+        'actual' => $node->field_datetime[$langcode][0]['value'],
+      ),
+      'field_image' => array(
+        'expected' => 'la fayette.jpeg',
+        'actual' => $node->field_image[$langcode][0]['filename'],
+      ),
+      'field_image:alt' => array(
+        'expected' => 'La Fayette',
+        'actual' => $node->field_image[$langcode][0]['alt'],
+      ),
+      'field_image:title' => array(
+        'expected' => 'la Fayette dans les bois',
+        'actual' => $node->field_image[$langcode][0]['title'],
+      ),
+      'field_link' => array(
+        'expected' => 'http://google.fr',
+        'actual' => $node->field_link[$langcode][0]['url'],
+      ),
+      'field_list_boolean' => array(
+        'expected' => '1',
+        'actual' => $node->field_list_boolean[$langcode][0]['value'],
+      ),
+      'field_number_decimal' => array(
+        'expected' => 1.2,
+        'actual' => $node->field_number_decimal[$langcode][0]['value'],
+      ),
+      'field_number_float' => array(
+        'expected' => 5.6295,
+        'actual' => $node->field_number_float[$langcode][0]['value'],
+      ),
+      'field_number_integer' => array(
+        'expected' => 2000,
+        'actual' => $node->field_number_integer[$langcode][0]['value'],
+      ),
+      'field_text' => array(
+        'expected' => 'Carottes',
+        'actual' => $node->field_text[$langcode][0]['value'],
+      ),
+    );
+  }
+}

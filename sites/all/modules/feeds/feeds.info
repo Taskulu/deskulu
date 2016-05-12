@@ -5,6 +5,12 @@ core = 7.x
 dependencies[] = ctools
 dependencies[] = job_scheduler
 
+test_dependencies[] = date:date
+test_dependencies[] = entity_translation:entity_translation
+test_dependencies[] = feeds_xpathparser:feeds_xpathparser
+test_dependencies[] = link:link
+test_dependencies[] = i18n:i18n_taxonomy
+
 files[] = includes/FeedsConfigurable.inc
 files[] = includes/FeedsImporter.inc
 files[] = includes/FeedsSource.inc
@@ -38,6 +44,8 @@ files[] = tests/feeds_mapper_field.test
 files[] = tests/feeds_mapper_file.test
 files[] = tests/feeds_mapper_hooks.test
 files[] = tests/feeds_mapper_link.test
+files[] = tests/feeds_mapper_list.test
+files[] = tests/feeds_mapper_multilingual_fields.test
 files[] = tests/feeds_mapper_path.test
 files[] = tests/feeds_mapper_profile.test
 files[] = tests/feeds_mapper_unique.test
@@ -46,6 +54,10 @@ files[] = tests/feeds_mapper_config.test
 files[] = tests/feeds_fetcher_file.test
 files[] = tests/feeds_mapper_format_config.test
 files[] = tests/feeds_fetcher_http.test
+files[] = tests/feeds_i18n.test
+files[] = tests/feeds_i18n_node.test
+files[] = tests/feeds_i18n_taxonomy.test
+files[] = tests/feeds_parser_csv.test
 files[] = tests/feeds_parser_sitemap.test
 files[] = tests/feeds_parser_syndication.test
 files[] = tests/feeds_processor_node.test
@@ -68,9 +80,9 @@ files[] = views/feeds_views_handler_field_source.inc
 files[] = views/feeds_views_handler_filter_severity.inc
 files[] = views/feeds_views_plugin_argument_validate_feed_nid.inc
 
-; Information added by Drupal.org packaging script on 2015-07-11
-version = "7.x-2.0-beta1"
+; Information added by Drupal.org packaging script on 2016-02-21
+version = "7.x-2.0-beta2"
 core = "7.x"
 project = "feeds"
-datestamp = "1436615941"
+datestamp = "1456055647"
 

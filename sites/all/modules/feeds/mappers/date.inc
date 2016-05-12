@@ -37,7 +37,7 @@ function date_feeds_processor_targets($entity_type, $bundle_name) {
 /**
  * Callback for setting date values.
  */
-function date_feeds_set_target(FeedsSource $source, $entity, $target, array $values) {
+function date_feeds_set_target(FeedsSource $source, $entity, $target, array $values, array $mapping) {
   list($field_name, $sub_field) = explode(':', $target, 2);
 
   $delta = 0;
@@ -56,7 +56,7 @@ function date_feeds_set_target(FeedsSource $source, $entity, $target, array $val
       }
     }
 
-    $value->buildDateField($entity, $field_name, $delta);
+    $value->buildDateField($entity, $field_name, $delta, $mapping['language']);
     $delta++;
   }
 }

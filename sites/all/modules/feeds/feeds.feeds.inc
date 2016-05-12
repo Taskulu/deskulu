@@ -23,6 +23,11 @@ function feeds_feeds_processor_targets($entity_type, $bundle) {
 function feeds_feeds_processor_targets_alter(array &$targets, $entity_type, $bundle) {
   // This hook gets called last, so that we normalize the whole array.
   feeds_normalize_targets($targets);
+
+  // Since a hook can be invoked multiple times during a request, reset the
+  // "feeds_feeds_processor_targets" variable.
+  // @see _feeds_feeds_processor_targets_alter()
+  drupal_static_reset('feeds_feeds_processor_targets');
 }
 
 /**

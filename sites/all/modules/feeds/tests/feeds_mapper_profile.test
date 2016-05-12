@@ -24,7 +24,7 @@ class FeedsMapperProfileTestCase extends FeedsMapperTestCase {
   }
 
   /**
-   * Basic test loading a doulbe entry CSV file.
+   * Basic test loading a double entry CSV file.
    */
   public function test() {
     // Create profile fields.

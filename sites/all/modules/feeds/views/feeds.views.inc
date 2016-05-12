@@ -55,6 +55,23 @@ function feeds_views_data() {
       'click sortable' => FALSE,
     ),
   );
+  $data['feeds_source']['imported'] = array(
+    'title' => t('Imported date'),
+    'help' => t('The date the source was imported last.'),
+    'field' => array(
+      'handler' => 'views_handler_field_date',
+      'click sortable' => TRUE,
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_date',
+    ),
+    'argument' => array(
+      'handler' => 'views_handler_argument_date',
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort_date',
+    ),
+  );
   $data['feeds_source']['table']['join'] = array(
     'node' => array(
       'left_field' => 'nid',
@@ -189,13 +206,31 @@ function feeds_views_data() {
     'group' => 'Feeds log',
     'base' => array(
       'field' => array('flid'),
-      'title' => 'Feeds log',
-      'help' => 'Logs events during importing, clearing, expiry.',
+      'title' => t('Feeds log'),
+      'help' => t('Logs events during importing, clearing, expiry.'),
+    ),
+  );
+  $data['feeds_log']['flid'] = array(
+    'title' => t('Log id'),
+    'help' => t('The id of the log message.'),
+    'field' => array(
+      'handler' => 'views_handler_field',
+      'click sortable' => TRUE,
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_numeric',
+    ),
+    'argument' => array(
+      'handler' => 'views_handler_argument_numeric',
+      'numeric' => TRUE,
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
     ),
   );
   $data['feeds_log']['id'] = array(
-    'title' => 'Importer id',
-    'help' => 'The id of an importer.',
+    'title' => t('Importer id'),
+    'help' => t('The id of an importer.'),
     'field' => array(
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
@@ -203,15 +238,15 @@ function feeds_views_data() {
     'filter' => array(
       'handler' => 'views_handler_filter_string',
       'allow empty' => TRUE,
-      'help' => 'Filter on an importer id.',
+      'help' => t('Filter on an importer id.'),
     ),
     'argument' => array(
       'handler' => 'feeds_views_handler_argument_importer_id',
-      'help' => 'Filter on an importer id.',
+      'help' => t('Filter on an importer id.'),
     ),
     'sort' => array(
       'handler' => 'views_handler_sort',
-      'help' => 'Sort by importer id.',
+      'help' => t('Sort by importer id.'),
     ),
     'relationship' => array(
       'title' => t('Importer'),
@@ -223,15 +258,15 @@ function feeds_views_data() {
   );
   $data['feeds_log']['importer_name'] = array(
     'real field' => 'id',
-    'title' => 'Importer name',
-    'help' => 'The human readable name of an importer.',
+    'title' => t('Importer name'),
+    'help' => t('The human readable name of an importer.'),
     'field' => array(
       'handler' => 'feeds_views_handler_field_importer_name',
     ),
   );
   $data['feeds_log']['feed_nid'] = array(
-    'title' => 'Feed node id',
-    'help' => 'Contains the node id of a feed node if the feed\'s configuration is attached to a content type, otherwise contains 0.',
+    'title' => t('Feed node id'),
+    'help' => t('Contains the node id of a feed node if the feed\'s configuration is attached to a content type, otherwise contains 0.'),
     'field' => array(
       'handler' => 'views_handler_field_numeric',
       'click sortable' => TRUE,
@@ -239,17 +274,17 @@ function feeds_views_data() {
     'filter' => array(
       'handler' => 'views_handler_filter_numeric',
       'allow empty' => TRUE,
-      'help' => 'Filter on a Feeds Source\'s feed_nid field.',
+      'help' => t('Filter on a Feeds Source\'s feed_nid field.'),
     ),
     'argument' => array(
       'handler' => 'views_handler_argument_numeric',
       'numeric' => TRUE,
       'validate type' => 'nid',
-      'help' => 'Argument on a Feeds Source\'s feed_nid field.',
+      'help' => t('Argument on a Feeds Source\'s feed_nid field.'),
     ),
     'sort' => array(
       'handler' => 'views_handler_sort',
-      'help' => 'Sort Feeds Source\'s feed_nid field.',
+      'help' => t('Sort Feeds Source\'s feed_nid field.'),
     ),
     'relationship' => array(
       'title' => t('Feed node'),
@@ -272,6 +307,12 @@ function feeds_views_data() {
     'filter' => array(
       'handler' => 'views_handler_filter_date',
     ),
+    'argument' => array(
+      'handler' => 'views_handler_argument_numeric',
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
   );
   $data['feeds_log']['request_time'] = array(
     'title' => t('Request time'),
@@ -286,10 +327,33 @@ function feeds_views_data() {
     'filter' => array(
       'handler' => 'views_handler_filter_date',
     ),
+    'argument' => array(
+      'handler' => 'views_handler_argument_numeric',
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
+  );
+  $data['feeds_log']['type'] = array(
+    'title' => t('Type'),
+    'help' => t('Type of log message.'),
+    'field' => array(
+      'handler' => 'views_handler_field',
+      'click sortable' => TRUE,
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_string',
+    ),
+    'argument' => array(
+      'handler' => 'views_handler_argument_string',
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
   );
   $data['feeds_log']['message'] = array(
-    'title' => 'Log message',
-    'help' => 'The message logged by the event.',
+    'title' => t('Log message'),
+    'help' => t('The message logged by the event.'),
     'field' => array(
       'handler' => 'feeds_views_handler_field_log_message',
       'click sortable' => FALSE,
@@ -297,10 +361,16 @@ function feeds_views_data() {
         'variables',
       ),
     ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_string',
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
   );
   $data['feeds_log']['severity'] = array(
-    'title' => 'Severity',
-    'help' => 'The severity of the event logged.',
+    'title' => t('Severity'),
+    'help' => t('The severity of the event logged.'),
     'field' => array(
       'handler' => 'feeds_views_handler_field_severity',
       'click sortable' => FALSE,
@@ -308,7 +378,13 @@ function feeds_views_data() {
     'filter' => array(
       'handler' => 'feeds_views_handler_filter_severity',
       'allow empty' => TRUE,
-      'help' => 'Filter on the severity of a log message.',
+      'help' => t('Filter on the severity of a log message.'),
+    ),
+    'argument' => array(
+      'handler' => 'views_handler_argument_numeric',
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
     ),
   );
   $data['feeds_log']['table']['join'] = array(

@@ -120,6 +120,21 @@ abstract class FeedsParser extends FeedsPlugin {
   }
 
   /**
+   * Get list of mapped sources.
+   *
+   * @return array
+   *   List of mapped source names in an array.
+   */
+  public function getMappingSourceList() {
+    $mappings = feeds_importer($this->id)->processor->config['mappings'];
+    $sources = array();
+    foreach ($mappings as $mapping) {
+      $sources[] = $mapping['source'];
+    }
+    return $sources;
+  }
+
+  /**
    * Get an element identified by $element_key of the given item.
    * The element key corresponds to the values in the array returned by
    * FeedsParser::getMappingSources().
@@ -554,13 +569,13 @@ class FeedsDateTimeElement extends FeedsElement {
    * Helper method for buildDateField(). Build a FeedsDateTimeElement object
    * from a standard formatted node.
    */
-  protected static function readDateField($entity, $field_name, $delta = 0) {
+  protected static function readDateField($entity, $field_name, $delta = 0, $language = LANGUAGE_NONE) {
     $ret = new FeedsDateTimeElement();
-    if (isset($entity->{$field_name}['und'][$delta]['date']) && $entity->{$field_name}['und'][$delta]['date'] instanceof FeedsDateTime) {
-      $ret->start = $entity->{$field_name}['und'][$delta]['date'];
+    if (isset($entity->{$field_name}[$language][$delta]['date']) && $entity->{$field_name}[$language][$delta]['date'] instanceof FeedsDateTime) {
+      $ret->start = $entity->{$field_name}[$language][$delta]['date'];
     }
-    if (isset($entity->{$field_name}['und'][$delta]['date2']) && $entity->{$field_name}['und'][$delta]['date2'] instanceof FeedsDateTime) {
-      $ret->end = $entity->{$field_name}['und'][$delta]['date2'];
+    if (isset($entity->{$field_name}[$language][$delta]['date2']) && $entity->{$field_name}[$language][$delta]['date2'] instanceof FeedsDateTime) {
+      $ret->end = $entity->{$field_name}[$language][$delta]['date2'];
     }
     return $ret;
   }
@@ -575,10 +590,10 @@ class FeedsDateTimeElement extends FeedsElement {
    * @param int $delta
    *   The delta in the field.
    */
-  public function buildDateField($entity, $field_name, $delta = 0) {
+  public function buildDateField($entity, $field_name, $delta = 0, $language = LANGUAGE_NONE) {
     $info = field_info_field($field_name);
 
-    $oldfield = FeedsDateTimeElement::readDateField($entity, $field_name, $delta);
+    $oldfield = FeedsDateTimeElement::readDateField($entity, $field_name, $delta, $language);
     // Merge with any preexisting objects on the field; we take precedence.
     $oldfield = $this->merge($oldfield);
     $use_start = $oldfield->start;
@@ -611,27 +626,27 @@ class FeedsDateTimeElement extends FeedsElement {
 
     $db_tz = new DateTimeZone($db_tz);
     if (!isset($entity->{$field_name})) {
-      $entity->{$field_name} = array('und' => array());
+      $entity->{$field_name} = array($language => array());
     }
     if ($use_start) {
-      $entity->{$field_name}['und'][$delta]['timezone'] = $use_start->getTimezone()->getName();
-      $entity->{$field_name}['und'][$delta]['offset'] = $use_start->getOffset();
+      $entity->{$field_name}[$language][$delta]['timezone'] = $use_start->getTimezone()->getName();
+      $entity->{$field_name}[$language][$delta]['offset'] = $use_start->getOffset();
       $use_start->setTimezone($db_tz);
-      $entity->{$field_name}['und'][$delta]['date'] = $use_start;
+      $entity->{$field_name}[$language][$delta]['date'] = $use_start;
       /**
        * @todo the date_type_format line could be simplified based upon a patch
        *   DO issue #259308 could affect this, follow up on at some point.
        *   Without this, all granularity info is lost.
        *   $use_start->format(date_type_format($field['type'], $use_start->granularity));
        */
-      $entity->{$field_name}['und'][$delta]['value'] = $use_start->format(date_type_format($info['type']));
+      $entity->{$field_name}[$language][$delta]['value'] = $use_start->format(date_type_format($info['type']));
     }
     if ($use_end) {
       // Don't ever use end to set timezone (for now)
-      $entity->{$field_name}['und'][$delta]['offset2'] = $use_end->getOffset();
+      $entity->{$field_name}[$language][$delta]['offset2'] = $use_end->getOffset();
       $use_end->setTimezone($db_tz);
-      $entity->{$field_name}['und'][$delta]['date2'] = $use_end;
-      $entity->{$field_name}['und'][$delta]['value2'] = $use_end->format(date_type_format($info['type']));
+      $entity->{$field_name}[$language][$delta]['date2'] = $use_end;
+      $entity->{$field_name}[$language][$delta]['value2'] = $use_end->format(date_type_format($info['type']));
     }
   }
 }

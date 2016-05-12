@@ -92,7 +92,9 @@ class EntityTranslationNodeHandler extends EntityTranslationDefaultHandler {
 
     if (!$this->isTranslationForm()) {
       // Inherit entity authoring information for the original values.
-      $values['name'] = $form_state['values']['name'];
+      if (isset($form_state['values']['name'])) {
+        $values['name'] = $form_state['values']['name'];
+      }
       if (!empty($form_state['values']['date'])) {
         $values['created'] = $form_state['values']['date'];
       }

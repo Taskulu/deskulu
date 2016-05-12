@@ -11,6 +11,7 @@ files[] = includes/translation.handler.comment.inc
 files[] = includes/translation.handler.node.inc
 files[] = includes/translation.handler.taxonomy_term.inc
 files[] = includes/translation.handler.user.inc
+files[] = includes/translation.migrate.inc
 
 files[] = tests/entity_translation.test
 
@@ -22,9 +23,9 @@ files[] = views/entity_translation_handler_filter_language.inc
 files[] = views/entity_translation_handler_filter_translation_exists.inc
 files[] = views/entity_translation_handler_field_field.inc
 
-; Information added by Drupal.org packaging script on 2015-01-22
-version = "7.x-1.0-beta4"
+; Information added by Drupal.org packaging script on 2016-05-07
+version = "7.x-1.0-beta5"
 core = "7.x"
 project = "entity_translation"
-datestamp = "1421971088"
+datestamp = "1462661041"
 

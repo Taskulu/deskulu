@@ -212,6 +212,58 @@ function search_api_facetapi_search_api_query_alter($query) {
 }
 
 /**
+ * Implements hook_date_formats().
+ */
+function search_api_facetapi_date_formats() {
+  return array(
+    array(
+      'type' => 'search_api_facetapi_' . FACETAPI_DATE_YEAR,
+      'format' => 'Y',
+      'locales' => array(),
+    ),
+    array(
+      'type' => 'search_api_facetapi_' . FACETAPI_DATE_MONTH,
+      'format' => 'F Y',
+      'locales' => array(),
+    ),
+    array(
+      'type' => 'search_api_facetapi_' . FACETAPI_DATE_DAY,
+      'format' => 'F j, Y',
+      'locales' => array(),
+    ),
+    array(
+      'type' => 'search_api_facetapi_' . FACETAPI_DATE_HOUR,
+      'format' => 'H:__',
+      'locales' => array(),
+    ),
+    array(
+      'type' => 'search_api_facetapi_' . FACETAPI_DATE_MINUTE,
+      'format' => 'H:i',
+      'locales' => array(),
+    ),
+    array(
+      'type' => 'search_api_facetapi_' . FACETAPI_DATE_SECOND,
+      'format' => 'H:i:s',
+      'locales' => array(),
+    ),
+  );
+}
+
+/**
+ * Implements hook_date_format_types().
+ */
+function search_api_facetapi_date_format_types() {
+  return array(
+    'search_api_facetapi_' . FACETAPI_DATE_YEAR => t('Search facets - Years'),
+    'search_api_facetapi_' . FACETAPI_DATE_MONTH => t('Search facets - Months'),
+    'search_api_facetapi_' . FACETAPI_DATE_DAY => t('Search facets - Days'),
+    'search_api_facetapi_' . FACETAPI_DATE_HOUR => t('Search facets - Hours'),
+    'search_api_facetapi_' . FACETAPI_DATE_MINUTE => t('Search facets - Minutes'),
+    'search_api_facetapi_' . FACETAPI_DATE_SECOND => t('Search facets - Seconds'),
+  );
+}
+
+/**
  * Menu callback for the facet settings page.
  */
 function search_api_facetapi_settings($realm_name, SearchApiIndex $index) {
@@ -340,13 +392,13 @@ function search_api_facetapi_facet_map_callback(array $values, array $options = 
     $lower = isset($map[$range['lower']]) ? $map[$range['lower']] : $range['lower'];
     $upper = isset($map[$range['upper']]) ? $map[$range['upper']] : $range['upper'];
     if ($lower == '*' && $upper == '*') {
-      $map[$value] =  t('any');
+      $map[$value] = t('any');
     }
     elseif ($lower == '*') {
-      $map[$value] = "< $upper";
+      $map[$value] = "≤ $upper";
     }
     elseif ($upper == '*') {
-      $map[$value] = "> $lower";
+      $map[$value] = "≥ $lower";
     }
     else {
       $map[$value] = "$lower – $upper";
@@ -532,16 +584,12 @@ function search_api_facetapi_map_date(array $values, array $options = array()) {
       continue;
     }
 
-    // For years, the URL value is already the label.
-    if ($granularity == FACETAPI_DATE_YEAR) {
-      $map[$value] = $value;
-      continue;
-    }
-
     // Otherwise, parse the timestamp from the known format and format it as a
     // label.
     $format = search_api_facetapi_date_get_granularity_format($granularity);
-    $date = DateTime::createFromFormat($format, $value);
+    // Use the "!" modifier to make the date parsing independent of the current
+    // date/time. (See #2678856.)
+    $date = DateTime::createFromFormat('!' . $format, $value);
     if (!$date) {
       continue;
     }
@@ -568,17 +616,16 @@ function search_api_facetapi_map_date(array $values, array $options = array()) {
  */
 function search_api_facetapi_format_timestamp($timestamp, $precision = FACETAPI_DATE_YEAR) {
   $formats = array(
-    FACETAPI_DATE_YEAR => 'Y',
-    FACETAPI_DATE_MONTH => 'F Y',
-    FACETAPI_DATE_DAY => 'F j, Y',
-    FACETAPI_DATE_HOUR => 'H:__',
-    FACETAPI_DATE_MINUTE => 'H:i',
-    FACETAPI_DATE_SECOND => 'H:i:s',
+    FACETAPI_DATE_YEAR,
+    FACETAPI_DATE_MONTH,
+    FACETAPI_DATE_DAY,
+    FACETAPI_DATE_HOUR,
+    FACETAPI_DATE_MINUTE,
+    FACETAPI_DATE_SECOND,
   );
 
-  if (!isset($formats[$precision])) {
+  if (!in_array($precision, $formats)) {
     $precision = FACETAPI_DATE_YEAR;
   }
-
-  return format_date($timestamp, 'custom', $formats[$precision]);
+  return format_date($timestamp, 'search_api_facetapi_' . $precision);
 }

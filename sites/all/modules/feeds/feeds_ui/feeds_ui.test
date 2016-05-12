@@ -122,7 +122,7 @@ class FeedsUIUserInterfaceTestCase extends FeedsWebTestCase {
     $this->createImporterConfiguration($name, $id);
     $this->setPlugin($id, 'FeedsCSVParser');
     $this->setPlugin($id, 'FeedsFileFetcher');
-    $this->setPlugin($id, 'FeedsTermProcessor');
+    $this->setPlugin($id, 'FeedsUserProcessor');
 
     $this->setSettings($id, 'FeedsFileFetcher', array('allowed_extensions' => 'xml'));
     $this->setSettings($id, 'FeedsCSVParser', array('delimiter' => '|'));
@@ -145,7 +145,7 @@ class FeedsUIUserInterfaceTestCase extends FeedsWebTestCase {
     $importer = feeds_importer($id);
     $this->assertEqual('FeedsFileFetcher', get_class($importer->fetcher));
     $this->assertEqual('FeedsCSVParser', get_class($importer->parser));
-    $this->assertEqual('FeedsTermProcessor', get_class($importer->processor));
+    $this->assertEqual('FeedsUserProcessor', get_class($importer->processor));
 
     $config = $importer->fetcher->getConfig();
     $this->assertEqual('xml', $config['allowed_extensions']);

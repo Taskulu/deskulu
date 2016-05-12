@@ -1,0 +1,119 @@
+<?php
+
+/**
+ * @file
+ * Contains Feedsi18nTaxonomyTestCase.
+ */
+
+/**
+ * Tests importing terms in a language.
+ */
+class Feedsi18nTaxonomyTestCase extends Feedsi18nTestCase {
+
+  /**
+   * Name of created vocabulary.
+   *
+   * @var string
+   */
+  private $vocabulary;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Multilingual terms',
+      'description' => 'Tests Feeds multilingual support for taxonomy terms.',
+      'group' => 'Feeds',
+      'dependencies' => array('locale', 'i18n_taxonomy'),
+    );
+  }
+
+  public function setUp($modules = array(), $permissions = array()) {
+    $this->entityType = 'taxonomy_term';
+    $this->processorName = 'FeedsTermProcessor';
+
+    $modules = array_merge($modules, array(
+      'i18n_taxonomy',
+    ));
+    parent::setUp($modules, $permissions);
+
+    // Create vocabulary.
+    $this->vocabulary = strtolower($this->randomName(8));
+    $edit = array(
+      'name' => $this->vocabulary,
+      'machine_name' => $this->vocabulary,
+    );
+    $this->drupalPost('admin/structure/taxonomy/add', $edit, t('Save'));
+
+    // Configure importer.
+    $this->setSettings('i18n', $this->processorName, array(
+      'bundle' => $this->vocabulary,
+      'language' => 'de',
+      'update_existing' => FEEDS_UPDATE_EXISTING,
+      'skip_hash_check' => TRUE,
+    ));
+    $this->addMappings('i18n', array(
+      0 => array(
+        'source' => 'guid',
+        'target' => 'guid',
+        'unique' => '1',
+      ),
+      1 => array(
+        'source' => 'title',
+        'target' => 'name',
+      ),
+    ));
+  }
+
+  /**
+   * Tests if the language setting is available on the processor.
+   */
+  public function testAvailableProcessorLanguageSetting() {
+    // Check if the language setting is available when the i18n_taxonomy module is enabled.
+    $this->drupalGet('admin/structure/feeds/i18n/settings/FeedsTermProcessor');
+    $this->assertField('language', 'Language field is available on the term processor settings when the i18n_taxonomy module is enabled.');
+
+    // Disable the i18n_taxonomy module and check if the language setting is no longer available.
+    module_disable(array('i18n_taxonomy'));
+    $this->drupalGet('admin/structure/feeds/i18n/settings/FeedsTermProcessor');
+    $this->assertNoField('language', 'Language field is not available on the term processor settings when the i18n_taxonomy module is disabled.');
+  }
+
+  /**
+   * Tests if terms get imported in LANGUAGE_NONE when the i18n_taxonomy module gets disabled.
+   */
+  public function testDisabledi18nTaxonomyModule() {
+    module_disable(array('i18n_taxonomy'));
+    // Make sure that entity info is reset.
+    drupal_flush_all_caches();
+    drupal_static_reset();
+
+    // Import content.
+    $this->importFile('i18n', $this->absolutePath() . '/tests/feeds/content.csv');
+
+    // Assert that the terms have no language assigned.
+    $entities = entity_load($this->entityType, array(1, 2));
+    foreach ($entities as $entity) {
+      // Terms shouldn't have a language property.
+      $this->assertFalse(isset($entity->language), 'The term does not have a language.');
+    }
+  }
+
+  /**
+   * Tests if terms get imported in LANGUAGE_NONE when the i18n_taxonomy module gets uninstalled.
+   */
+  public function testUninstalledi18nTaxonomyModule() {
+    module_disable(array('i18n_taxonomy'));
+    drupal_uninstall_modules(array('i18n_taxonomy'));
+    // Make sure that entity info is reset.
+    drupal_flush_all_caches();
+    drupal_static_reset();
+
+    // Import content.
+    $this->importFile('i18n', $this->absolutePath() . '/tests/feeds/content.csv');
+
+    // Assert that the terms have no language assigned.
+    $entities = entity_load($this->entityType, array(1, 2));
+    foreach ($entities as $entity) {
+      $this->assertFalse(isset($entity->language), 'The term does not have a language.');
+    }
+  }
+}

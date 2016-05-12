@@ -14,6 +14,14 @@ function entity_enable() {
 }
 
 /**
+ * Implements hook_uninstall().
+ */
+function entity_uninstall() {
+  // Delete variables.
+  variable_del('entity_rebuild_on_flush');
+}
+
+/**
  * The entity API modules have been merged into a single module.
  */
 function entity_update_7000() {

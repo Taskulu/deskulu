@@ -1,0 +1,133 @@
+<?php
+
+/**
+ * @file
+ * Contains Feedsi18nTestCase.
+ */
+
+/**
+ * Tests importing data in a language.
+ */
+class Feedsi18nTestCase extends FeedsMapperTestCase {
+
+  /**
+   * The entity type to be tested.
+   *
+   * @var string
+   */
+  protected $entityType;
+
+  /**
+   * The processor being used.
+   *
+   * @var string
+   */
+  protected $processorName;
+
+  public function setUp($modules = array(), $permissions = array()) {
+    $modules = array_merge($modules, array(
+      'locale',
+    ));
+    $permissions = array_merge(array(
+      'administer languages',
+    ));
+    parent::setUp($modules, $permissions);
+
+    // Setup other languages.
+    $edit = array(
+      'langcode' => 'nl',
+    );
+    $this->drupalPost('admin/config/regional/language/add', $edit, t('Add language'));
+    $this->assertText(t('The language Dutch has been created and can now be used.'));
+    $edit = array(
+      'langcode' => 'de',
+    );
+    $this->drupalPost('admin/config/regional/language/add', $edit, t('Add language'));
+    $this->assertText(t('The language German has been created and can now be used.'));
+
+    // Include FeedsProcessor.inc to make its constants available.
+    module_load_include('inc', 'feeds', 'plugins/FeedsProcessor');
+
+    // Create and configure importer.
+    $this->createImporterConfiguration('Multilingual term importer', 'i18n');
+    $this->setPlugin('i18n', 'FeedsFileFetcher');
+    $this->setPlugin('i18n', 'FeedsCSVParser');
+    $this->setPlugin('i18n', $this->processorName);
+  }
+
+  /**
+   * Tests if entities get the language assigned that is set in the processor.
+   */
+  public function testImport() {
+    // Import content in German.
+    $this->importFile('i18n', $this->absolutePath() . '/tests/feeds/content.csv');
+
+    // Assert that the entity's language is in German.
+    $entities = entity_load($this->entityType, array(1, 2));
+    foreach ($entities as $entity) {
+      $this->assertEqual('de', entity_language($this->entityType, $entity));
+    }
+  }
+
+  /**
+   * Tests if entities get a different language assigned when the processor's language
+   * is changed.
+   */
+  public function testChangedLanguageImport() {
+    // Import content in German.
+    $this->importFile('i18n', $this->absolutePath() . '/tests/feeds/content.csv');
+
+    // Change processor's language to Dutch.
+    $this->setSettings('i18n', $this->processorName, array('language' => 'nl'));
+
+    // Re-import content.
+    $this->importFile('i18n', $this->absolutePath() . '/tests/feeds/content.csv');
+
+    // Assert that the entity's language is now in Dutch.
+    $entities = entity_load($this->entityType, array(1, 2));
+    foreach ($entities as $entity) {
+      $this->assertEqual('nl', entity_language($this->entityType, $entity));
+    }
+  }
+
+  /**
+   * Tests if items are imported in LANGUAGE_NONE if the processor's language is disabled.
+   */
+  public function testDisabledLanguage() {
+    // Disable the German language.
+    $path = 'admin/config/regional/language';
+    $edit = array(
+      'enabled[de]' => FALSE,
+    );
+    $this->drupalPost($path, $edit, t('Save configuration'));
+
+    // Import content.
+    $this->importFile('i18n', $this->absolutePath() . '/tests/feeds/content.csv');
+
+    // Assert that the entities have no language assigned.
+    $entities = entity_load($this->entityType, array(1, 2));
+    foreach ($entities as $entity) {
+      $language = entity_language($this->entityType, $entity);
+      $this->assertEqual(LANGUAGE_NONE, $language, format_string('The entity is language neutral (actual: !language).', array('!language' => $language)));
+    }
+  }
+
+  /**
+   * Tests if items are imported in LANGUAGE_NONE if the processor's language is removed.
+   */
+  public function testRemovedLanguage() {
+    // Remove the German language.
+    $path = 'admin/config/regional/language/delete/de';
+    $this->drupalPost($path, array(), t('Delete'));
+
+    // Import content.
+    $this->importFile('i18n', $this->absolutePath() . '/tests/feeds/content.csv');
+
+    // Assert that the entities have no language assigned.
+    $entities = entity_load($this->entityType, array(1, 2));
+    foreach ($entities as $entity) {
+      $language = entity_language($this->entityType, $entity);
+      $this->assertEqual(LANGUAGE_NONE, $language, format_string('The entity is language neutral (actual: !language).', array('!language' => $language)));
+    }
+  }
+}

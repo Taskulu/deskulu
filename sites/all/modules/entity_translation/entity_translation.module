@@ -567,7 +567,7 @@ function entity_translation_edit_access() {
   }
 
   $translations = $handler->getTranslations();
-  $langcode = $langcode = entity_translation_get_existing_language($entity_type, $entity, $langcode);
+  $langcode = entity_translation_get_existing_language($entity_type, $entity, $langcode);
 
   // The user must be explicitly allowed to access the original values if
   // workflow permissions are enabled.
@@ -1274,10 +1274,14 @@ function entity_translation_field_attach_form($entity_type, $entity, &$form, &$f
 function entity_translation_prepare_element($element, &$form_state) {
   static $drupal_static_fast;
   if (!isset($drupal_static_fast)) {
-    $drupal_static_fast['source_forms'] = &drupal_static(__FUNCTION__, array());
+    $drupal_static_fast = &drupal_static(__FUNCTION__, array(
+      'source_forms' => array(),
+      'source_form_states' => array(),
+    ));
   }
 
   $source_forms = &$drupal_static_fast['source_forms'];
+  $source_form_states = &$drupal_static_fast['source_form_states'];
   $form = $form_state['complete form'];
   $build_id = $form['#build_id'];
   $source = $element['#source'];
@@ -1294,9 +1298,11 @@ function entity_translation_prepare_element($element, &$form_state) {
     $source_form_state = $form_state;
     field_attach_form($entity_type, $element['#entity'], $source_form, $source_form_state, $source);
     $source_forms[$build_id][$source][$entity_type][$id] = &$source_form;
+    $source_form_states[$build_id][$source][$entity_type][$id] = &$source_form_state;
   }
 
   $source_form = &$source_forms[$build_id][$source][$entity_type][$id];
+  $source_form_state = $source_form_states[$build_id][$source][$entity_type][$id];
   $langcode = $element['#language'];
   $field_name = $element['#field_name'];
 
@@ -1307,10 +1313,40 @@ function entity_translation_prepare_element($element, &$form_state) {
   if (isset($source_form[$field_name][$source])) {
     $element[$langcode] = $source_form[$field_name][$source];
     entity_translation_form_element_language_replace($element, $source, $langcode);
+    entity_translation_form_element_state_replace($element, $source_form[$field_name], $field_name, $source_form_state, $form_state);
     unset($element[$element['#previous']]);
   }
 
   return $element;
+}
+
+/**
+ * Helper function. Sets the right values in $form_state['field'] when using
+ * source language values as defaults.
+ */
+function entity_translation_form_element_state_replace($element, $source_element, $field_name, $source_form_state, &$form_state) {
+  if (isset($source_element['#language'])) {
+    $source = $source_element['#language'];
+
+    // Iterate through the form structure recursively.
+    foreach (element_children($element) as $key) {
+      if (isset($source_element[$key])) {
+        entity_translation_form_element_state_replace($element[$key], $source_element[$key], $key, $source_form_state, $form_state);
+      }
+      elseif (isset($source_element[$source])) {
+        entity_translation_form_element_state_replace($element[$key], $source_element[$source], $key, $source_form_state, $form_state);
+      }
+    }
+
+    if (isset($source_element[$source]['#field_parents'])) {
+      $source_parents = $source_element[$source]['#field_parents'];
+      $langcode = $element['#language'];
+      $parents = $element[$langcode]['#field_parents'];
+      $source_state = field_form_get_state($source_parents, $field_name, $source, $source_form_state);
+      drupal_alter('entity_translation_source_field_state', $source_state);
+      field_form_set_state($parents, $field_name, $langcode, $form_state, $source_state);
+    }
+  }
 }
 
 /**
@@ -1799,6 +1835,9 @@ function entity_translation_settings($entity_type, $bundle) {
  */
 function entity_translation_language($entity_type, $entity) {
   $handler = entity_translation_get_handler($entity_type, $entity);
+  if (empty($handler)) {
+    return LANGUAGE_NONE;
+  }
   $langcode = $handler->getFormLanguage();
   return !empty($langcode) ? $langcode : $handler->getLanguage();
 }
@@ -2018,4 +2057,24 @@ function path_entity_translation_delete($entity_type, $entity, $langcode) {
   // Remove any existing path alias for the removed translation.
   $handler = entity_translation_get_handler($entity_type, $entity);
   path_delete(array('source' => $handler->getViewPath(), 'language' => $langcode));
+}
+
+/**
+ * Wrapper for entity_save().
+ *
+ * @param $entity_type
+ *   The entity type.
+ * @param $entity
+ *   The entity object.
+ */
+function entity_translation_entity_save($entity_type, $entity) {
+  // Entity module isn't required, but use it if it's available.
+  if (module_exists('entity')) {
+    entity_save($entity_type, $entity);
+  }
+  // Fall back to field_attach_* functions otherwise.
+  else {
+    field_attach_presave($entity_type, $entity);
+    field_attach_update($entity_type, $entity);
+  }
 }

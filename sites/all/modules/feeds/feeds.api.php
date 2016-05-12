@@ -227,7 +227,7 @@ function hook_feeds_after_clear(FeedsSource $source) {
 function hook_feeds_parser_sources_alter(&$sources, $content_type) {
   $sources['my_source'] = array(
     'name' => t('Images in description element'),
-    'description' => t('Images occuring in the description element of a feed item.'),
+    'description' => t('Images occurring in the description element of a feed item.'),
     'callback' => 'my_source_get_source',
   );
 }
@@ -273,43 +273,103 @@ function my_source_get_source(FeedsSource $source, FeedsParserResult $result, $k
  *   The entity bundle to return targets for.
  *
  * @return array
- *   Array containing the targets to be offered to the user. This function must
- *   return an array, even an empty one.
+ *   An array whose keys are the target name and whose values are arrays
+ *   containing the following keys:
+ *   - name: A human readable, translated label for the target.
+ *   - description: (optional) A human readable, translated description for the
+ *     target.
+ *   - callback: The callback used to set the value on the target.
+ *   - real_target: (optional) the name of the property on the entity that will
+ *     be set by the callback. Specify this if the target name is not equal to
+ *     the entity property name. This information will be used to clear the
+ *     right target at the beginning of the mapping process.
+ *   - optional_unique: (optional) A boolean that indicates whether or not the
+ *     target can be used as an unique target. If you set this to TRUE, be sure
+ *     to also specify "unique_callbacks".
+ *   - unique_callbacks: (optional) An array of callbacks that are used to
+ *     retrieve existing entity ids. Existing entities can be updated based on
+ *     unique targets.
+ *   - form_callbacks: (optional) An array of callbacks that are used to return
+ *     a form with additional configuration for a target.
+ *   - summary_callbacks: (optional) An array of callbacks that are used to
+ *     display values of additional target configuration.
+ *   - preprocess_callbacks: (optional) An array of callbacks that are used to
+ *     set or change mapping options.
+ *   - deprecated: (optional) A boolean that if TRUE, hides the target from the
+ *     UI. Use this if you want to rename targets for consistency, but don't
+ *     want to break importers that are using the old target name. If an
+ *     importer uses this target it will show up as "DEPRECATED" in the UI.
  */
 function hook_feeds_processor_targets($entity_type, $bundle) {
   $targets = array();
 
   if ($entity_type == 'node') {
+    // Example 1: provide the minimal info for a target. Description is
+    // optional, but recommended.
+    // @see my_module_set_target()
     $targets['my_node_field'] = array(
       'name' => t('My custom node field'),
       'description' => t('Description of what my custom node field does.'),
       'callback' => 'my_module_set_target',
+    );
 
-      // Specify both summary_callback and form_callback to add a per mapping
-      // configuration form.
-      'summary_callbacks' => array('my_module_summary_callback'),
-      'form_callbacks' => array('my_module_form_callback'),
-    );
-    $targets['my_node_field2'] = array(
-      'name' => t('My Second custom node field'),
-      'description' => t('Description of what my second custom node field does.'),
+    // Example 2: specify "real_target" if the target name is different from
+    // the entity property name.
+    // Here the target is called "my_node_field2:uri", but the entity property
+    // is called "my_node_field2". This will ensure that the property
+    // "my_node_field2" is cleared out that the beginning of the mapping
+    // process.
+    $targets['my_node_field2:uri'] = array(
+      'name' => t('My third custom node field'),
+      'description' => t('A target that sets a property that does not have the same name as the target.'),
       'callback' => 'my_module_set_target2',
-      'real_target' => 'my_node_field_two', // Specify real target field on node.
+      'real_target' => 'my_node_field2',
     );
+
+    // Example 3: you can make your target selectable as an unique target by
+    // setting "optional_unique" to TRUE and specify one or more callbacks to
+    // retrieve existing entity id's.
+    // @see my_module_mapper_unique()
     $targets['my_node_field3'] = array(
       'name' => t('My third custom node field'),
-      'description' => t('Description of what my third custom node field does.'),
+      'description' => t('A field that can be set as an unique target.'),
       'callback' => 'my_module_set_target3',
-
-      // Set optional_unique to TRUE and specify unique_callbacks to allow the
-      // target to be unique. Existing entities can be updated based on unique
-      // targets.
       'optional_unique' => TRUE,
       'unique_callbacks' => array('my_module_mapper_unique'),
+    );
 
-      // Preprocess callbacks are called before the actual callback allowing you
-      // to prepare values on the entity or mapping array.
+    // Example 4: use the form and summary callbacks to add additional
+    // configuration options for your target. Use the form callbacks to provide
+    // a form to set the target configuration. Use the summary callbacks to
+    // display the target configuration.
+    // @see my_module_form_callback()
+    // @see my_module_summary_callback()
+    $targets['my_node_field4'] = array(
+      'name' => t('My fourth custom node field'),
+      'description' => t('A field with additional configuration.'),
+      'callback' => 'my_module_set_target4',
+      'form_callbacks' => array('my_module_form_callback'),
+      'summary_callbacks' => array('my_module_summary_callback'),
+    );
+
+    // Example 5: use preprocess callbacks to set or change mapping options.
+    // @see my_module_preprocess_callback()
+    $targets['my_node_field5'] = array(
+      'name' => t('My fifth custom node field'),
+      'description' => t('A field with additional configuration.'),
+      'callback' => 'my_module_set_target5',
       'preprocess_callbacks' => array('my_module_preprocess_callback'),
+    );
+
+    // Example 6: when you want to remove or rename previously provided targets,
+    // you can set "deprecated" to TRUE for the old target name. This will make
+    // the target to be no longer selectable in the UI. If an importer uses this
+    // target it will show up as "DEPRECATED" in the UI.
+    // If you want that the target continues to work, you can still specify the
+    // callback.
+    $targets['deprecated_target'] = array(
+      'name' => t('A target that cannot be chosen in the UI.'),
+      'deprecated' => TRUE,
     );
   }
 
@@ -332,6 +392,7 @@ function hook_feeds_processor_targets($entity_type, $bundle) {
  * @see hook_feeds_processor_targets()
  */
 function hook_feeds_processor_targets_alter(array &$targets, $entity_type, $bundle) {
+  // Example: set an existing target as optional unique.
   if ($entity_type == 'node' && $bundle == 'article') {
     if (isset($targets['nid'])) {
       $targets['nid']['unique_callbacks'][] = 'my_module_mapper_unique';
@@ -363,6 +424,27 @@ function my_module_set_target(FeedsSource $source, $entity, $target, array $valu
 }
 
 /**
+ * Example of the form_callback specified in hook_feeds_processor_targets().
+ *
+ * The arguments are the same that my_module_summary_callback() gets.
+ *
+ * @return array
+ *   The per mapping configuration form. Once the form is saved, $mapping will
+ *   be populated with the form values.
+ *
+ * @see my_module_summary_callback()
+ */
+function my_module_form_callback(array $mapping, $target, array $form, array $form_state) {
+  return array(
+    'my_setting' => array(
+      '#type' => 'checkbox',
+      '#title' => t('My setting checkbox'),
+      '#default_value' => !empty($mapping['my_setting']),
+    ),
+  );
+}
+
+/**
  * Example of the summary_callback specified in hook_feeds_processor_targets().
  *
  * @param array $mapping
@@ -388,27 +470,6 @@ function my_module_summary_callback(array $mapping, $target, array $form, array 
   else {
     return t('My setting <strong>active</strong>');
   }
-}
-
-/**
- * Example of the form_callback specified in hook_feeds_processor_targets().
- *
- * The arguments are the same that my_module_summary_callback() gets.
- *
- * @return array
- *   The per mapping configuration form. Once the form is saved, $mapping will
- *   be populated with the form values.
- *
- * @see my_module_summary_callback()
- */
-function my_module_form_callback(array $mapping, $target, array $form, array $form_state) {
-  return array(
-    'my_setting' => array(
-      '#type' => 'checkbox',
-      '#title' => t('My setting checkbox'),
-      '#default_value' => !empty($mapping['my_setting']),
-    ),
-  );
 }
 
 /**
@@ -449,10 +510,6 @@ function my_module_mapper_unique(FeedsSource $source, $entity_type, $bundle, $ta
 /**
  * Example of the preprocess_callbacks specified in hook_feeds_processor_targets().
  *
- * @param FeedsSource $source
- *   The Feed source.
- * @param object $entity
- *   The entity being processed.
  * @param array $target
  *   The full target definition.
  * @param array &$mapping
@@ -460,7 +517,7 @@ function my_module_mapper_unique(FeedsSource $source, $entity_type, $bundle, $ta
  *
  * @see hook_feeds_processor_targets()
  */
-function my_module_preprocess_callback(FeedsSource $source, $entity, array $target, array &$mapping) {
+function my_module_preprocess_callback(array $target, array &$mapping) {
   // Add in default values.
   $mapping += array('setting_value' => TRUE);
 }

@@ -127,7 +127,7 @@ function title_field_text_sync_get($entity_type, $entity, $legacy_field, $info, 
     $items = $entity->{$field_name}[$langcode];
     $value = !empty($items[0]['value']) ? $items[0]['value'] : NULL;
   }
-  return $value;
+  return array($legacy_field => $value);
 }
 
 /**
@@ -142,25 +142,31 @@ function title_field_text_sync_set($entity_type, $entity, $legacy_field, $info, 
  */
 function title_field_text_with_summary_sync_get($entity_type, $entity, $legacy_field, $info, $langcode) {
   $value = NULL;
+  $format = NULL;
   $format_key = $info['additional keys']['format'];
   $field_name = $info['field']['field_name'];
   // Return values only if there is any available to process for the current
   // language.
   if (!empty($entity->{$field_name}[$langcode]) && is_array($entity->{$field_name}[$langcode])) {
-    $entity->{$format_key} = $entity->{$field_name}[$langcode][0]['format'];
     $items = $entity->{$field_name}[$langcode];
     $value = !empty($items[0]['value']) ? $items[0]['value'] : NULL;
+    $format = $entity->{$field_name}[$langcode][0]['format'];
   }
-  return $value;
+  return array(
+    $legacy_field => $value,
+    $format_key => $format,
+  );
 }
 
 /**
  * Sync back callback for the text with summary field type.
  */
 function title_field_text_with_summary_sync_set($entity_type, $entity, $legacy_field, $info, $langcode) {
-  $format_key = $info['additional keys']['format'];
-  $entity->{$info['field']['field_name']}[$langcode][0]['value'] = $entity->{$legacy_field};
-  $entity->{$info['field']['field_name']}[$langcode][0]['format'] = $entity->{$format_key};
+  foreach (array('value' => $legacy_field, 'format' => $info['additional keys']['format']) as $column => $name) {
+    if (isset($entity->{$name})) {
+      $entity->{$info['field']['field_name']}[$langcode][0][$column] = $entity->{$name};
+    }
+  }
 }
 
 /**

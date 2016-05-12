@@ -160,7 +160,36 @@ class SearchApiEntityDataSourceController extends SearchApiAbstractDataSourceCon
         $query->addExpression(':index_id', 'index_id', array(':index_id' => $index->id));
         $query->addExpression('1', 'changed');
         if ($bundles = $this->getIndexBundles($index)) {
-          $query->condition($this->bundleKey, $bundles);
+          $bundle_column = $this->bundleKey;
+          if (!db_field_exists($table, $bundle_column)) {
+            if ($this->entityType == 'taxonomy_term') {
+              $bundle_column = 'vid';
+              $bundles = db_query('SELECT vid FROM {taxonomy_vocabulary} WHERE machine_name IN (:bundles)', array(':bundles' => $bundles))->fetchCol();
+            }
+            elseif ($this->entityType == 'comment') {
+              // Comments are significantly more complicated, since they don't
+              // store their bundle explicitly in their database table. Instead,
+              // we need to get all the nodes from the enabled types and filter
+              // by those.
+              $bundle_column = 'nid';
+              $node_types = array();
+              foreach ($bundles as $bundle) {
+                if (substr($bundle, 0, 13) === 'comment_node_') {
+                  $node_types[] = substr($bundle, 13);
+                }
+              }
+              if ($node_types) {
+                $bundles = db_query('SELECT nid FROM {node} WHERE type IN (:bundles)', array(':bundles' => $node_types))->fetchCol();
+              }
+              else {
+                return;
+              }
+            }
+            else {
+              $this->startTrackingFallback(array($index->machine_name => $index));
+            }
+          }
+          $query->condition($bundle_column, $bundles);
         }
 
         // INSERT ... SELECT ...
@@ -170,20 +199,38 @@ class SearchApiEntityDataSourceController extends SearchApiAbstractDataSourceCon
       }
     }
     else {
-      // In the absence of a 'base table', use the slower way of retrieving the
-      // items and inserting them "manually". For each index we get the item IDs
-      // (since selected bundles might differ) and insert all of them as new.
-      foreach ($indexes as $index) {
-        $query = new EntityFieldQuery();
-        $query->entityCondition('entity_type', $this->entityType);
-        if ($bundles = $this->getIndexBundles($index)) {
-          $query->entityCondition('bundle', $bundles);
-        }
-        $result = $query->execute();
-        $ids = !empty($result[$this->entityType]) ? array_keys($result[$this->entityType]) : array();
-        if ($ids) {
-          $this->trackItemInsert($ids, array($index));
-        }
+      $this->startTrackingFallback($indexes);
+    }
+  }
+
+  /**
+   * Initializes tracking of the index status of items for the given indexes.
+   *
+   * Fallback for when the items cannot directly be loaded into
+   * {search_api_item} via "INSERT INTO … SELECT …".
+   *
+   * @param SearchApiIndex[] $indexes
+   *   The indexes for which item tracking should be initialized.
+   *
+   * @throws SearchApiDataSourceException
+   *   Thrown if any error state was encountered.
+   *
+   * @see SearchApiEntityDataSourceController::startTracking()
+   */
+  protected function startTrackingFallback(array $indexes) {
+    // In the absence of a 'base table', use the slower way of retrieving the
+    // items and inserting them "manually". For each index we get the item IDs
+    // (since selected bundles might differ) and insert all of them as new.
+    foreach ($indexes as $index) {
+      $query = new EntityFieldQuery();
+      $query->entityCondition('entity_type', $this->entityType);
+      if ($bundles = $this->getIndexBundles($index)) {
+        $query->entityCondition('bundle', $bundles);
+      }
+      $result = $query->execute();
+      $ids = !empty($result[$this->entityType]) ? array_keys($result[$this->entityType]) : array();
+      if ($ids) {
+        $this->trackItemInsert($ids, array($index));
       }
     }
   }
@@ -225,7 +272,7 @@ class SearchApiEntityDataSourceController extends SearchApiAbstractDataSourceCon
       '#type' => 'checkboxes',
       '#title' => t('Bundles'),
       '#description' => t('Restrict the entity bundles that will be included in this index. Leave blank to include all bundles. This setting cannot be changed for existing indexes.'),
-      '#options' => $options,
+      '#options' => array_map('check_plain', $options),
       '#attributes' => array('class' => array('search-api-checkboxes-list')),
       '#disabled' => !empty($form_state['index']),
     );

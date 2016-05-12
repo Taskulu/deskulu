@@ -23,6 +23,11 @@ function file_feeds_processor_targets($entity_type, $bundle_name) {
         'real_target' => $name,
       );
 
+      // Keep the old target name for backwards compatibility, but hide it from
+      // the UI.
+      $targets[$name] = $targets[$name . ':uri'];
+      $targets[$name]['deprecated'] = TRUE;
+
       if ($info['type'] == 'image') {
         $targets[$name . ':alt'] = array(
           'name' => t('@label: Alt', array('@label' => $instance['label'])),
@@ -54,7 +59,9 @@ function file_feeds_processor_targets($entity_type, $bundle_name) {
 /**
  * Callback for mapping file fields.
  */
-function file_feeds_set_target(FeedsSource $source, $entity, $target, array $values) {
+function file_feeds_set_target(FeedsSource $source, $entity, $target, array $values, array $mapping) {
+  $language = $mapping['language'];
+
   // Add default of uri for backwards compatibility.
   list($field_name, $sub_field) = explode(':', $target . ':uri');
   $info = field_info_field($field_name);
@@ -74,9 +81,14 @@ function file_feeds_set_target(FeedsSource $source, $entity, $target, array $val
       }
     }
 
-    $entity_type = $source->importer->processor->entityType();
-    $bundle = $source->importer->processor->bundle();
-
+    if ($entity instanceof Entity) {
+      $entity_type = $entity->entityType();
+      $bundle = $entity->bundle();
+    }
+    else {
+      $entity_type = $source->importer->processor->entityType();
+      $bundle = $source->importer->processor->bundle();
+    }
     $instance_info = field_info_instance($entity_type, $field_name, $bundle);
 
     // Determine file destination.
@@ -90,31 +102,31 @@ function file_feeds_set_target(FeedsSource $source, $entity, $target, array $val
   }
 
   // Populate entity.
-  $field = isset($entity->$field_name) ? $entity->$field_name : array(LANGUAGE_NONE => array());
+  $field = isset($entity->$field_name) ? $entity->$field_name : array($language => array());
   $delta = 0;
   foreach ($values as $v) {
     if ($info['cardinality'] == $delta) {
       break;
     }
 
-    if (!isset($field[LANGUAGE_NONE][$delta])) {
-      $field[LANGUAGE_NONE][$delta] = array();
+    if (!isset($field[$language][$delta])) {
+      $field[$language][$delta] = array();
     }
 
     switch ($sub_field) {
       case 'alt':
       case 'title':
       case 'description':
-        $field[LANGUAGE_NONE][$delta][$sub_field] = $v;
+        $field[$language][$delta][$sub_field] = $v;
         break;
 
       case 'uri':
         if ($v) {
           try {
             $v->setAllowedExtensions($instance_info['settings']['file_extensions']);
-            $field[LANGUAGE_NONE][$delta] += (array) $v->getFile($destination);
+            $field[$language][$delta] += (array) $v->getFile($destination);
             // @todo: Figure out how to properly populate this field.
-            $field[LANGUAGE_NONE][$delta]['display'] = 1;
+            $field[$language][$delta]['display'] = 1;
           }
           catch (Exception $e) {
             watchdog('feeds', check_plain($e->getMessage()));

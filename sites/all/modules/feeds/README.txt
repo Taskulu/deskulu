@@ -209,6 +209,12 @@ Default:     FALSE
 Description: Flag to stop feeds from using its cURL for http requests. See
              http_request_use_curl().
 
+Name:        feeds_use_mbstring
+Default:     TRUE
+Description: The extension mbstring is used to convert encodings during parsing.
+             The reason that this can be turned off is to be able to test Feeds
+             behavior when the extension is not available.
+
 Glossary
 ========
 

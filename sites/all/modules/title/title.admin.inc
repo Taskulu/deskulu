@@ -14,19 +14,15 @@ function title_form_field_ui_overview(&$form, &$form_state) {
   if (!empty($entity_info['field replacement'])) {
     $field_replacement_info = $entity_info['field replacement'];
     $admin_path = _field_ui_bundle_admin_path($form['#entity_type'], $form['#bundle']);
-    $form['fields']['#header'][6]['colspan'] += 1;
 
     foreach (element_children($form['fields']) as $field_name) {
       if (isset($field_replacement_info[$field_name])) {
-        $form['fields'][$field_name]['field_replacement'] = array(
+        $form['fields'][$field_name]['delete'] = array(
           '#type' => 'link',
           '#title' => t('replace'),
           '#href' => $admin_path . '/fields/replace/' . $field_name,
           '#options' => array('attributes' => array('title' => t('Replace %field with a customizable field instance that can be translated.', array('%field' => $field_name)))),
         );
-      }
-      else {
-        $form['fields'][$field_name]['field_replacement'] = array();
       }
     }
   }

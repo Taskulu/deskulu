@@ -60,6 +60,7 @@ function feeds_requirements($phase) {
 function feeds_uninstall() {
   variable_del('http_request_timeout');
   variable_del('feeds_reschedule');
+  variable_del('feeds_use_mbstring');
 }
 
 /**
@@ -689,65 +690,10 @@ function feeds_update_7209() {
   DrupalQueue::get('feeds_importer_expire')->deleteQueue();
 }
 
-/**
- * Fix importer mappings for file and image fields to use :uri convention.
- */
+ /**
+  * Does nothing. Update removed.
+  */
 function feeds_update_7211(&$sandbox) {
-  // If this is the first pass through this update function then set some
-  // variables.
-  if (!isset($sandbox['progress'])) {
-    $importers = feeds_importer_load_all(TRUE);
-    $sandbox['importers'] = array_keys($importers);
-    $sandbox['progress'] = 0;
-    $sandbox['updated_count'] = 0;
-    $sandbox['max'] = count($sandbox['importers']);
-  }
-
-  if (empty($sandbox['importers'])) {
-    return t('No importers to process.');
-  }
-
-  // Load a single importer.
-  $importer = array_pop($sandbox['importers']);
-  $importer = feeds_importer($importer);
-  $mappings = $importer->processor->getMappings();
-
-  foreach ($mappings as $key => $mapping) {
-    // Act on mappings that do not contain a colon.
-    if (strpos($mapping['target'], ':') !== FALSE) {
-      continue;
-    }
-
-    // Get field data. Check if $info is empty to weed out non-field mappings
-    // like temporary targets.
-    if (!$info = field_info_field($mapping['target'])) {
-      continue;
-    }
-
-    // Act on file or image fields.
-    if (in_array($info['type'], array('file', 'image'))) {
-      // Add ':uri' to fix the mapping.
-      $mappings[$key]['target'] = $mapping['target'] . ':uri';
-    }
-  }
-
-  // If importer has changed, add the updated config and save it.
-  if ($importer->processor->getMappings() !== $mappings) {
-    $importer->processor->addConfig(array('mappings' => $mappings));
-    $importer->save();
-    $sandbox['updated_count']++;
-  }
-
-  $sandbox['progress']++;
-
-  // Set the value for finished. If progress == max then finished will be 1,
-  // signifying we are done.
-  $sandbox['#finished'] = ($sandbox['progress'] / $sandbox['max']);
-
-  if (empty($sandbox['importers'])) {
-    $sandbox['#finished'] = 1;
-    return t('@importers total importers processed, @updated_count with fields that were updated.', array('@importers' => $sandbox['max'], '@updated_count' => $sandbox['updated_count']));
-  }
 }
 
 /**

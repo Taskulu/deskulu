@@ -144,7 +144,8 @@ class SearchApiViewsHandlerFilterFulltext extends SearchApiViewsHandlerFilterTex
       return;
     }
     $fields = $this->options['fields'];
-    $fields = $fields ? $fields : array_keys($this->getFulltextFields());
+    $available_fields = array_keys($this->getFulltextFields());
+    $fields = $fields ? array_intersect($fields, $available_fields) : $available_fields;
 
     // If something already specifically set different fields, we silently fall
     // back to mere filtering.

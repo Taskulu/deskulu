@@ -79,15 +79,15 @@ class FeedsFileFetcher extends FeedsFetcher {
    *   no files could be found. Never contains directories.
    */
   protected function listFiles($dir) {
-    $dir = file_stream_wrapper_uri_normalize($dir);
+    // Seperate out string into array of extensions. Make sure its regex safe.
+    $config = $this->getConfig();
+    $extensions = array_filter(array_map('preg_quote', explode(' ', $config['allowed_extensions'])));
+    $regex = '/\.(' . implode('|', $extensions) . ')$/';
     $files = array();
-    if ($items = @scandir($dir)) {
-      foreach ($items as $item) {
-        if (is_file("$dir/$item") && strpos($item, '.') !== 0) {
-          $files[] = "$dir/$item";
-        }
-      }
+    foreach (file_scan_directory($dir, $regex) as $file) {
+      $files[] = $file->uri;
     }
+
     return $files;
   }
 

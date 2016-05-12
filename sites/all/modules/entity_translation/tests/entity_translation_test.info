@@ -6,9 +6,9 @@ hidden = TRUE
 dependencies[] = entity_translation
 files[] = entity_translation_test.module
 
-; Information added by Drupal.org packaging script on 2015-01-22
-version = "7.x-1.0-beta4"
+; Information added by Drupal.org packaging script on 2016-05-07
+version = "7.x-1.0-beta5"
 core = "7.x"
 project = "entity_translation"
-datestamp = "1421971088"
+datestamp = "1462661041"
 

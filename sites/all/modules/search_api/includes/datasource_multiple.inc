@@ -252,7 +252,7 @@ class SearchApiCombinedEntityDataSourceController extends SearchApiAbstractDataS
       '#type' => 'checkboxes',
       '#title' => t('Entity types'),
       '#description' => t('Select the entity types which should be included in this index.'),
-      '#options' => search_api_entity_type_options_list(),
+      '#options' => array_map('check_plain', search_api_entity_type_options_list()),
       '#attributes' => array('class' => array('search-api-checkboxes-list')),
       '#disabled' => !empty($form_state['index']),
       '#required' => TRUE,

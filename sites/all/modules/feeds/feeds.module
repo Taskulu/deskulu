@@ -634,6 +634,11 @@ function feeds_node_presave($node) {
   }
   $last_title = NULL;
   $last_feeds = NULL;
+
+  // Update "changed" value if there was mapped to that.
+  if (isset($node->feeds_item->node_changed)) {
+    $node->changed = $node->feeds_item->node_changed;
+  }
 }
 
 /**
@@ -830,7 +835,14 @@ function _feeds_feeds_processor_targets_alter(array &$targets, $entity_type, $bu
  * Implements hook_flush_caches().
  */
 function feeds_flush_caches() {
-  return array('cache_feeds_http');
+  // The update to add the table needs to have run. Taken from
+  // https://www.drupal.org/node/2511858
+  include_once DRUPAL_ROOT . '/includes/install.inc';
+
+  if (drupal_get_installed_schema_version('feeds') >= 7212) {
+    return array('cache_feeds_http');
+  }
+  return array();
 }
 
 /**
@@ -864,8 +876,26 @@ function feeds_importer_load_all($load_disabled = FALSE) {
         $feeds[$config->id] = feeds_importer($config->id);
       }
     }
+    uasort($feeds, 'feeds_importer_name_sort');
   }
   return $feeds;
+}
+
+/**
+ * Sorts importers by name.
+ *
+ * Callback for uasort().
+ *
+ * @param FeedsImporter $a
+ *   The first FeedsImporter for comparison.
+ * @param FeedsImporter $b
+ *   The second FeedsImporter for comparison.
+ *
+ * @return int
+ *   The comparison result for uasort().
+ */
+function feeds_importer_name_sort(FeedsImporter $a, FeedsImporter $b) {
+  return strcasecmp($a->config['name'], $b->config['name']);
 }
 
 /**

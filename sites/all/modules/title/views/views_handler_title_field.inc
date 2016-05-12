@@ -36,13 +36,13 @@ class views_handler_title_field extends views_handler_field_field {
     if (!empty($this->options['link_to_entity'])) {
       $values = $this->original_values;
       $entity_type = $this->definition['entity_tables'][$this->base_table];
-      $entity_info = entity_get_info($entity_type);
-      $key = $entity_info['entity keys']['id'];
+      $key = $this->field_alias;
       if (!empty($values->_field_data[$key]['entity'])) {
         $entity = $values->_field_data[$key]['entity'];
         $uri = entity_uri($entity_type, $entity);
         $this->options['alter']['make_link'] = TRUE;
         $this->options['alter']['path'] = $uri['path'];
+        $this->options['alter']['options'] = !empty($uri['options']) ? $uri['options'] : array();
       }
     }
     return parent::render_item($count, $item);

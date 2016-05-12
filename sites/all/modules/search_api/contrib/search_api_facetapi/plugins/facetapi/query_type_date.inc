@@ -58,27 +58,36 @@ class SearchApiFacetapiDate extends SearchApiFacetapiTerm implements FacetapiQue
       $item = end($active);
       $field = $this->facet['field'];
       $filter = $this->createRangeFilter($item['value']);
-      $this->addFacetFilter($query, $field, $filter);
+      if ($filter) {
+        $this->addFacetFilter($query, $field, $filter);
+      }
     }
   }
 
   /**
    * Rewrites the handler-specific date range syntax to the normal facet syntax.
    *
-   * @param $value
+   * @param string $value
    *   The user-facing facet value.
    *
-   * @return string
+   * @return string|null
    *   A facet to add as a filter, in the format used internally in this module.
+   *   Or NULL if the raw facet in $value is not valid.
    */
   protected function createRangeFilter($value) {
-    // Gets the granularity. Ignore any filters passed directly from the server
-    // (range or missing). We always create filters starting with a year.
-    if (!$value || !ctype_digit($value[0])) {
-      return $value;
+    // Ignore any filters passed directly from the server (range or missing).
+    if (!$value || $value == '!' || (!ctype_digit($value[0]) && preg_match('/^[\[(][^ ]+ [^ ]+[])]$/', $value))) {
+      return $value ? $value : NULL;
     }
 
-    $parts = explode('-', $value);
+    // Parse into date parts.
+    $parts = $this->parseRangeFilter($value);
+
+    // Return NULL if the date parts are invalid or none were found.
+    if (empty($parts)) {
+      return NULL;
+    }
+
     $date = new DateTime();
     switch (count($parts)) {
       case 1:
@@ -138,6 +147,48 @@ class SearchApiFacetapiDate extends SearchApiFacetapiTerm implements FacetapiQue
     }
 
     return "[$lower TO $upper]";
+  }
+
+  /**
+   * Parses the date range filter value into parts.
+   *
+   * @param string $value
+   *   The user-facing facet value.
+   *
+   * @return int[]|null
+   *   An array of date parts, or NULL if an invalid value was provided.
+   */
+  protected static function parseRangeFilter($value) {
+    $parts = explode('-', $value);
+
+    foreach ($parts as $i => $part) {
+      // Invalidate if part is not an integer.
+      if ($part === '' || !is_numeric($part) || intval($part) != $part) {
+        return NULL;
+      }
+      $parts[$i] = (int) $part;
+      // Depending on the position, negative numbers or 0 are invalid.
+      switch ($i) {
+        case 0:
+          // Years can contain anything – negative values are unlikely, but
+          // technically possible.
+          break;
+        case 1:
+        case 2:
+          // Days and months have to be positive.
+          if ($part <= 0) {
+            return NULL;
+          }
+          break;
+        default:
+          // All others can be 0, but not negative.
+          if ($part < 0) {
+            return NULL;
+          }
+      }
+    }
+
+    return $parts;
   }
 
   /**
