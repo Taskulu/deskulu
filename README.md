@@ -17,6 +17,7 @@ Here's what Deskulu offers by default:
   * Ticket tagging.
 * Multi-lingual support 
   * Farsi and English are available by default.
+  * Default theme supports RTL layout.
 * RESTful API for integration with your own product.
 
 ## Installation
@@ -66,7 +67,7 @@ For the rest of this guide I'll be assuming that deskulu will be accessible from
   * Find REPLY E-MAIL ADDRESS and change its value to ticket-[node:nid]-[node:field_security_token]@helpmail.yoursite.com
 15. Open http://yoursite.com/admin/config/services/mandrill and set the Mandrill API Key.
 
-**Note:** You can visit all automation Rules and add/remove/edit them here: http://yoursite.com/admin/config/workflow/rules (Configuration > Workflow > Rules).
+**Note:** You can see all automation Rules and add/remove/edit them here: http://yoursite.com/admin/config/workflow/rules (Configuration > Workflow > Rules).
 
 ###Localization
 You can enable as many languages as you need. To do that you first need to add thos languages from http://yoursite.com/admin/config/regional/language (Configuration > Regional and language > Languages). Most of languages have translations available in https://localize.drupal.org/. You can download translations from this site and import them in http://yoursite.com/admin/config/regional/translate/import (Configuration > Regional and language > Translate interface > Import). If there are strings that are not translated after importing, you can use the form at http://yoursite.com/admin/config/regional/translate/translate (Configuration > Regional and language > Translate interface > Translate) to translate them yourself.
