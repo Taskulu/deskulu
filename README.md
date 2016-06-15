@@ -1,5 +1,11 @@
 #Intro
-Deskulu is an opensource helpdesk and ticketing system based on Drupal 7, developed as a weekend project by [Taskulu](https://taskulu.com) - a task management tool for enterprise. We've been using Deskulu as our own helpdesk since the initial development and have been fixing bugs and making improvements. It's quite production ready at this point.
+Deskulu is an opensource helpdesk and ticketing system based on Drupal 7, developed as a weekend project by [Taskulu](https://taskulu.com) - a task management tool for enterprise. We've been using Deskulu as our own [helpdesk](https://help.taskulu.com) since the initial development and have been fixing bugs and making improvements. It's quite production ready at this point.
+
+![Knowledge base](/screenshots/knowledgebase.png?raw=true "Knowledge base")
+
+![Agent Dashboard](/screenshots/dashboard.png?raw=true "Agent Dashboard")
+
+![Ticket](/screenshots/ticket.png?raw=true "Ticket")
 
 ##Features
 Deskulu is based on Drupal and inherits all its flexibility and [plethora of modules](https://www.drupal.org/project/project_module) that allow you to add more functionality. 
@@ -15,10 +21,10 @@ Here's what Deskulu offers by default:
   * Configurable ticket categories (feature request/bug report/technical support/etc)
   * Configurable ticket priorities (urgent/high/low/etc).
   * Ticket tagging.
-* Multi-lingual support 
+* Multi-lingual support
   * Farsi and English are available by default.
   * Default theme supports RTL layout.
-* RESTful API for integration with your own product.
+* RESTful API for integration with your own product using the [Services](https://www.drupal.org/project/services) module.
 
 ## Installation
 Before you continue please make sure that you have all the necessary [requirements](https://www.drupal.org/requirements). You also need a [Mandrill](http://mandrill.com/) account for the email integration to work.
@@ -83,6 +89,9 @@ You probably want to change the menus. You can do that from here: http://yoursit
 
 ###Changing fields on helpdesk articles, tickets and discussion forums
 If you need to add/remove fields to helpdesk articles or tickets visit this page: http://yoursite.com/admin/structure/types (Structure > Content types).
+
+###Using the RESTful API
+Please see the documentation of [Services](https://www.drupal.org/project/services) module.
 
 ##Roadmap
 * Add a more minimal theme.
