@@ -1,0 +1,13 @@
+diff --git a/modules/field/modules/options/options.module b/modules/field/modules/options/options.module
+index 041b84a..37d452a 100644
+--- a/modules/field/modules/options/options.module
++++ b/modules/field/modules/options/options.module
+@@ -279,7 +279,7 @@ function _options_prepare_options(&$options, $properties) {
+       if ($properties['strip_tags']) {
+         $options[$value] = strip_tags($label);
+       }
+-      if ($properties['strip_tags_and_unescape']) {
++      if (!empty($properties['strip_tags_and_unescape']) && $properties['strip_tags_and_unescape']) {
+         $options[$value] = decode_entities(strip_tags($label));
+       }
+       if ($properties['filter_xss']) {
