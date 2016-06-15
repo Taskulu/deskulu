@@ -48,7 +48,7 @@ For the rest of this guide I'll be assuming that deskulu will be accessible from
 ### Install and configure Deskulu
 1. Clone the repository (or download the [zip file](https://github.com/Taskulu/deskulu/archive/master.zip) and extrac it) in your webserver's documentroot.
 2. Create a new database and import deskulu.sql.gz
-3. Adjust your [PHP configuration](https://www.drupal.org/requirements/php) to make sure it meets Druapl requirements.
+3. Adjust your [PHP configuration](https://www.drupal.org/requirements/php) to make sure it meets Drupal requirements.
 4. Configure your web server
   * [Nginx configuration](https://github.com/perusio/drupal-with-nginx)
   * [Apache configuration](https://www.digitalocean.com/community/tutorials/how-to-install-drupal-on-an-ubuntu-14-04-server-with-apache)
