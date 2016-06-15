@@ -50,8 +50,8 @@ For the rest of this guide I'll be assuming that deskulu will be accessible from
 2. Create a new database and import deskulu.sql.gz
 3. Adjust your [PHP configuration](https://www.drupal.org/requirements/php) to make sure it meets Druapl requirements.
 4. Configure your web server
-  * [Nginx configurations](https://github.com/perusio/drupal-with-nginx)
-  * [Apache configurations](https://www.digitalocean.com/community/tutorials/how-to-install-drupal-on-an-ubuntu-14-04-server-with-apache)
+  * [Nginx configuration](https://github.com/perusio/drupal-with-nginx)
+  * [Apache configuration](https://www.digitalocean.com/community/tutorials/how-to-install-drupal-on-an-ubuntu-14-04-server-with-apache)
 5. Open sites/default/settings.php, replace DB_NAME, USERNAME and PASSWORD with your database name, username and password.
 6. Open the website in your browser and login
   * Username: admin
