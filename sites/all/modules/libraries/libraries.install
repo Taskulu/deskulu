@@ -25,3 +25,12 @@ function libraries_update_7200() {
     db_create_table('cache_libraries', $specs['cache_libraries']);
   }
 }
+
+/**
+ * Rebuild the class registry.
+ */
+function libraries_update_7201() {
+  // The tests were split from a single libraries.test file into multiple files
+  // during the 7.x-2.x cycle.
+  registry_rebuild();
+}

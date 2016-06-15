@@ -16,6 +16,10 @@
  *   - name: The official, human-readable name of the library.
  *   - vendor url: The URL of the homepage of the library.
  *   - download url: The URL of a web page on which the library can be obtained.
+ *   - download file url: (optional) The URL where the latest version of the
+ *     library can be downloaded. In case such a static URL exists the library
+ *     can be downloaded automatically via Drush. Run
+ *     'drush help libraries-download' in the command-line for more information.
  *   - path: (optional) A relative path from the directory of the library to the
  *     actual library. Only required if the extracted download package contains
  *     the actual library files in a sub-directory.
@@ -211,6 +215,9 @@ function hook_libraries_info() {
     'name' => 'Example library',
     'vendor url' => 'http://example.com',
     'download url' => 'http://example.com/download',
+    // It is important that this URL does not include the actual version to
+    // download. Not all libraries provide such a static URL.
+    'download file url' => 'http://example.com/latest.tar.gz',
     // Optional: If, after extraction, the actual library files are contained in
     // 'sites/all/libraries/example/lib', specify the relative path here.
     'path' => 'lib',
@@ -343,6 +350,9 @@ function hook_libraries_info() {
     'name' => 'Simple library',
     'vendor url' => 'http://example.com/simple',
     'download url' => 'http://example.com/simple',
+    // The download file URL can also point to a single file (instead of an
+    // archive).
+    'download file url' => 'http://example.com/latest/simple.js',
     'version arguments' => array(
       'file' => 'readme.txt',
       // Best practice: Document the actual version strings for later reference.
@@ -467,7 +477,7 @@ function hook_libraries_info_alter(&$libraries) {
  * @return
  *   An array of paths.
  */
-function hook_libraries_paths() {
+function hook_libraries_info_file_paths() {
   // Taken from the Libraries test module, which needs to specify the path to
   // the test library.
   return array(drupal_get_path('module', 'libraries_test') . '/example');

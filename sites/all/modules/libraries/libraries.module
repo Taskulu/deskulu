@@ -33,7 +33,7 @@ function libraries_flush_caches() {
  * @param $base_path
  *   Whether to prefix the resulting path with base_path().
  *
- * @return
+ * @return string
  *   The path to the specified library or FALSE if the library wasn't found.
  *
  * @ingroup libraries
@@ -67,7 +67,7 @@ function libraries_get_path($name, $base_path = FALSE) {
  * in both the site-wide directory and site-specific directory, only the
  * site-specific version will be listed.
  *
- * @return
+ * @return array
  *   A list of library directories.
  *
  * @ingroup libraries
@@ -122,7 +122,7 @@ function libraries_get_libraries() {
  * - sites/$sitename/libraries
  * - any directories specified via hook_libraries_info_file_paths()
  *
- * @return
+ * @return array
  *   An array of info files, keyed by library name. The values are the paths of
  *   the files.
  */
@@ -429,17 +429,21 @@ function &libraries_info($name = NULL) {
 /**
  * Applies default properties to a library definition.
  *
- * @library
+ * @param array $library
  *   An array of library information, passed by reference.
- * @name
+ * @param string $name
  *   The machine name of the passed-in library.
+ *
+ * @return array
+ *   The library information array with defaults populated.
  */
-function libraries_info_defaults(&$library, $name) {
+function libraries_info_defaults(array &$library, $name) {
   $library += array(
     'machine name' => $name,
     'name' => $name,
     'vendor url' => '',
     'download url' => '',
+    'download file url' => '',
     'path' => '',
     'library path' => NULL,
     'version callback' => 'libraries_get_version',
@@ -472,12 +476,15 @@ function libraries_info_defaults(&$library, $name) {
 /**
  * Tries to detect a library and its installed version.
  *
- * @param $name
- *   The machine name of a library to return registered information for.
+ * @param string $name
+ *   (optional) The machine name of a library to detect and return registered
+ *   information for. If omitted, information about all registered libraries is
+ *   returned.
  *
  * @return array|false
- *   An associative array containing registered information for the library
- *   specified by $name, or FALSE if the library $name is not registered.
+ *   An associative array containing registered information for all libraries,
+ *   the registered information for the library specified by $name, or FALSE if
+ *   the library $name is not registered.
  *   In addition to the keys returned by libraries_info(), the following keys
  *   are contained:
  *   - installed: A boolean indicating whether the library is installed. Note
@@ -491,7 +498,15 @@ function libraries_info_defaults(&$library, $name) {
  *
  * @see libraries_info()
  */
-function libraries_detect($name) {
+function libraries_detect($name = NULL) {
+  if (!isset($name)) {
+    $libraries = &libraries_info();
+    foreach ($libraries as $name => $library) {
+      libraries_detect($name);
+    }
+    return $libraries;
+  }
+
   // Re-use the statically cached value of libraries_info() to save memory.
   $library = &libraries_info($name);
 
@@ -531,7 +546,7 @@ function libraries_detect($name) {
       $library['version'] = call_user_func_array($library['version callback'], array_merge(array($library), $library['version arguments']));
     }
     else {
-      $library['version'] = $library['version callback']($library, $library['version arguments']);
+      $library['version'] = call_user_func($library['version callback'], $library, $library['version arguments']);
     }
     if (empty($library['version'])) {
       $library['error'] = 'not detected';
@@ -693,6 +708,10 @@ function libraries_load($name, $variant = NULL) {
  *   The number of loaded files.
  */
 function libraries_load_files($library) {
+  // As this key was added after 7.x-2.1 cached library structures might not
+  // have it.
+  $library += array('post-load integration files' => FALSE);
+
   // Load integration files.
   if (!$library['post-load integration files'] && !empty($library['integration files'])) {
     $enabled_themes = array();
@@ -866,4 +885,62 @@ function libraries_get_version($library, $options) {
     $options['lines']--;
   }
   fclose($file);
+}
+
+/**
+ * Implements hook_help().
+ */
+function libraries_help($path, $arg) {
+  switch ($path) {
+    case 'admin/reports/libraries':
+      return t('Click on a library for a status report or detailed installation instructions in case the library is not installed correctly.');
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function libraries_menu() {
+  $items = array();
+  $items['admin/reports/libraries'] = array(
+    'title' => 'Libraries',
+    'description' => 'An overview of libraries installed on this site.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('libraries_admin_overview'),
+    'access arguments' => array('access site reports'),
+    'file' => 'libraries.admin.inc'
+  );
+  $items['admin/reports/libraries/%libraries_ui'] = array(
+    'title' => 'Library status report',
+    'description' => 'Status overview for a single library',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('libraries_admin_library_status_form', 3),
+    'access arguments' => array('access site reports'),
+    'file' => 'libraries.admin.inc'
+  );
+  return $items;
+}
+
+/**
+ * Loads library information for display in the user interface.
+ *
+ * This can be used as a menu loader function by specifying a '%libraries_ui'
+ * parameter in a path.
+ *
+ * We do not use libraries_load() (and, thus, a '%libraries' parameter) directly
+ * for displaying library information in the user interface as we do not want
+ * the library files to be loaded.
+ *
+ * @param string $name
+ *   The machine name of a library to return registered information for.
+ *
+ * @return array|false
+ *   An associative array containing registered information for the library
+ *   specified by $name, or FALSE if the library $name is not registered.
+ *
+ * @see libraries_detect()
+ * @see libraries_menu()
+ */
+function libraries_ui_load($name) {
+  return libraries_detect($name);
 }

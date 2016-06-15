@@ -5,9 +5,9 @@ package = Testing
 dependencies[] = libraries
 hidden = TRUE
 
-; Information added by Drupal.org packaging script on 2014-02-09
-version = "7.x-2.2"
+; Information added by Drupal.org packaging script on 2016-05-12
+version = "7.x-2.3"
 core = "7.x"
 project = "libraries"
-datestamp = "1391965716"
+datestamp = "1463077450"
 

@@ -18,6 +18,9 @@ function libraries_test_module_libraries_info() {
   // Test library detection.
   $libraries['example_missing'] = array(
     'name' => 'Example missing',
+    // Provide a vendor and download URL to test that the UI links to it.
+    'vendor url' => 'http://example.com',
+    'download url' => 'http://example.com/download',
     'library path' => drupal_get_path('module', 'libraries') . '/tests/libraries/missing',
   );
   $libraries['example_undetected_version'] = array(
@@ -28,6 +31,8 @@ function libraries_test_module_libraries_info() {
   );
   $libraries['example_unsupported_version'] = array(
     'name' => 'Example unsupported version',
+    // Provide a download URL to test that the UI links to it.
+    'download url' => 'http://example.com/download',
     'library path' => drupal_get_path('module', 'libraries') . '/tests/libraries/example',
     'version callback' => '_libraries_test_module_return_version',
     'version arguments' => array('1'),

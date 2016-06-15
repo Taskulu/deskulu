@@ -2,67 +2,29 @@
 
 /**
  * @file
- * Tests for Libraries API.
+ * Contains LibrariesLoadWebTest.
+ *
+ * Simpletest automatically discovers test files using PSR-4. We cannot,
+ * however, declare a namespace for this class, as that would require PHP 5.3.
+ * To prepare the PHP 5.3 requirement and the usage of PSR-4 in 7.x-3.x, we
+ * place the test files in the correct directory already, but for now register
+ * them explicitly in libraries.info
  */
-
-/**
- * Tests basic Libraries API functions.
- */
-class LibrariesUnitTestCase extends DrupalUnitTestCase {
-  public static function getInfo() {
-    return array(
-      'name' => 'Libraries API unit tests',
-      'description' => 'Tests basic functions provided by Libraries API.',
-      'group' => 'Libraries API',
-    );
-  }
-
-  function setUp() {
-    drupal_load('module', 'libraries');
-    parent::setUp();
-  }
-
-  /**
-   * Tests libraries_get_path().
-   */
-  function testLibrariesGetPath() {
-    // Note that, even though libraries_get_path() doesn't find the 'example'
-    // library, we are able to make it 'installed' by specifying the 'library
-    // path' up-front. This is only used for testing purposed and is strongly
-    // discouraged as it defeats the purpose of Libraries API in the first
-    // place.
-    $this->assertEqual(libraries_get_path('example'), FALSE, 'libraries_get_path() returns FALSE for a missing library.');
-  }
-
-  /**
-   * Tests libraries_prepare_files().
-   */
-  function testLibrariesPrepareFiles() {
-    $expected = array(
-      'files' => array(
-        'js' => array('example.js' => array()),
-        'css' => array('example.css' => array()),
-        'php' => array('example.php' => array()),
-      ),
-    );
-    $library = array(
-      'files' => array(
-        'js' => array('example.js'),
-        'css' => array('example.css'),
-        'php' => array('example.php'),
-      ),
-    );
-    libraries_prepare_files($library, NULL, NULL);
-    $this->assertEqual($expected, $library, 'libraries_prepare_files() works correctly.');
-  }
-}
 
 /**
  * Tests basic detection and loading of libraries.
  */
-class LibrariesTestCase extends DrupalWebTestCase {
-  protected $profile = 'testing';
+class LibrariesLoadWebTest extends LibrariesWebTestBase {
 
+  /**
+   * Provides metadata about this test.
+   *
+   * @return array
+   *   An array of test metadata with the following keys:
+   *   - name: The name of the test.
+   *   - description: The description of the test.
+   *   - group: The group of the test.
+   */
   public static function getInfo() {
     return array(
       'name' => 'Libraries detection and loading',
@@ -71,15 +33,10 @@ class LibrariesTestCase extends DrupalWebTestCase {
     );
   }
 
-  function setUp() {
-    parent::setUp('libraries', 'libraries_test_module');
-    theme_enable(array('libraries_test_theme'));
-  }
-
   /**
    * Tests libraries_detect_dependencies().
    */
-  function testLibrariesDetectDependencies() {
+  public function testLibrariesDetectDependencies() {
     $library = array(
       'name' => 'Example',
       'dependencies' => array('example_missing'),
@@ -158,7 +115,7 @@ class LibrariesTestCase extends DrupalWebTestCase {
   /**
    * Tests libraries_scan_info_files().
    */
-  function testLibrariesScanInfoFiles() {
+  public function testLibrariesScanInfoFiles() {
     $expected = array('example_info_file' => (object) array(
       'uri' => drupal_get_path('module', 'libraries') . '/tests/libraries/example_info_file.libraries.info',
       'filename' => 'example_info_file.libraries.info',
@@ -171,7 +128,7 @@ class LibrariesTestCase extends DrupalWebTestCase {
   /**
    * Tests libraries_info().
    */
-  function testLibrariesInfo() {
+  public function testLibrariesInfo() {
     // Test that modules can provide and alter library information.
     $info = libraries_info();
     $this->assertTrue(isset($info['example_module']));
@@ -226,7 +183,7 @@ class LibrariesTestCase extends DrupalWebTestCase {
   /**
    * Tests libraries_detect().
    */
-  function testLibrariesDetect() {
+  public function testLibrariesDetect() {
     // Test missing library.
     $library = libraries_detect('example_missing');
     $this->verbose('<pre>' . var_export($library, TRUE) . '</pre>');
@@ -307,9 +264,23 @@ class LibrariesTestCase extends DrupalWebTestCase {
   }
 
   /**
+   * Tests libraries_detect() without a $name parameter.
+   */
+  public function testLibrariesDetectAll() {
+    // Test that an array with all library information is returned and that the
+    // libraries are properly detected.
+    $libraries = libraries_detect();
+    $this->verbose('<pre>' . var_export($libraries, TRUE) . '</pre>');
+    $this->assertEqual($libraries['example_missing']['error'], 'not found');
+    $this->assertEqual($libraries['example_undetected_version']['error'], 'not detected');
+    $this->assertEqual($libraries['example_unsupported_version']['error'], 'not supported');
+    $this->assertEqual($libraries['example_supported_version']['installed'], TRUE);
+  }
+
+  /**
    * Tests libraries_load().
    */
-  function testLibrariesLoad() {
+  public function testLibrariesLoad() {
     // Test dependencies.
     $library = libraries_load('example_dependency_missing');
     $this->verbose('<pre>' . var_export($library, TRUE) . '</pre>');
@@ -334,7 +305,7 @@ class LibrariesTestCase extends DrupalWebTestCase {
   /**
    * Tests the applying of callbacks.
    */
-  function testCallbacks() {
+  public function testCallbacks() {
     $expected = array(
       'name' => 'Example callback',
       'library path' => drupal_get_path('module', 'libraries') . '/tests/libraries/example',
@@ -453,7 +424,7 @@ class LibrariesTestCase extends DrupalWebTestCase {
    *
    * @see _libraries_test_module_load()
    */
-  function testLibrariesOutput() {
+  public function testLibrariesOutput() {
     // Test loading of a simple library with a top-level files property.
     $this->drupalGet('libraries-test-module/files');
     $this->assertLibraryFiles('example_1', 'File loading');
@@ -527,7 +498,7 @@ class LibrariesTestCase extends DrupalWebTestCase {
    *   (optional) The expected file extensions of $name. Defaults to
    *   array('js', 'css', 'php').
    */
-  function assertLibraryFiles($name, $label = '', $extensions = array('js', 'css', 'php')) {
+  public function assertLibraryFiles($name, $label = '', $extensions = array('js', 'css', 'php')) {
     $label = ($label !== '' ? "$label: " : '');
 
     // Test that the wrong files are not loaded...
@@ -570,4 +541,3 @@ class LibrariesTestCase extends DrupalWebTestCase {
   }
 
 }
-

@@ -1,4 +1,20 @@
 
+Libraries 7.x-2.3, 2016-05-12
+-----------------------------
+#1884246 by BR0kEN, tstoeckler et al: Allow downloading libraries via Drush.
+by tstoeckler: Allow detecting all libraries by calling libraries_detect().
+by tstoeckler: Prevent LibrariesWebTestBase from being displayed in the UI.
+#819610 by tstoeckler: Add tests for the Libraries UI.
+#1884246 by BR0kEN, tstoeckler: Show the provider in drush libraries-list
+#819610 by Pol, tstoeckler: Show the provider in the UI.
+#2634732 by Rob Holmes, tstoeckler: Sort libraries by title in the UI.
+#2585395 by robinsonsarah01: Allow object methods as version callbacks.
+#819610 by tstoeckler, Pol: Provide a status report for library information.
+#2352251 by netw3rker: Fix incorrect hook name in libraries.api.php.
+#2352237 by netw3rker, tstoeckler: Allow clearing the libraries cache from Drush.
+#2193969 by tstoeckler: Avoid warnings for stale library caches.
+#2287529 by drupalshrek, tstoeckler: Update installation link in README.txt.
+
 Libraries 7.x-2.2, 2014-02-09
 -----------------------------
 #2046919 by tstoeckler: Clarify 'version' docs.
