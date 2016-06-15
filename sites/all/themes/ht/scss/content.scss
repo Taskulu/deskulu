@@ -325,3 +325,7 @@ aside {
 }
 
 .freshdesk_quote { display: none ; }
+
+.breadcrumb > li + li:before {
+    content: "/";
+}

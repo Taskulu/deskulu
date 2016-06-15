@@ -17,7 +17,6 @@
  * - $name: User name of post author.
  * - $author_pane: Entire contents of the Author Pane template.
  */
-$account = user_load($node->uid);
 $name = format_username($account);
 ?>
 
