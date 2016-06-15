@@ -1,11 +1,11 @@
 #Intro
 Deskulu is an opensource helpdesk and ticketing system based on Drupal 7, developed as a weekend project by [Taskulu](https://taskulu.com) - a task management tool for enterprise. We've been using Deskulu as our own [helpdesk](https://help.taskulu.com) since the initial development and have been fixing bugs and making improvements. It's quite production ready at this point.
 
-![Knowledge base](/screenshots/knowledgebase.png?raw=true "Knowledge base")
+![Knowledge base](/screenshots/knowledgebase.png?raw=true "Knowledge base")Knowledge base
 
-![Agent Dashboard](/screenshots/dashboard.png?raw=true "Agent Dashboard")
+![Agent Dashboard](/screenshots/dashboard.png?raw=true "Agent Dashboard")Agent dashboard
 
-![Ticket](/screenshots/ticket.png?raw=true "Ticket")
+![Ticket](/screenshots/ticket.png?raw=true "Ticket")Ticket
 
 ##Features
 Deskulu is based on Drupal and inherits all its flexibility and [plethora of modules](https://www.drupal.org/project/project_module) that allow you to add more functionality. 
