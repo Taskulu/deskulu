@@ -39,14 +39,15 @@ For the rest of this guide I'll be assuming that deskulu will be accessible from
   * When The Receiving Email Address Matches: support@helpmail.yoursite.com
   * Post To URL: http://yoursite.com/tickets/incoming/new
 6. Add another route by clicking on the "+Add New Route" button again.
-  * When The Receiving Email Address Matches: ticket-*-*@helpmail.yoursite.com
-  * Post To URL: http://yoursite.com/tickets/incoming/new
+  * When The Receiving Email Address Matches: ticket-\*-\*@helpmail.yoursite.com
+  * Post To URL: http://yoursite.com/tickets/incoming/reply
 7. Visit https://mandrillapp.com/settings/index and generate a new API key for the helpdesk. You'll need this API key later.
 8. Open your own mail administration tool and create an Alias to forward all emails sent to support@yoursite.com to support@mail.taskulu.com.
 
 
 ### Install and configure Deskulu
 1. Clone the repository (or download the [zip file](https://github.com/Taskulu/deskulu/archive/master.zip) and extrac it) in your webserver's documentroot.
+	* Apply all patches available in /sites/all/patches
 2. Create a new database and import deskulu.sql.gz
 3. Adjust your [PHP configuration](https://www.drupal.org/requirements/php) to make sure it meets Drupal requirements.
 4. Configure your web server
